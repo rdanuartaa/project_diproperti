@@ -7,7 +7,6 @@ import "rc-slider/assets/index.css";
 import { usePathname } from "next/navigation";
 import BackToTop from "@/components/common/BackToTop";
 import MobileMenu from "@/components/headers/MobileMenu";
-import SettingsHandler from "@/components/common/SettingsHandler";
 import Login from "@/components/modals/Login";
 import Register from "@/components/modals/Register";
 
@@ -76,7 +75,6 @@ export default function RootLayout({ children }) {
         {children}
         <MobileMenu />
         <BackToTop />
-        <SettingsHandler />
         <Login />
         <Register />
       </body>
