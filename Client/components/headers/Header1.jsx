@@ -1,8 +1,29 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import Nav from "./Nav";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/context/AuthContext";
+
 export default function Header1({ parentClass = "header" }) {
+  const { isAuthenticated, user, isAdmin, logout } = useAuth();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const handleGoogleLogin = (e) => {
+    e.preventDefault();
+    window.location.href = "http://localhost:8000/api/auth/google/redirect";
+  };
+
+  const handleLogout = async (e) => {
+    e.preventDefault();
+    await logout();
+    setDropdownOpen(false);
+  };
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
   return (
     <header id="header-main" className={parentClass}>
       <div className="header-inner">
@@ -27,33 +48,164 @@ export default function Header1({ parentClass = "header" }) {
                   </ul>
                 </nav>
                 <div className="header-right">
-                  <div className="phone-number">
-                    <div className="icons">
-                      <svg
-                        width={20}
-                        height={20}
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
+                  <div className="nav-login-item" style={{ marginRight: "20px" }}>
+                    {isAuthenticated && user ? (
+                      <div
+                        className="user-avatar-dropdown"
+                        style={{ position: "relative" }}
                       >
-                        <path
-                          d="M1.875 5.625C1.875 12.5283 7.47167 18.125 14.375 18.125H16.25C16.7473 18.125 17.2242 17.9275 17.5758 17.5758C17.9275 17.2242 18.125 16.7473 18.125 16.25V15.1067C18.125 14.6767 17.8325 14.3017 17.415 14.1975L13.7292 13.2758C13.3625 13.1842 12.9775 13.3217 12.7517 13.6233L11.9433 14.7008C11.7083 15.0142 11.3025 15.1525 10.935 15.0175C9.57073 14.5159 8.33179 13.7238 7.30398 12.696C6.27618 11.6682 5.48406 10.4293 4.9825 9.065C4.8475 8.6975 4.98583 8.29167 5.29917 8.05667L6.37667 7.24833C6.67917 7.0225 6.81583 6.63667 6.72417 6.27083L5.8025 2.585C5.75178 2.38225 5.63477 2.20225 5.47004 2.07361C5.30532 1.94498 5.10234 1.87507 4.89333 1.875H3.75C3.25272 1.875 2.77581 2.07254 2.42417 2.42417C2.07254 2.77581 1.875 3.25272 1.875 3.75V5.625Z"
-                          stroke="black"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </div>
-                    <p>(603) 555-0123</p>
+                        <button
+                          onClick={toggleDropdown}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            cursor: "pointer",
+                            borderRadius: "50%",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {user.avatar ? (
+                            <Image
+                              src={user.avatar}
+                              alt={user.name}
+                              width={40}
+                              height={40}
+                              className="rounded-circle"
+                              style={{ objectFit: "cover" }}
+                            />
+                          ) : (
+                            <div
+                              style={{
+                                width: "40px",
+                                height: "40px",
+                                borderRadius: "50%",
+                                backgroundColor: "var(--Primary, #4285F4)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "#fff",
+                                fontWeight: "400",
+                                fontSize: "16px",
+                              }}
+                            >
+                              {user.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </button>
+
+                        {dropdownOpen && (
+                          <div
+                            className="dropdown-menu show"
+                            style={{
+                              position: "absolute",
+                              top: "100%",
+                              right: 0,
+                              marginTop: "10px",
+                              minWidth: "200px",
+                              backgroundColor: "#fff",
+                              borderRadius: "8px",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                              zIndex: 9999,
+                              padding: "8px 0",
+                            }}
+                          >
+                            <div
+                              style={{
+                                padding: "8px 16px",
+                                borderBottom: "1px solid #e5e7eb",
+                                fontSize: "16px",
+                                fontWeight: "400",
+                              }}
+                            >
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontWeight: "600",
+                                  color: "#1f2937",
+                                }}
+                              >
+                                {user.name}
+                              </p>
+                              <p
+                                style={{
+                                  margin: "4px 0 0",
+                                  fontSize: "16px",
+                                  color: "#6b7280",
+                                  fontWeight: "400",
+                                }}
+                              >
+                                {user.email}
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleLogout}
+                              className="dropdown-item"
+                              style={{
+                                padding: "8px 16px",
+                                display: "block",
+                                width: "100%",
+                                background: "none",
+                                border: "none",
+                                color: "#dc2626",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                fontSize: "16px",
+                                fontWeight: "400",
+                              }}
+                            >
+                              Logout
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        href="/login"
+                        onClick={handleGoogleLogin}
+                        className="nav-link-style"
+                        style={{
+                          color: "#ffffff",
+                          padding: "29px 0",
+                          fontWeight: "400",
+                          fontSize: "16px",
+                          textDecoration: "none",
+                          display: "inline-block",
+                          cursor: "pointer",
+                          transition: "color 0.3s ease",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "var(--Primary)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = "#ffffff";
+                        }}
+                      >
+                        Masuk
+                      </Link>
+                    )}
                   </div>
                   <div className="btn-add">
-                    <Link
-                      className="tf-btn style-border pd-23"
-                      href={`/admin/add-property`}
-                    >
-                      Add property
-                    </Link>
+                    {isAuthenticated && isAdmin ? (
+                      <Link
+                        className="tf-btn style-border pd-23"
+                        href={`/admin/add-property`}
+                      >
+                        Add property
+                      </Link>
+                    ) : (
+                      <a
+                        href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20menambahkan%20properti"
+                        className="tf-btn style-border pd-23"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          cursor: "pointer",
+                        }}
+                      >
+                        Hubungi Admin
+                      </a>
+                    )}
                   </div>
                   <div
                     className="mobile-button"

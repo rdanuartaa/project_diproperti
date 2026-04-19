@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import ThemeController from "@/components/common/ThemeController";
 import Footer1 from "@/components/footers/Footer1";
 import Header2 from "@/components/headers/Header2";
@@ -12,16 +16,32 @@ import Facts from "@/components/homes/home-2/Facts";
 import Hero from "@/components/homes/home-2/Hero";
 import Properties from "@/components/homes/home-2/Properties";
 import Testimonials from "@/components/homes/home-2/Testimonials";
-import React from "react";
 
-export const metadata = {
-  title: "Home 02 || Proty - Real Estate React Nextjs Template",
-  description: "Proty - Real Estate React Nextjs Template",
-};
-export default function page() {
+export default function Home02Page() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const status = searchParams.get('status');
+
+    if (status === 'success' && token) {
+      // Simpan token
+      localStorage.setItem('auth_token', token);
+      
+      // 🔥 Trigger custom event agar AuthContext detect
+      window.dispatchEvent(new Event('auth_token_changed'));
+      
+      // Bersihkan URL tanpa reload
+      if (typeof window !== 'undefined') {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+  }, [searchParams]);
+
   return (
     <>
-      <div className="counter-scroll ">
+      <div className="counter-scroll">
         <ThemeController themeColor={"theme-color-1"} />
         <div id="wrapper">
           <Header2 />
@@ -34,7 +54,6 @@ export default function page() {
             <Agents />
             <Cities />
             <Testimonials />
-
             <Banner />
             <Brands />
             <Blogs />
