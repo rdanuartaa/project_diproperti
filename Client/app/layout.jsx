@@ -9,6 +9,7 @@ import BackToTop from "@/components/common/BackToTop";
 import MobileMenu from "@/components/headers/MobileMenu";
 import Login from "@/components/modals/Login";
 import Register from "@/components/modals/Register";
+import { AuthProvider } from "@/context/AuthContext";
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();
@@ -48,6 +49,7 @@ export default function RootLayout({ children }) {
     });
     wow.init();
   }, [pathname]);
+
   useEffect(() => {
     const handleSticky = () => {
       const navbar = document.querySelector(".header");
@@ -72,11 +74,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="popup-loader">
+        <AuthProvider>
         {children}
-        <MobileMenu />
         <BackToTop />
+        <MobileMenu />
         <Login />
         <Register />
+        </AuthProvider>
       </body>
     </html>
   );
