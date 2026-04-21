@@ -179,7 +179,7 @@ export default function Header2() {
                       // Admin sudah login - Tampilkan "Add property"
                       <Link
                         className="tf-btn style-border pd-23"
-                        href={`/admin/add-property`}
+                        href={`/admin/add-properti`}
                       >
                         Add property
                       </Link>

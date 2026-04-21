@@ -6,6 +6,8 @@ form {
   z-index: 30;
   .input.input-nl,
   textarea,
+  select,
+  select.form-control,
   input[type="text"],
   input[type="password"],
   input[type="datetime"],

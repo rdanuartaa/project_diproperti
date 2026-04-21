@@ -27,13 +27,13 @@ export default function Nav() {
         <Link href="/property-gird-right-sidebar">Properti</Link>
       </li>
       <li className={pathname === "/compare" ? "current-menu" : ""}>
-        <Link href="/compare">Compare</Link>
+        <Link href="/compare">Komparasi</Link>
+      </li>
+      <li className={pathname === "/bunga-flat" ? "current-menu" : ""}>
+        <Link href="/bunga-flat">Bunga Flat</Link>
       </li>
       <li className={pathname.startsWith("/blog") ? "current-menu" : ""}>
         <Link href="/blog-grid">Artikel</Link>
-      </li>
-      <li className={"/contact" == pathname ? "current-menu" : ""}>
-        <Link href={`/contact`}>Contact</Link>
       </li>
     </>
   );
