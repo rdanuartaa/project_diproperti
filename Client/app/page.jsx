@@ -34,7 +34,6 @@ export default function page() {
             <Agents />
             <Cities />
             <Testimonials />
-
             <Banner />
             <Brands />
             <Blogs />

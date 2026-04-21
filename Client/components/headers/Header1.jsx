@@ -189,7 +189,7 @@ export default function Header1({ parentClass = "header" }) {
                     {isAuthenticated && isAdmin ? (
                       <Link
                         className="tf-btn style-border pd-23"
-                        href={`/admin/add-property`}
+                        href={`/admin/add-properti`}
                       >
                         Add property
                       </Link>

@@ -8,9 +8,9 @@ export const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
+  timeout: 15000,
 });
 
-// Request interceptor
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
@@ -21,22 +21,29 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor - Handle error dengan lebih baik
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Jika 401 (Unauthorized) atau 404 (Not Found)
-    if (error.response?.status === 401 || error.response?.status === 404) {
+    const status = error.response?.status;
+    const data = error.response?.data;
+
+    if (status === 401) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('auth_token');
-        // Jangan redirect otomatis, biarkan component handle sendiri
       }
     }
+
+    if (status === 422) {
+      console.warn('🔴 Validation Error:', data?.errors);
+    }
+
+    if (status === 500) {
+      console.error('🔴 Server Error:', data?.message || 'Internal Server Error');
+    }
+
     return Promise.reject(error);
   }
 );

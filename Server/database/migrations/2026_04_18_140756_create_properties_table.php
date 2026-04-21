@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('title', 255);
             $table->string('slug', 255)->unique();
             $table->enum('type', ['rumah', 'perumahan', 'ruko', 'kos', 'tanah']);
-            $table->string('building_type', 100)->nullable();
+            $table->unsignedInteger('building_type')->nullable();
             $table->enum('listing_type', ['jual', 'sewa']);
             $table->string('kecamatan', 100);
             $table->string('city', 100)->default('Jember');
