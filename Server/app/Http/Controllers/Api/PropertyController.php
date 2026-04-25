@@ -13,13 +13,48 @@ use Illuminate\Support\Facades\Log;
 class PropertyController extends Controller
 {
     /**
+     * Helper: Trigger accessor full_url untuk semua images
+     * Memastikan URL Cloudflare R2 ter-generate dan masuk ke JSON response
+     */
+    private function appendImageUrls($data)
+    {
+        if ($data instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+            $data->getCollection()->transform(function($property) {
+                if ($property->relationLoaded('images')) {
+                    $property->images->each(function($image) {
+                        // Force trigger accessor dengan mengakses full_url
+                        $image->full_url;
+                    });
+                }
+                return $property;
+            });
+        } elseif ($data instanceof \Illuminate\Database\Eloquent\Collection) {
+            $data->each(function($property) {
+                if ($property->relationLoaded('images')) {
+                    $property->images->each(function($image) {
+                        $image->full_url;
+                    });
+                }
+            });
+        } elseif ($data instanceof Property) {
+            if ($data->relationLoaded('images')) {
+                $data->images->each(function($image) {
+                    $image->full_url;
+                });
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * Display a listing of properties (Public)
      */
     public function index(Request $request)
     {
         $query = Property::with(['user', 'detail', 'images']);
 
-        // Filter
+        // Filter basic
         if ($request->has('type')) $query->where('type', $request->type);
         if ($request->has('listing_type')) $query->where('listing_type', $request->listing_type);
         if ($request->has('city')) $query->where('city', $request->city);
@@ -33,12 +68,48 @@ class PropertyController extends Controller
             });
         }
 
-        // Hanya tampilkan published (kecuali admin)
-        if (!$request->user()?->isAdmin()) {
+        // Filter status: hanya published untuk non-admin
+        $user = $request->user();
+        if (!$user || !$user->isAdmin()) {
             $query->where('status', 'published');
         }
 
         $properties = $query->latest()->paginate($request->get('per_page', 12));
+
+        // ✅ TRIGGER ACCESSOR untuk full_url
+        $this->appendImageUrls($properties);
+
+        return response()->json($properties);
+    }
+
+    /**
+     * Display a listing of properties for admin (All statuses)
+     */
+    public function adminIndex(Request $request)
+    {
+        if (!$request->user()?->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $query = Property::with(['user', 'detail', 'images']);
+
+        if ($request->has('type')) $query->where('type', $request->type);
+        if ($request->has('listing_type')) $query->where('listing_type', $request->listing_type);
+        if ($request->has('city')) $query->where('city', $request->city);
+        if ($request->has('min_price')) $query->where('price', '>=', $request->min_price);
+        if ($request->has('max_price')) $query->where('price', '<=', $request->max_price);
+        if ($request->has('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('title', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhere('kecamatan', 'like', "%{$request->search}%");
+            });
+        }
+
+        $properties = $query->latest()->paginate($request->get('per_page', 12));
+
+        // ✅ TRIGGER ACCESSOR untuk full_url
+        $this->appendImageUrls($properties);
 
         return response()->json($properties);
     }
@@ -52,7 +123,9 @@ class PropertyController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // Tambah counter views (kecuali admin)
+        // ✅ TRIGGER ACCESSOR untuk full_url
+        $this->appendImageUrls($property);
+
         if (!request()->user()?->isAdmin()) {
             $property->increment('views');
         }
@@ -69,7 +142,7 @@ class PropertyController extends Controller
             Log::info('=== CREATE PROPERTY START ===');
             Log::info('User ID: ' . $request->user()->id);
 
-            // ✅ PRE-PROCESS: Normalize detail input BEFORE validation
+            // Pre-process: Normalize detail input
             $rawDetail = $request->input('detail', []);
             $normalizedDetail = $this->normalizeDetailInput($rawDetail);
             $request->merge(['detail' => $normalizedDetail]);
@@ -87,8 +160,6 @@ class PropertyController extends Controller
                 'certificate_status' => 'nullable|in:lunas,bank',
                 'status' => 'nullable|in:draft,published,sold',
                 'description' => 'nullable|string',
-
-                // Detail validation
                 'detail' => 'required|array',
                 'detail.luas_tanah' => 'required|integer|min:0',
                 'detail.luas_bangunan' => 'nullable|integer|min:0',
@@ -105,10 +176,7 @@ class PropertyController extends Controller
                 'detail.water' => 'nullable|in:pdam,sumur',
                 'detail.listrik_type' => 'nullable|in:overground,underground',
                 'detail.wifi_provider' => 'nullable|string|max:255',
-
-                // Images validation
-                'images' => 'nullable|array',
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+                'images' => 'nullable',
             ]);
 
             Log::info('Validation passed');
@@ -131,34 +199,22 @@ class PropertyController extends Controller
 
             Log::info('Property created with ID: ' . $property->id);
 
-            // ✅ CREATE PROPERTY DETAIL - dengan sanitasi ekstra
+            // Create Property Detail
             $detailData = $this->prepareDetailData($validated['detail'], $property->id);
             $property->detail()->create($detailData);
             Log::info('Property detail created');
 
-            // Upload Images
-            if ($request->hasFile('images')) {
-                Log::info('Uploading ' . count($request->file('images')) . ' images...');
-
-                foreach ($request->file('images') as $index => $image) {
-                    try {
-                        $path = $image->store('properties', 'public');
-
-                        $property->images()->create([
-                            'image_url' => Storage::url($path),
-                            'is_primary' => $index === 0,
-                        ]);
-
-                        Log::info('Image ' . ($index + 1) . ' uploaded: ' . $path);
-                    } catch (\Exception $e) {
-                        Log::error('Failed to upload image: ' . $e->getMessage());
-                        // Continue with other images
-                    }
-                }
+            // ✅ Upload Images ke Cloudflare R2
+            $uploadedCount = $this->handleImageUpload($property, $request, 0);
+            if ($uploadedCount === 0 && $request->hasFile('images')) {
+                Log::warning('⚠️ Images uploaded to R2 but NOT saved to database! Count: 0');
             }
 
-            // Load relationships for response
+            // Load relationships
             $property->load(['detail', 'images', 'user']);
+
+            // ✅ TRIGGER ACCESSOR untuk full_url sebelum return
+            $this->appendImageUrls($property);
 
             Log::info('=== CREATE PROPERTY SUCCESS ===');
 
@@ -192,14 +248,12 @@ class PropertyController extends Controller
     public function update(Request $request, Property $property)
     {
         try {
-            // Check ownership
             if (!$request->user()->isAdmin() && $property->user_id !== $request->user()->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
             Log::info('=== UPDATE PROPERTY START === ID: ' . $property->id);
 
-            // Pre-process detail input
             $rawDetail = $request->input('detail', []);
             $normalizedDetail = $this->normalizeDetailInput($rawDetail);
             $request->merge(['detail' => $normalizedDetail]);
@@ -216,10 +270,8 @@ class PropertyController extends Controller
                 'certificate_status' => 'nullable|in:lunas,bank',
                 'status' => 'sometimes|required|in:draft,published,sold',
                 'description' => 'nullable|string',
-
-                // Detail validation
-                'detail' => 'sometimes|required|array',
-                'detail.luas_tanah' => 'sometimes|required|integer|min:0',
+                'detail' => 'nullable|array',
+                'detail.luas_tanah' => 'nullable|integer|min:0',
                 'detail.luas_bangunan' => 'nullable|integer|min:0',
                 'detail.bedrooms' => 'nullable|integer|min:0',
                 'detail.bathrooms' => 'nullable|integer|min:0',
@@ -234,29 +286,30 @@ class PropertyController extends Controller
                 'detail.water' => 'nullable|in:pdam,sumur',
                 'detail.listrik_type' => 'nullable|in:overground,underground',
                 'detail.wifi_provider' => 'nullable|string|max:255',
-
-                // Images
+                'images_to_delete' => 'nullable|array',
+                'images_to_delete.*' => 'integer|exists:property_images,id',
                 'images' => 'nullable|array',
-                'images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
             ]);
 
-            // Update main property - only update fields that are present
-            $updateData = [];
-            $mainFields = ['title', 'type', 'building_type', 'listing_type', 'kecamatan', 'city', 'price', 'certificate_type', 'certificate_status', 'status', 'description'];
+            // Update main property fields
+            $updatableFields = [
+                'title', 'type', 'building_type', 'listing_type',
+                'kecamatan', 'city', 'price', 'certificate_type',
+                'certificate_status', 'status', 'description'
+            ];
 
-            foreach ($mainFields as $field) {
+            foreach ($updatableFields as $field) {
                 if (isset($validated[$field])) {
-                    $updateData[$field] = $validated[$field];
+                    $property->{$field} = $validated[$field];
                 }
             }
 
-            if (!empty($updateData)) {
-                // Regenerate slug if title changed
-                if (isset($validated['title'])) {
-                    $updateData['slug'] = Str::slug($validated['title']) . '-' . Str::random(5);
-                }
-                $property->update($updateData);
+            if (isset($validated['title'])) {
+                $property->slug = Str::slug($validated['title']) . '-' . Str::random(5);
             }
+
+            $property->save();
 
             // Update detail
             if (isset($validated['detail'])) {
@@ -267,29 +320,42 @@ class PropertyController extends Controller
                 );
             }
 
-            // Handle new images
-            if ($request->hasFile('images')) {
-                foreach ($request->file('images') as $image) {
-                    try {
-                        $path = $image->store('properties', 'public');
-                        $property->images()->create([
-                            'image_url' => Storage::url($path),
-                            'is_primary' => false,
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('Failed to upload image on update: ' . $e->getMessage());
+            // ✅ Delete selected images dari R2
+            if (!empty($validated['images_to_delete'])) {
+                $imagesToDelete = $property->images()
+                    ->whereIn('id', $validated['images_to_delete'])
+                    ->get();
+
+                foreach ($imagesToDelete as $image) {
+                    if (Storage::disk('s3')->exists($image->image_url)) {
+                        Storage::disk('s3')->delete($image->image_url);
                     }
+                    $image->delete();
+                    Log::info('Image deleted from R2: ' . $image->id);
                 }
             }
+
+            // ✅ Handle new images upload ke R2
+            $uploadedCount = $this->handleImageUpload($property, $request, $property->images()->count());
+            if ($uploadedCount === 0 && $request->hasFile('images')) {
+                Log::warning('⚠️ Update: Images uploaded to R2 but NOT saved to database!');
+            }
+
+            // Load relationships
+            $property->load(['detail', 'images', 'user']);
+
+            // ✅ TRIGGER ACCESSOR untuk full_url sebelum return
+            $this->appendImageUrls($property);
 
             Log::info('=== UPDATE PROPERTY SUCCESS ===');
 
             return response()->json([
                 'message' => 'Property updated successfully',
-                'property' => $property->load(['detail', 'images', 'user'])
+                'property' => $property
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Validation failed: ' . json_encode($e->errors()));
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
@@ -301,6 +367,8 @@ class PropertyController extends Controller
                 'message' => 'Server error: ' . $e->getMessage(),
             ], 500);
         }
+        Log::info($request->all());
+        Log::info('FILES:', $request->allFiles());
     }
 
     /**
@@ -309,18 +377,16 @@ class PropertyController extends Controller
     public function destroy(Request $request, Property $property)
     {
         try {
-            // Check ownership
             if (!$request->user()->isAdmin() && $property->user_id !== $request->user()->id) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
             Log::info('=== DELETE PROPERTY START === ID: ' . $property->id);
 
-            // Delete images from storage
+            // ✅ Delete all images dari Cloudflare R2
             foreach ($property->images as $image) {
-                $path = str_replace('/storage/', 'public/', $image->image_url);
-                if (Storage::exists($path)) {
-                    Storage::delete($path);
+                if (Storage::disk('s3')->exists($image->image_url)) {
+                    Storage::disk('s3')->delete($image->image_url);
                 }
             }
 
@@ -349,16 +415,15 @@ class PropertyController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
 
-            // Delete file
-            $path = str_replace('/storage/', 'public/', $image->image_url);
-            if (Storage::exists($path)) {
-                Storage::delete($path);
+            // ✅ HAPUS FILE DARI CLOUDFLARE R2
+            if (Storage::disk('s3')->exists($image->image_url)) {
+                Storage::disk('s3')->delete($image->image_url);
             }
 
             $imageId = $image->id;
             $image->delete();
 
-            Log::info('Image deleted: ' . $imageId);
+            Log::info('Image deleted from R2: ' . $imageId);
 
             return response()->json(['message' => 'Image deleted successfully']);
 
@@ -370,9 +435,84 @@ class PropertyController extends Controller
         }
     }
 
-    // ========================================
-    // ✅ HELPER METHODS (FIX INT & BOOLEAN)
-    // ========================================
+    /**
+     * ✅ HANDLE IMAGE UPLOAD KE CLOUDFLARE R2
+     */
+    private function handleImageUpload(Property $property, Request $request, int $startIndex = 0): int
+    {
+        if (!$request->hasFile('images')) {
+            return 0;
+        }
+
+        $images = $request->file('images');
+
+        if (!is_array($images)) {
+            $images = [$images];
+        }
+
+        $images = array_filter($images, fn($img) => $img !== null && $img instanceof \Illuminate\Http\UploadedFile);
+
+        if (count($images) === 0) {
+            return 0;
+        }
+
+        Log::info('Uploading ' . count($images) . ' images to R2 for property #' . $property->id);
+        $successCount = 0;
+        $hasPrimary = $property->images()->where('is_primary', true)->exists();
+
+        foreach ($images as $index => $image) {
+            try {
+                if (!$image->isValid()) {
+                    Log::error('Invalid file: ' . $image->getClientOriginalName());
+                    continue;
+                }
+
+                // Generate unique filename
+                $filename = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+
+                // ✅ UPLOAD KE CLOUDFLARE R2
+                $r2Path = 'properties/' . $filename;
+
+                // Put file ke R2 dengan visibility public
+                $uploaded = Storage::disk('s3')->put($r2Path, file_get_contents($image->getRealPath()), 'public');
+
+                if (!$uploaded) {
+                    Log::error('R2 upload failed for: ' . $filename);
+                    continue;
+                }
+
+                // ✅ SIMPAN PATH RELATIF KE DATABASE
+                $imageRecord = $property->images()->create([
+                    'image_url' => $r2Path,
+                    'is_primary' => !$hasPrimary && $index === 0,
+                ]);
+
+                Log::info('✅ Image record created! ID: ' . $imageRecord->id . ' | R2 Path: ' . $r2Path);
+                $successCount++;
+                $hasPrimary = true;
+
+            } catch (\Illuminate\Database\QueryException $qe) {
+                Log::error('❌ DATABASE QUERY ERROR: ' . $qe->getMessage());
+                Log::error('SQL: ' . $qe->getSql());
+                Log::error('Bindings: ' . json_encode($qe->getBindings()));
+
+                if (app()->environment('local')) {
+                    throw $qe;
+                }
+
+            } catch (\Exception $e) {
+                Log::error('❌ GENERAL ERROR: ' . $e->getMessage());
+                Log::error('Trace: ' . $e->getTraceAsString());
+
+                if (app()->environment('local')) {
+                    throw $e;
+                }
+            }
+        }
+
+        Log::info('R2 Upload completed: ' . $successCount . '/' . count($images) . ' images saved');
+        return $successCount;
+    }
 
     /**
      * Normalize detail input: convert string 'null' / '' to actual null
@@ -387,14 +527,12 @@ class PropertyController extends Controller
         foreach ($integerFields as $field) {
             if (array_key_exists($field, $detail)) {
                 $value = $detail[$field];
-                // Convert string 'null', empty, or whitespace to actual null
-                if ($value === 'null' || $value === '' || $value === null || trim($value) === '') {
+                if ($value === 'null' || $value === '' || $value === null || (is_string($value) && trim($value) === '')) {
                     $detail[$field] = null;
                 }
             }
         }
 
-        // Handle boolean fields
         $booleanFields = ['carport', 'garden', 'one_gate_system', 'security_24jam'];
         foreach ($booleanFields as $field) {
             if (array_key_exists($field, $detail)) {
@@ -407,42 +545,37 @@ class PropertyController extends Controller
 
     /**
      * Prepare detail data for database insert/update
-     * Ensures integers are integers, booleans are booleans, strings are strings
      */
     private function prepareDetailData(array $detail, int $propertyId): array
     {
         $data = ['property_id' => $propertyId];
 
-        // Integer fields: cast to int or set to null
         $integerFields = [
-            'luas_tanah' => true,   // REQUIRED: default to 0 if empty
-            'luas_bangunan' => false,
-            'bedrooms' => false,
-            'bathrooms' => false,
-            'floors' => false,
-            'kitchens' => false,
-            'living_rooms' => false,
-            'electricity_capacity' => false,
+            'luas_tanah' => ['required' => true, 'default' => 0],
+            'luas_bangunan' => ['required' => false, 'default' => 0],
+            'bedrooms' => ['required' => false, 'default' => 0],
+            'bathrooms' => ['required' => false, 'default' => 0],
+            'floors' => ['required' => false, 'default' => 1],
+            'kitchens' => ['required' => false, 'default' => 0],
+            'living_rooms' => ['required' => false, 'default' => 0],
+            'electricity_capacity' => ['required' => false, 'default' => 0],
         ];
 
-        foreach ($integerFields as $field => $isRequired) {
+        foreach ($integerFields as $field => $config) {
             $value = $detail[$field] ?? null;
-
             if ($value === null || $value === '' || $value === 'null') {
-                $data[$field] = $isRequired ? 0 : null;
+                $data[$field] = $config['default'];
             } else {
                 $data[$field] = (int) $value;
             }
         }
 
-        // Boolean fields
         $booleanFields = ['carport', 'garden', 'one_gate_system', 'security_24jam'];
         foreach ($booleanFields as $field) {
             $val = $detail[$field] ?? false;
             $data[$field] = filter_var($val, FILTER_VALIDATE_BOOLEAN);
         }
 
-        // String fields with defaults
         $data['water'] = $detail['water'] ?? 'pdam';
         $data['listrik_type'] = $detail['listrik_type'] ?? 'overground';
         $data['wifi_provider'] = $detail['wifi_provider'] ?? null;

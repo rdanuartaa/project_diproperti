@@ -35,7 +35,6 @@ class Property extends Model
         'price' => 'integer',
         'views' => 'integer',
         'building_type' => 'integer',
-        'is_primary' => 'boolean',
     ];
 
     // Auto-generate slug dari title
