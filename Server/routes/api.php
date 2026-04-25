@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ✅ ADMIN ONLY (Butuh Login + Role Admin)
     Route::middleware('admin')->group(function () {
+        Route::get('/admin/properties', [PropertyController::class, 'adminIndex']);
         Route::post('/properties', [PropertyController::class, 'store']);
         Route::put('/properties/{property}', [PropertyController::class, 'update']);
         Route::delete('/properties/{property}', [PropertyController::class, 'destroy']);

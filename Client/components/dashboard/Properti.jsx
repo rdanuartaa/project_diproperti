@@ -13,6 +13,9 @@ export default function Properti() {
   const [formLoading, setFormLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // UI state for primary image selection (new uploads)
+  const [primaryNewIndex, setPrimaryNewIndex] = useState(null);
+
   // State untuk modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -24,6 +27,7 @@ export default function Properti() {
     title: "",
     price: "",
     type: "rumah",
+    building_type: "",
     listing_type: "jual",
     kecamatan: "",
     city: "Jember",
@@ -48,7 +52,6 @@ export default function Properti() {
       listrik_type: "overground",
       wifi_provider: "",
     },
-    // Untuk upload gambar
     newImages: [],
     existingImages: [],
     imagesToDelete: [],
@@ -58,44 +61,27 @@ export default function Properti() {
     () => activeProperty?.title || "Selected Property",
     [activeProperty],
   );
-  useEffect(() => {
-    console.log("🔄 Component mounted, fetching properties...");
-    fetchProperties();
-  }, []);
-  // 🔹 Fetch properties dari API
+
+  // 🔹 Fetch properties dari API (dipanggil sekali saat mount)
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      console.log("📥 Fetching properties...");
-
-      const response = await api.get("/properties");
-
-      console.log("📦 Properties response:", response.data);
-
-      // Handle berbagai format response
-      const propertiesData = response.data?.data || response.data || [];
-
-      setProperties(propertiesData);
-      console.log(`✅ Loaded ${propertiesData.length} properties`);
+      // ✅ Interceptor di api.js sudah auto-attach token, tidak perlu header manual
+      const response = await api.get("/admin/properties");
+      setProperties(response.data.data || response.data);
     } catch (error) {
-      console.error("❌ Failed to fetch properties:", error);
-
-      // Jangan set loading false jika error, biarkan data lama tetap tampil
-      if (error.response?.status === 401) {
-        console.error("Authentication required");
-      } else if (error.response?.status === 500) {
-        console.error("Server error");
-      }
+      console.error("Failed to fetch properties:", error);
     } finally {
       setLoading(false);
     }
   };
 
+  // ✅ SINGLE useEffect untuk fetch data
   useEffect(() => {
     fetchProperties();
   }, []);
 
-  // 🔹 Handle input change (termasuk nested detail & checkbox)
+  // 🔹 Handle input change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -115,7 +101,6 @@ export default function Properti() {
       }));
     }
 
-    // Clear error saat user mulai mengetik
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: null }));
     }
@@ -128,21 +113,29 @@ export default function Properti() {
       alert("Maksimal 10 gambar diperbolehkan");
       return;
     }
+    if (primaryNewIndex === null && files.length > 0) {
+      setPrimaryNewIndex(formData.newImages.length);
+    }
     setFormData((prev) => ({
       ...prev,
       newImages: [...prev.newImages, ...files],
     }));
   };
 
-  // 🔹 Remove new image (belum diupload)
+  // 🔹 Remove new image
   const handleRemoveNewImage = (index) => {
+    if (primaryNewIndex === index) {
+      setPrimaryNewIndex(null);
+    } else if (primaryNewIndex !== null && index < primaryNewIndex) {
+      setPrimaryNewIndex(primaryNewIndex - 1);
+    }
     setFormData((prev) => ({
       ...prev,
       newImages: prev.newImages.filter((_, i) => i !== index),
     }));
   };
 
-  // 🔹 Remove existing image (akan dihapus dari server)
+  // 🔹 Remove existing image
   const handleRemoveExistingImage = async (imageId) => {
     try {
       await api.delete(`/property-images/${imageId}`);
@@ -158,10 +151,12 @@ export default function Properti() {
 
   // 🔹 Reset form
   const resetForm = () => {
+    setPrimaryNewIndex(null);
     setFormData({
       title: "",
       price: "",
       type: "rumah",
+      building_type: "",
       listing_type: "jual",
       kecamatan: "",
       city: "Jember",
@@ -193,19 +188,23 @@ export default function Properti() {
     setErrors({});
   };
 
-  // 🔹 Open modal Create
+  // 🔹 Open modal
   const openCreate = () => {
     resetForm();
     setIsCreateOpen(true);
   };
 
-  // 🔹 Open modal Edit
   const openEdit = (property) => {
+    setPrimaryNewIndex(null);
     setActiveProperty(property);
     setFormData({
       title: property.title || "",
       price: property.price || "",
       type: property.type || "rumah",
+      building_type:
+        property.building_type !== null && property.building_type !== undefined
+          ? property.building_type
+          : "",
       listing_type: property.listing_type || "jual",
       kecamatan: property.kecamatan || "",
       city: property.city || "Jember",
@@ -238,18 +237,17 @@ export default function Properti() {
     setIsEditOpen(true);
   };
 
-  // 🔹 Open modal Delete
   const openDelete = (property) => {
     setActiveProperty(property);
     setIsDeleteOpen(true);
   };
 
-  // 🔹 Close all modals
   const closeAll = () => {
     setIsCreateOpen(false);
     setIsEditOpen(false);
     setIsDeleteOpen(false);
     setActiveProperty(null);
+    setPrimaryNewIndex(null);
     resetForm();
   };
 
@@ -271,11 +269,46 @@ export default function Properti() {
     }
   };
 
+  const validateRequiredFields = () => {
+    const requiredMain = [
+      "title",
+      "price",
+      "type",
+      "listing_type",
+      "status",
+      "city",
+      "kecamatan",
+      "certificate_type",
+    ];
+
+    for (const field of requiredMain) {
+      if (!String(formData[field] ?? "").trim()) {
+        return "Semua data wajib diisi dan tidak boleh kosong.";
+      }
+    }
+
+    if (!String(formData.detail.luas_tanah ?? "").trim()) {
+      return "Luas tanah wajib diisi.";
+    }
+
+    const totalImages =
+      (formData.existingImages?.length || 0) +
+      (formData.newImages?.length || 0);
+    if (totalImages < 1) {
+      return "Minimal upload 1 gambar.";
+    }
+
+    return null;
+  };
+
   // 🔹 Prepare payload untuk JSON request
   const prepareJsonPayload = () => ({
     title: formData.title,
     price: Number(formData.price),
     type: formData.type,
+    building_type: formData.building_type
+      ? Number(formData.building_type)
+      : null,
     listing_type: formData.listing_type,
     kecamatan: formData.kecamatan,
     city: formData.city,
@@ -308,92 +341,80 @@ export default function Properti() {
 
   // 🔹 Prepare FormData untuk upload gambar
   const prepareFormData = (jsonPayload) => {
-    const formDataObj = new FormData();
+    const formDataToSend = new FormData();
 
-    // Append JSON fields
+    // ✅ append semua field biasa
     Object.keys(jsonPayload).forEach((key) => {
       if (key === "detail") {
-        Object.keys(jsonPayload.detail).forEach((detailKey) => {
-          const value = jsonPayload.detail[detailKey];
-          formDataObj.append(
-            `detail[${detailKey}]`,
-            value === null || value === undefined ? "" : value,
-          );
+        Object.keys(jsonPayload.detail).forEach((dKey) => {
+          formDataToSend.append(`detail[${dKey}]`, jsonPayload.detail[dKey]);
         });
       } else {
-        const value = jsonPayload[key];
-        formDataObj.append(key, value === null || value === undefined ? "" : value);
+        formDataToSend.append(key, jsonPayload[key]);
       }
     });
 
-    // Append new images
-    formData.newImages.forEach((image) => {
-      formDataObj.append("images[]", image);
+    // ✅ IMAGE UPLOAD (INI KUNCI UTAMA)
+    formData.newImages.forEach((file) => {
+      formDataToSend.append("images[]", file); // WAJIB pakai []
     });
 
-    return formDataObj;
+    // ✅ DELETE IMAGE
+    formData.imagesToDelete.forEach((id) => {
+      formDataToSend.append("images_to_delete[]", id);
+    });
+
+    return formDataToSend;
   };
 
-  // 🔹 Handle Create Property (POST)
+
+  // 🔹 Handle Create Property (POST) - FIXED
   const handleCreate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
     setErrors({});
 
     try {
+      // ✅ 1. Prepare jsonPayload DULU
       const jsonPayload = prepareJsonPayload();
-      const payload =
-        formData.newImages.length > 0
-          ? prepareFormData(jsonPayload)
-          : jsonPayload;
 
-      const config =
-        formData.newImages.length > 0
-          ? { headers: { "Content-Type": "multipart/form-data" } }
-          : {};
+      console.log("📤 Payload JSON:", jsonPayload);
+      console.log("📷 Images to upload:", formData.newImages?.length || 0);
 
-      console.log("📤 Sending create request...", payload);
+      // ✅ 2. Tentukan payload & config
+      const hasImages = formData.newImages?.length > 0;
+      const payload = hasImages 
+        ? prepareFormData(jsonPayload) 
+        : jsonPayload;
 
+      const config = hasImages 
+        ? { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
+        : { timeout: 30000 };
+
+      console.log("🚀 Sending request...");
+      
+      // ✅ 3. Kirim request SEKALI SAJA
       const response = await api.post("/properties", payload, config);
 
-      console.log("✅ Create success:", response.data);
-
+      console.log("✅ Success:", response.data);
       alert("✅ Property created successfully!");
-
-      // Tutup modal dulu
       closeAll();
-
-      // Reload properties dengan error handling
-      try {
-        await fetchProperties();
-        console.log("✅ Properties reloaded successfully");
-      } catch (reloadError) {
-        console.error("❌ Failed to reload properties:", reloadError);
-        // Jangan tampilkan error ke user, cukup log saja
-        // User tetap bisa refresh manual
-      }
+      await fetchProperties(); // Refresh list
+      
     } catch (error) {
-      console.error("❌ Create property error:", error);
+      console.error("❌ Error:", error);
+      console.error("❌ Error response:", error.response);
+      console.error("❌ Error data:", error.response?.data);
 
       if (error.response?.status === 422) {
-        // Validation error
-        const validationErrors = error.response.data.errors || {};
-        setErrors(validationErrors);
-
-        // Show first error message
-        const firstError = Object.values(validationErrors)[0]?.[0];
-        alert(`❌ Validation Error: ${firstError}`);
-      } else if (error.response?.status === 401) {
-        alert("❌ Session expired. Please login again.");
-        // Redirect to login atau clear token
-        localStorage.removeItem("auth_token");
-        window.location.href = "/login";
+        const errors = error.response.data.errors || {};
+        setErrors(errors);
+        const firstError = Object.values(errors)[0]?.[0];
+        alert(`❌ Validation: ${firstError}`);
       } else if (error.response?.status === 500) {
-        alert("❌ Server error. Property mungkin sudah tersimpan.");
+        alert("❌ Server error. Check logs.");
       } else {
-        alert(
-          `❌ Failed to create property: ${error.message || "Unknown error"}`,
-        );
+        alert(`❌ Error: ${error.message}`);
       }
     } finally {
       setFormLoading(false);
@@ -408,19 +429,40 @@ export default function Properti() {
     setFormLoading(true);
     setErrors({});
 
-    try {
-      const jsonPayload = prepareJsonPayload();
-      const payload =
-        formData.newImages.length > 0 || formData.imagesToDelete.length > 0
-          ? prepareFormData(jsonPayload)
-          : jsonPayload;
+    const requiredError = validateRequiredFields();
+    if (requiredError) {
+      alert(`❌ ${requiredError}`);
+      setFormLoading(false);
+      return;
+    }
 
-      const config =
-        formData.newImages.length > 0 || formData.imagesToDelete.length > 0
-          ? { headers: { "Content-Type": "multipart/form-data" } }
-          : {};
+    try {
+      // ✅ HANYA SEKALI
+      const jsonPayload = prepareJsonPayload();
+
+      // ✅ CLEAN DETAIL
+      if (!jsonPayload.detail || Object.keys(jsonPayload.detail).length === 0) {
+        delete jsonPayload.detail;
+      }
+
+      if (jsonPayload.detail?.luas_tanah === "") {
+        delete jsonPayload.detail.luas_tanah;
+      }
+
+      // ✅ TENTUKAN PAYLOAD
+      const isMultipart =
+        formData.newImages.length > 0 || formData.imagesToDelete.length > 0;
+
+      const payload = isMultipart
+        ? prepareFormData(jsonPayload)
+        : jsonPayload;
+
+      const config = isMultipart
+        ? { headers: { "Content-Type": "multipart/form-data" } }
+        : {};
 
       await api.put(`/properties/${activeProperty.id}`, payload, config);
+
       alert("✅ Property updated successfully!");
       closeAll();
       fetchProperties();
@@ -434,6 +476,7 @@ export default function Properti() {
       setFormLoading(false);
     }
   };
+
 
   // 🔹 Handle Delete Property (DELETE)
   const handleDelete = async () => {
@@ -470,7 +513,7 @@ export default function Properti() {
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
-                  Post Status:<span>*</span>
+                  Status Posting:<span>*</span>
                 </label>
                 <DropdownSelect
                   options={["All", "published", "draft", "sold"]}
@@ -483,12 +526,12 @@ export default function Properti() {
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
-                  Search:<span>*</span>
+                  Cari:<span>*</span>
                 </label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search by title..."
+                  placeholder="Cari berdasarkan judul..."
                 />
               </fieldset>
             </form>
@@ -498,14 +541,14 @@ export default function Properti() {
         {/* Property List */}
         <div className="widget-box-2 wd-listing mt-20">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
-            <h3 className="title">My Properties</h3>
+            <h3 className="title">Properti Saya</h3>
             <button
               type="button"
               className="tf-btn style-border pd-23"
               onClick={openCreate}
               disabled={formLoading}
             >
-              Create Property
+              Tambah Properti
             </button>
           </div>
 
@@ -514,20 +557,20 @@ export default function Properti() {
               {loading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-2 text-gray-500">Loading properties...</p>
+                  <p className="mt-2 text-gray-500">Memuat properti...</p>
                 </div>
               ) : properties.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  No properties found. Click "Create Property" to add one.
+                  Belum ada properti. Klik "Tambah Properti" untuk menambah.
                 </div>
               ) : (
                 <table>
                   <thead>
                     <tr>
-                      <th>Listing</th>
+                      <th>Properti</th>
                       <th>Status</th>
-                      <th>Price</th>
-                      <th>Action</th>
+                      <th>Harga</th>
+                      <th>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -536,17 +579,17 @@ export default function Properti() {
                         <td>
                           <div className="listing-box">
                             <div className="images">
-                              {property.images?.[0]?.image_url ? (
+                              {property.images?.[0]?.full_url ? (
                                 <Image
                                   alt={property.title}
-                                  src={property.images[0].image_url}
+                                  src={property.images[0].full_url}
                                   width={150}
                                   height={100}
                                   className="object-cover rounded"
                                 />
                               ) : (
                                 <div className="w-[150px] h-[100px] bg-gray-200 rounded flex items-center justify-center text-gray-400 text-sm">
-                                  No Image
+                                  Tidak ada gambar
                                 </div>
                               )}
                             </div>
@@ -606,7 +649,7 @@ export default function Properti() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                Edit
+                                Ubah
                               </button>
                             </li>
                             <li>
@@ -630,7 +673,7 @@ export default function Properti() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                Delete
+                                Hapus
                               </button>
                             </li>
                           </ul>
@@ -666,13 +709,13 @@ export default function Properti() {
           <p>Copyright © {new Date().getFullYear()} Propty</p>
           <ul className="list">
             <li>
-              <a href="#">Privacy</a>
+              <a href="#">Privasi</a>
             </li>
             <li>
-              <a href="#">Terms</a>
+              <a href="#">Syarat</a>
             </li>
             <li>
-              <a href="#">Support</a>
+              <a href="#">Bantuan</a>
             </li>
           </ul>
         </div>
@@ -684,7 +727,7 @@ export default function Properti() {
         onClick={closeAll}
       />
 
-      {/* DELETE MODAL - Self-contained, no Bootstrap JS dependency */}
+      {/* DELETE MODAL */}
       {isDeleteOpen && (
         <div
           className="modal show d-block"
@@ -768,17 +811,17 @@ export default function Properti() {
                 </div>
 
                 <h4 className="fw-bold mb-2" style={{ color: "#1f2937" }}>
-                  Delete Property?
+                  Hapus Properti?
                 </h4>
                 <p
                   className="text-gray-600 mb-1"
                   style={{ fontSize: "1rem", lineHeight: "1.5" }}
                 >
-                  Are you sure you want to delete{" "}
+                  Yakin ingin menghapus{" "}
                   <strong style={{ color: "#111827" }}>{activeTitle}</strong>?
                 </p>
                 <p className="text-sm" style={{ color: "#6b7280" }}>
-                  This action cannot be undone.
+                  Tindakan ini tidak dapat dibatalkan.
                 </p>
               </div>
 
@@ -797,7 +840,7 @@ export default function Properti() {
                     border: "1px solid #e5e7eb",
                   }}
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="button"
@@ -820,7 +863,7 @@ export default function Properti() {
                         className="spinner-border spinner-border-sm"
                         style={{ width: "1rem", height: "1rem" }}
                       />
-                      Deleting...
+                      Menghapus...
                     </>
                   ) : (
                     <>
@@ -833,7 +876,7 @@ export default function Properti() {
                         <path d="M6.854 7.146a.5.5 0 1 0-.708.708L7.293 9l-1.147 1.146a.5.5 0 0 0 .708.708L8 9.707l1.146 1.147a.5.5 0 0 0 .708-.708L8.707 9l1.147-1.146a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146z" />
                         <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
                       </svg>
-                      Delete
+                      Hapus
                     </>
                   )}
                 </button>
@@ -843,15 +886,15 @@ export default function Properti() {
         </div>
       )}
 
-      {/* MODAL: Create / Edit */}
+      {/* MODAL: Tambah / Edit */}
       {(isCreateOpen || isEditOpen) && (
         <div className="modal fade show" style={{ display: "block" }}>
           <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
               <div className="modal-header modal-header-title">
                 <h5 className="modal-title">
-                  {isCreateOpen && "Create Property"}
-                  {isEditOpen && `Edit: ${activeTitle}`}
+                  {isCreateOpen && "Tambah Properti"}
+                  {isEditOpen && `Ubah: ${activeTitle}`}
                 </h5>
                 <button
                   type="button"
@@ -865,6 +908,10 @@ export default function Properti() {
                 className="modal-body modal-body-wide"
                 style={{ maxHeight: "70vh", overflowY: "auto" }}
               >
+                <div className="alert alert-warning" role="alert">
+                  Semua data wajib diisi dan tidak boleh kosong. Minimal upload
+                  1 gambar.
+                </div>
                 <form
                   className="modal-form-spacing"
                   onSubmit={isCreateOpen ? handleCreate : handleUpdate}
@@ -873,20 +920,18 @@ export default function Properti() {
                     {/* === SECTION 1: BASIC INFO === */}
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        📋 Basic Information
+                        📋 Informasi Dasar
                       </h6>
                     </div>
 
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>
-                          Title<span className="text-red-500">*</span>
-                        </label>
+                        <label>Judul</label>
                         <input
                           type="text"
                           name="title"
                           className={`form-control ${errors.title ? "border-red-500" : ""}`}
-                          placeholder="Modern City Apartment"
+                          placeholder="Contoh: Apartemen Kota Modern"
                           value={formData.title}
                           onChange={handleChange}
                           required
@@ -901,14 +946,12 @@ export default function Properti() {
 
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>
-                          Price (IDR)<span className="text-red-500">*</span>
-                        </label>
+                        <label>Harga (IDR)</label>
                         <input
                           type="number"
                           name="price"
                           className={`form-control ${errors.price ? "border-red-500" : ""}`}
-                          placeholder="500000000"
+                          placeholder="Contoh: 500000000"
                           value={formData.price}
                           onChange={handleChange}
                           required
@@ -921,11 +964,9 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>
-                          Type<span className="text-red-500">*</span>
-                        </label>
+                        <label>Tipe</label>
                         <DropdownSelect
                           options={[
                             "rumah",
@@ -940,26 +981,23 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>
-                          Listing Type<span className="text-red-500">*</span>
-                        </label>
-                        <DropdownSelect
-                          options={["jual", "sewa"]}
-                          selectedValue={formData.listing_type}
-                          onChange={(value) =>
-                            updateField("listing_type", value)
-                          }
+                        <label>Tipe Bangunan (angka)</label>
+                        <input
+                          type="number"
+                          name="building_type"
+                          className="form-control"
+                          placeholder="Contoh: 1"
+                          value={formData.building_type}
+                          onChange={handleChange}
                         />
                       </fieldset>
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>
-                          Status<span className="text-red-500">*</span>
-                        </label>
+                        <label>Status</label>
                         <DropdownSelect
                           options={["draft", "published", "sold"]}
                           selectedValue={formData.status}
@@ -970,14 +1008,40 @@ export default function Properti() {
 
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>
-                          Kecamatan<span className="text-red-500">*</span>
-                        </label>
+                        <label>Tipe Listing</label>
+                        <DropdownSelect
+                          options={["jual", "sewa"]}
+                          selectedValue={formData.listing_type}
+                          onChange={(value) =>
+                            updateField("listing_type", value)
+                          }
+                        />
+                      </fieldset>
+                    </div>
+
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Kota</label>
+                        <input
+                          type="text"
+                          name="city"
+                          className="form-control"
+                          placeholder="Contoh: Jember"
+                          value={formData.city}
+                          onChange={handleChange}
+                          required
+                        />
+                      </fieldset>
+                    </div>
+
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Kecamatan</label>
                         <input
                           type="text"
                           name="kecamatan"
                           className={`form-control ${errors.kecamatan ? "border-red-500" : ""}`}
-                          placeholder="Sumbersari"
+                          placeholder="Contoh: Sumbersari"
                           value={formData.kecamatan}
                           onChange={handleChange}
                           required
@@ -992,40 +1056,7 @@ export default function Properti() {
 
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>
-                          City<span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          name="city"
-                          className="form-control"
-                          placeholder="Jember"
-                          value={formData.city}
-                          onChange={handleChange}
-                          required
-                        />
-                      </fieldset>
-                    </div>
-
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>
-                          Certificate Type
-                          <span className="text-red-500">*</span>
-                        </label>
-                        <DropdownSelect
-                          options={["SHM", "SHGB"]}
-                          selectedValue={formData.certificate_type}
-                          onChange={(value) =>
-                            updateField("certificate_type", value)
-                          }
-                        />
-                      </fieldset>
-                    </div>
-
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Certificate Status</label>
+                        <label>Status Sertifikat</label>
                         <DropdownSelect
                           options={["lunas", "bank"]}
                           selectedValue={formData.certificate_status}
@@ -1036,14 +1067,27 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Jenis Sertifikat</label>
+                        <DropdownSelect
+                          options={["SHM", "SHGB"]}
+                          selectedValue={formData.certificate_type}
+                          onChange={(value) =>
+                            updateField("certificate_type", value)
+                          }
+                        />
+                      </fieldset>
+                    </div>
+
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Description</label>
+                        <label>Deskripsi</label>
                         <textarea
                           name="description"
                           className="textarea"
                           rows={3}
-                          placeholder="Describe the property highlights..."
+                          placeholder="Tuliskan deskripsi singkat properti..."
                           value={formData.description}
                           onChange={handleChange}
                         />
@@ -1053,7 +1097,7 @@ export default function Properti() {
                     {/* === SECTION 2: PROPERTY DETAILS === */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🏠 Property Details
+                        🏠 Detail Properti
                       </h6>
                     </div>
 
@@ -1081,7 +1125,7 @@ export default function Properti() {
                             checked={formData.detail.garden}
                             onChange={handleChange}
                           />
-                          Garden
+                          Taman
                         </label>
                       </fieldset>
                     </div>
@@ -1109,21 +1153,19 @@ export default function Properti() {
                             checked={formData.detail.security_24jam}
                             onChange={handleChange}
                           />
-                          Security 24 Jam
+                          Keamanan 24 Jam
                         </label>
                       </fieldset>
                     </div>
 
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
-                        <label>
-                          Luas Tanah (m²)<span className="text-red-500">*</span>
-                        </label>
+                        <label>Luas Tanah (m²)</label>
                         <input
                           type="number"
                           name="detail.luas_tanah"
                           className={`form-control ${errors["detail.luas_tanah"] ? "border-red-500" : ""}`}
-                          placeholder="120"
+                          placeholder="Contoh: 120"
                           value={formData.detail.luas_tanah}
                           onChange={handleChange}
                           required
@@ -1143,7 +1185,7 @@ export default function Properti() {
                           type="number"
                           name="detail.luas_bangunan"
                           className="form-control"
-                          placeholder="90"
+                          placeholder="Contoh: 90"
                           value={formData.detail.luas_bangunan}
                           onChange={handleChange}
                         />
@@ -1152,12 +1194,12 @@ export default function Properti() {
 
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
-                        <label>Floors</label>
+                        <label>Jumlah Lantai</label>
                         <input
                           type="number"
                           name="detail.floors"
                           className="form-control"
-                          placeholder="1"
+                          placeholder="Contoh: 2"
                           value={formData.detail.floors}
                           onChange={handleChange}
                         />
@@ -1166,12 +1208,12 @@ export default function Properti() {
 
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
-                        <label>Bedrooms</label>
+                        <label>Kamar Tidur</label>
                         <input
                           type="number"
                           name="detail.bedrooms"
                           className="form-control"
-                          placeholder="3"
+                          placeholder="Contoh: 3"
                           value={formData.detail.bedrooms}
                           onChange={handleChange}
                         />
@@ -1180,12 +1222,12 @@ export default function Properti() {
 
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
-                        <label>Bathrooms</label>
+                        <label>Kamar Mandi</label>
                         <input
                           type="number"
                           name="detail.bathrooms"
                           className="form-control"
-                          placeholder="2"
+                          placeholder="Contoh: 2"
                           value={formData.detail.bathrooms}
                           onChange={handleChange}
                         />
@@ -1194,12 +1236,12 @@ export default function Properti() {
 
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
-                        <label>Kitchens</label>
+                        <label>Dapur</label>
                         <input
                           type="number"
                           name="detail.kitchens"
                           className="form-control"
-                          placeholder="1"
+                          placeholder="Contoh: 1"
                           value={formData.detail.kitchens}
                           onChange={handleChange}
                         />
@@ -1208,12 +1250,12 @@ export default function Properti() {
 
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
-                        <label>Living Rooms</label>
+                        <label>Ruang Tamu</label>
                         <input
                           type="number"
                           name="detail.living_rooms"
                           className="form-control"
-                          placeholder="1"
+                          placeholder="Contoh: 1"
                           value={formData.detail.living_rooms}
                           onChange={handleChange}
                         />
@@ -1221,23 +1263,37 @@ export default function Properti() {
                     </div>
 
                     {/* Utilities */}
-                    <div className="col-md-4">
+                    <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Electricity Capacity (VA)</label>
+                        <label>Daya Listrik (VA)</label>
                         <input
                           type="number"
                           name="detail.electricity_capacity"
                           className="form-control"
-                          placeholder="2200"
+                          placeholder="Contoh: 2200"
                           value={formData.detail.electricity_capacity}
                           onChange={handleChange}
                         />
                       </fieldset>
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Water Source</label>
+                        <label>Penyedia WiFi</label>
+                        <input
+                          type="text"
+                          name="detail.wifi_provider"
+                          className="form-control"
+                          placeholder="Contoh: IndiHome, Biznet"
+                          value={formData.detail.wifi_provider}
+                          onChange={handleChange}
+                        />
+                      </fieldset>
+                    </div>
+
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Sumber Air</label>
                         <DropdownSelect
                           options={["pdam", "sumur"]}
                           selectedValue={formData.detail.water}
@@ -1246,9 +1302,9 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Electricity Type</label>
+                        <label>Jenis Listrik</label>
                         <DropdownSelect
                           options={["overground", "underground"]}
                           selectedValue={formData.detail.listrik_type}
@@ -1259,24 +1315,10 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>WiFi Provider</label>
-                        <input
-                          type="text"
-                          name="detail.wifi_provider"
-                          className="form-control"
-                          placeholder="IndiHome, Biznet, etc."
-                          value={formData.detail.wifi_provider}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-
                     {/* === SECTION 3: IMAGES === */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🖼️ Property Images
+                        🖼️ Gambar Properti
                       </h6>
                     </div>
 
@@ -1284,7 +1326,7 @@ export default function Properti() {
                     {isEditOpen && formData.existingImages?.length > 0 && (
                       <div className="col-12 mb-3">
                         <p className="text-sm text-gray-600 mb-2">
-                          Existing images:
+                          Gambar tersimpan:
                         </p>
                         <div className="box-img-upload">
                           {formData.existingImages.map((img) => (
@@ -1292,8 +1334,13 @@ export default function Properti() {
                               key={img.id}
                               className="item-upload file-delete"
                             >
+                              {img.is_primary && (
+                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                                  Primary
+                                </span>
+                              )}
                               <Image
-                                src={img.image_url}
+                                src={img.full_url}
                                 alt="Property"
                                 width={615}
                                 height={405}
@@ -1315,7 +1362,7 @@ export default function Properti() {
                     {/* Upload New Images */}
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Upload New Images</label>
+                        <label>Unggah Gambar Baru</label>
                         <div className="box-uploadfile text-center">
                           <div className="uploadfile">
                             <label className="tf-btn bg-color-primary pd-10 btn-upload mx-auto">
@@ -1334,7 +1381,7 @@ export default function Properti() {
                                   strokeLinejoin="round"
                                 />
                               </svg>
-                              Select photos
+                              Pilih foto
                               <input
                                 type="file"
                                 name="images"
@@ -1345,8 +1392,8 @@ export default function Properti() {
                               />
                             </label>
                             <p className="file-name fw-5">
-                              or drag photos here <br />
-                              <span>(Up to 10 photos)</span>
+                              atau seret foto ke sini <br />
+                              <span>(Maks 10 foto)</span>
                             </p>
                           </div>
                         </div>
@@ -1358,12 +1405,24 @@ export default function Properti() {
                                 key={idx}
                                 className="item-upload file-delete"
                               >
+                                {primaryNewIndex === idx && (
+                                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                    Utama (upload pertama)
+                                  </span>
+                                )}
                                 <Image
                                   src={URL.createObjectURL(file)}
                                   alt={`Preview ${idx + 1}`}
                                   width={615}
                                   height={405}
                                 />
+                                <button
+                                  type="button"
+                                  className="tf-btn style-border pd-10"
+                                  onClick={() => setPrimaryNewIndex(idx)}
+                                >
+                                  Jadikan utama
+                                </button>
                                 <button
                                   type="button"
                                   className="icon icon-trashcan1 remove-file"
@@ -1393,7 +1452,7 @@ export default function Properti() {
                   onClick={closeAll}
                   disabled={formLoading}
                 >
-                  Cancel
+                  Batal
                 </button>
                 <button
                   type="submit"
@@ -1403,11 +1462,11 @@ export default function Properti() {
                 >
                   {formLoading
                     ? isCreateOpen
-                      ? "Creating..."
-                      : "Saving..."
+                      ? "Membuat..."
+                      : "Menyimpan..."
                     : isCreateOpen
-                      ? "Create"
-                      : "Save Changes"}
+                      ? "Tambah"
+                      : "Simpan Perubahan"}
                 </button>
               </div>
             </div>

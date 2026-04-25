@@ -15,7 +15,7 @@ import Testimonials from "@/components/homes/home-2/Testimonials";
 import React from "react";
 
 export const metadata = {
-  title: "Home 02 || Proty - Real Estate React Nextjs Template",
+  title: "Diproperti",
   description: "Proty - Real Estate React Nextjs Template",
 };
 export default function page() {
