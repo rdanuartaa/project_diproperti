@@ -1,51 +1,76 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-
-const initialTags = [
-  {
-    id: 101,
-    name: "tips",
-    slug: "tips",
-    created_at: "2024-03-10 10:00:00",
-    updated_at: "2024-03-12 08:30:00",
-  },
-  {
-    id: 102,
-    name: "kpr",
-    slug: "kpr",
-    created_at: "2024-03-15 14:10:00",
-    updated_at: "2024-03-16 09:20:00",
-  },
-];
+import React, { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
 
 const emptyForm = {
   name: "",
 };
 
-const slugify = (value) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-
 export default function TagArtikel() {
-  const [tags, setTags] = useState(initialTags);
+  const [tags, setTags] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [formLoading, setFormLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeTag, setActiveTag] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  // 🔥 NEW (pagination)
+  const [pagination, setPagination] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+
   const activeTitle = useMemo(
     () => activeTag?.name || "Selected Tag",
     [activeTag],
   );
 
+  // 🔹 Fetch tags dari API
+  const fetchTags = async () => {
+    try {
+      setLoading(true);
+
+      const params = {
+        page: currentPage,
+      };
+
+      if (searchQuery) params.search = searchQuery;
+
+      const response = await api.get("/admin/tags", { params });
+
+      setTags(response.data.data || []);
+      setPagination(response.data);
+    } catch (error) {
+      console.error("Failed to fetch tags:", error);
+      alert("❌ Gagal mengambil data tag");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔥 Debounce fetch
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      fetchTags();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [searchQuery, statusFilter, currentPage]);
+
+  // 🔥 Reset page saat search/filter berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter]);
+
   const openCreate = () => {
     setFormData(emptyForm);
+    setErrors({});
     setIsCreateOpen(true);
   };
 
@@ -54,6 +79,7 @@ export default function TagArtikel() {
     setFormData({
       name: tag.name ?? "",
     });
+    setErrors({});
     setIsEditOpen(true);
   };
 
@@ -68,53 +94,114 @@ export default function TagArtikel() {
     setIsDeleteOpen(false);
     setActiveTag(null);
     setFormData(emptyForm);
+    setErrors({});
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault();
-    const timestamp = new Date().toISOString();
-    const next = {
-      id: Date.now(),
-      name: formData.name,
-      slug: slugify(formData.name),
-      created_at: timestamp,
-      updated_at: timestamp,
-    };
-    setTags((prev) => [next, ...prev]);
-    closeAll();
+    setFormLoading(true);
+    setErrors({});
+
+    try {
+      await api.post("/admin/tags", formData);
+      alert("✅ Tag created successfully!");
+      await fetchTags();
+      closeAll();
+    } catch (error) {
+      if (error.response?.status === 422) {
+        setErrors(error.response.data.errors || {});
+      } else {
+        alert("❌ Failed to create tag");
+      }
+    } finally {
+      setFormLoading(false);
+    }
   };
 
-  const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    setTags((prev) =>
-      prev.map((item) =>
-        item.id === activeTag?.id
-          ? {
-              ...item,
-              name: formData.name,
-              slug: slugify(formData.name),
-              updated_at: new Date().toISOString(),
-            }
-          : item,
-      ),
-    );
-    closeAll();
-  };
-
-  const handleDelete = () => {
     if (!activeTag?.id) return;
-    setTags((prev) => prev.filter((item) => item.id !== activeTag.id));
-    closeAll();
+
+    setFormLoading(true);
+    setErrors({});
+
+    try {
+      await api.put(`/admin/tags/${activeTag.id}`, formData);
+      alert("✅ Tag updated successfully!");
+      await fetchTags();
+      closeAll();
+    } catch (error) {
+      if (error.response?.status === 422) {
+        setErrors(error.response.data.errors || {});
+      } else {
+        alert("❌ Failed to update tag");
+      }
+    } finally {
+      setFormLoading(false);
+    }
   };
 
+  const handleDelete = async () => {
+    if (!activeTag?.id) return;
+
+    setFormLoading(true);
+
+    try {
+      await api.delete(`/admin/tags/${activeTag.id}`);
+      alert("✅ Tag deleted successfully!");
+      await fetchTags();
+      closeAll();
+    } catch (error) {
+      if (error.response?.status === 409) {
+        alert(error.response.data.message);
+      } else {
+        alert("❌ Failed to delete tag");
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleFilterChange = (e) => {
+    setStatusFilter(e.target.value);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const slugify = (value) =>
+    value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
+        {/* Filter & Search */}
         <div className="row">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
@@ -122,7 +209,11 @@ export default function TagArtikel() {
                 <label>
                   Status:<span>*</span>
                 </label>
-                <select className="form-control">
+                <select
+                  className="form-control"
+                  value={statusFilter}
+                  onChange={handleFilterChange}
+                >
                   <option>All</option>
                   <option>active</option>
                 </select>
@@ -139,12 +230,15 @@ export default function TagArtikel() {
                   type="text"
                   className="form-control"
                   placeholder="Search by tag name..."
+                  value={searchQuery}
+                  onChange={handleSearch}
                 />
               </fieldset>
             </form>
           </div>
         </div>
 
+        {/* Tag List */}
         <div className="widget-box-2 wd-listing mt-20">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
             <h3 className="title">Tag Artikel</h3>
@@ -152,6 +246,7 @@ export default function TagArtikel() {
               type="button"
               className="tf-btn style-border pd-23"
               onClick={openCreate}
+              disabled={formLoading}
             >
               Create Tag
             </button>
@@ -159,17 +254,22 @@ export default function TagArtikel() {
 
           <div className="wrap-table">
             <div className="table-responsive">
-              {tags.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-2 text-gray-500">Memuat tag...</p>
+                </div>
+              ) : tags.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   No tags found. Click "Create Tag" to add one.
                 </div>
               ) : (
                 <table style={{ tableLayout: "fixed", width: "100%" }}>
                   <colgroup>
+                    <col style={{ width: "30%" }} />
+                    <col style={{ width: "30%" }} />
                     <col style={{ width: "25%" }} />
-                    <col style={{ width: "25%" }} />
-                    <col style={{ width: "25%" }} />
-                    <col style={{ width: "25%" }} />
+                    <col style={{ width: "15%" }} />
                   </colgroup>
                   <thead>
                     <tr>
@@ -183,17 +283,24 @@ export default function TagArtikel() {
                     {tags.map((tag) => (
                       <tr key={tag.id} className="file-delete">
                         <td style={{ maxWidth: 0, paddingLeft: 0 }}>
-                          <div className="listing-box" style={{ paddingLeft: 0 }}>
+                          <div
+                            className="listing-box"
+                            style={{ paddingLeft: 0 }}
+                          >
                             <div className="content" style={{ paddingLeft: 0 }}>
-                              <div className="title text-truncate">{tag.name}</div>
+                              <div className="title text-truncate">
+                                {tag.name}
+                              </div>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <span>{tag.slug}</span>
+                          <span className="text-gray-600">{tag.slug}</span>
                         </td>
                         <td>
-                          <span>{tag.updated_at}</span>
+                          <span className="text-sm text-gray-500">
+                            {formatDate(tag.updated_at)}
+                          </span>
                         </td>
                         <td>
                           <ul className="list-action">
@@ -202,6 +309,8 @@ export default function TagArtikel() {
                                 type="button"
                                 className="item"
                                 onClick={() => openEdit(tag)}
+                                disabled={formLoading}
+                                title="Edit"
                               >
                                 <svg
                                   width={16}
@@ -217,7 +326,6 @@ export default function TagArtikel() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                Edit
                               </button>
                             </li>
                             <li>
@@ -225,6 +333,8 @@ export default function TagArtikel() {
                                 type="button"
                                 className="remove-file item"
                                 onClick={() => openDelete(tag)}
+                                disabled={formLoading}
+                                title="Delete"
                               >
                                 <svg
                                   width={16}
@@ -240,7 +350,6 @@ export default function TagArtikel() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                Delete
                               </button>
                             </li>
                           </ul>
@@ -252,6 +361,7 @@ export default function TagArtikel() {
               )}
             </div>
 
+            {/* Pagination - Static untuk saat ini */}
             <ul className="wg-pagination">
               <li className="arrow">
                 <a href="#">
@@ -270,6 +380,7 @@ export default function TagArtikel() {
           </div>
         </div>
 
+        {/* Footer */}
         <div className="footer-dashboard">
           <p>Copyright (c) {new Date().getFullYear()} Propty</p>
           <ul className="list">
@@ -286,11 +397,13 @@ export default function TagArtikel() {
         </div>
       </div>
 
+      {/* Overlay */}
       <div
         className={`overlay-dashboard ${isCreateOpen || isEditOpen || isDeleteOpen ? "show" : ""}`}
         onClick={closeAll}
       />
 
+      {/* DELETE MODAL */}
       {isDeleteOpen && (
         <div
           className="modal show d-block"
@@ -396,6 +509,7 @@ export default function TagArtikel() {
                   type="button"
                   className="btn btn-light px-4 py-2"
                   onClick={closeAll}
+                  disabled={formLoading}
                   style={{
                     borderRadius: "8px",
                     fontWeight: "500",
@@ -408,6 +522,7 @@ export default function TagArtikel() {
                   type="button"
                   className="btn btn-danger px-4 py-2"
                   onClick={handleDelete}
+                  disabled={formLoading}
                   style={{
                     borderRadius: "8px",
                     fontWeight: "500",
@@ -418,7 +533,28 @@ export default function TagArtikel() {
                     gap: "0.5rem",
                   }}
                 >
-                  Delete
+                  {formLoading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        style={{ width: "1rem", height: "1rem" }}
+                      />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                      >
+                        <path d="M6.854 7.146a.5.5 0 1 0-.708.708L7.293 9l-1.147 1.146a.5.5 0 0 0 .708.708L8 9.707l1.146 1.147a.5.5 0 0 0 .708-.708L8.707 9l1.147-1.146a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146z" />
+                        <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
+                      </svg>
+                      Delete
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -426,6 +562,7 @@ export default function TagArtikel() {
         </div>
       )}
 
+      {/* CREATE/EDIT MODAL */}
       {(isCreateOpen || isEditOpen) && (
         <div className="modal fade show" style={{ display: "block" }}>
           <div className="modal-dialog modal-dialog-centered modal-xl">
@@ -460,16 +597,30 @@ export default function TagArtikel() {
 
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Name</label>
+                        <label>
+                          Name <span className="text-red-500">*</span>
+                        </label>
                         <input
                           type="text"
                           name="name"
-                          className="form-control"
-                          placeholder="Tulis nama tag"
+                          className={`form-control ${errors.name ? "border-red-500" : ""}`}
+                          placeholder="Contoh: tips-properti"
                           value={formData.name}
                           onChange={handleChange}
                           required
+                          autoFocus
                         />
+                        {errors.name && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {errors.name[0]}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500 mt-1">
+                          Slug akan digenerate otomatis:{" "}
+                          <strong>
+                            {slugify(formData.name) || "contoh-slug"}
+                          </strong>
+                        </p>
                       </fieldset>
                     </div>
                   </div>
@@ -479,11 +630,22 @@ export default function TagArtikel() {
                       type="button"
                       className="tf-btn style-border"
                       onClick={closeAll}
+                      disabled={formLoading}
                     >
                       Cancel
                     </button>
-                    <button type="submit" className="tf-btn">
-                      {isCreateOpen ? "Create" : "Update"}
+                    <button
+                      type="submit"
+                      className="tf-btn"
+                      disabled={formLoading}
+                    >
+                      {formLoading
+                        ? isCreateOpen
+                          ? "Creating..."
+                          : "Updating..."
+                        : isCreateOpen
+                          ? "Create"
+                          : "Update"}
                     </button>
                   </div>
                 </form>

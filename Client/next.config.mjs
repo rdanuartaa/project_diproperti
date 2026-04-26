@@ -28,8 +28,6 @@ const nextConfig = {
         hostname: 'www.gravatar.com',
         pathname: '/**',
       },
-      
-      // ✅ TAMBAHKAN INI - Cloudflare R2 Storage Endpoint
       {
         protocol: 'https',
         hostname: 'pub-a0eea8f875e1416b9ea4a5c4a1cea45e.r2.dev',

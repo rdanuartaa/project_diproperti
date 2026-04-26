@@ -394,7 +394,7 @@ export default function Properti() {
       console.log("🚀 Sending request...");
       
       // ✅ 3. Kirim request SEKALI SAJA
-      const response = await api.post("/properties", payload, config);
+      const response = await api.post("/admin/properties", payload, config);
 
       console.log("✅ Success:", response.data);
       alert("✅ Property created successfully!");
@@ -461,7 +461,7 @@ export default function Properti() {
         ? { headers: { "Content-Type": "multipart/form-data" } }
         : {};
 
-      await api.put(`/properties/${activeProperty.id}`, payload, config);
+      await api.put(`/admin/properties/${activeProperty.id}`, payload, config);
 
       alert("✅ Property updated successfully!");
       closeAll();
@@ -484,7 +484,7 @@ export default function Properti() {
 
     setFormLoading(true);
     try {
-      await api.delete(`/properties/${activeProperty.id}`);
+      await api.delete(`/admin/properties/${activeProperty.id}`);
       alert("✅ Property deleted successfully!");
       closeAll();
       fetchProperties();

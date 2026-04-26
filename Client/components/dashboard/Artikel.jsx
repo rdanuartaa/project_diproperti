@@ -1,79 +1,93 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-const initialArticles = [
-  {
-    id: 101,
-    user_id: 2,
-    image: "",
-    title: "Panduan Membeli Rumah Pertama",
-    slug: "panduan-membeli-rumah-pertama",
-    description: "Ringkasan tips penting sebelum membeli rumah pertama.",
-    content:
-      "Isi artikel lengkap tentang tahapan membeli rumah pertama.",
-    created_at: "2024-01-10 09:30:00",
-    updated_at: "2024-02-01 14:15:00",
-  },
-  {
-    id: 102,
-    user_id: 3,
-    image: "",
-    title: "Tren Properti 2024",
-    slug: "tren-properti-2024",
-    description: "Gambaran singkat tren pasar properti tahun ini.",
-    content:
-      "Isi artikel lengkap tentang tren properti dan prediksi pasar.",
-    created_at: "2024-02-05 10:00:00",
-    updated_at: "2024-03-12 16:45:00",
-  },
-];
+import { api } from "@/lib/api";
+import DropdownSelect from "../common/DropdownSelect";
 
 const emptyForm = {
-  image: "",
   title: "",
   description: "",
   content: "",
-  newImages: [],
+  status: "draft",
+  tags: [],
+  image: null,
+  newImage: null,
 };
 
-const slugify = (value) =>
-  value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-");
-
 export default function Artikel() {
-  const [articles, setArticles] = useState(initialArticles);
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [formLoading, setFormLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [allTags, setAllTags] = useState([]);
+
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeArticle, setActiveArticle] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
 
+  const [filters, setFilters] = useState({ status: "All", search: "" });
+
   const activeTitle = useMemo(
     () => activeArticle?.title || "Selected Article",
     [activeArticle],
   );
 
+  // 🔹 Fetch articles dari API
+  const fetchArticles = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filters.status !== "All") params.append("status", filters.status);
+      if (filters.search) params.append("search", filters.search);
+
+      const response = await api.get(`/admin/articles?${params}`);
+      setArticles(response.data.data || response.data);
+    } catch (error) {
+      console.error("Failed to fetch articles:", error);
+      alert("❌ Gagal mengambil data artikel");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Fetch all tags untuk dropdown
+  const fetchTags = async () => {
+    try {
+      const response = await api.get("/admin/tags");
+      setAllTags(response.data.data || response.data || []);
+    } catch (error) {
+      console.error("Failed to fetch tags:", error);
+    }
+  };
+
+  // ✅ Fetch data saat component mount
+  useEffect(() => {
+    fetchArticles();
+    fetchTags();
+  }, [filters]);
+
   const openCreate = () => {
     setFormData(emptyForm);
+    setErrors({});
     setIsCreateOpen(true);
   };
 
   const openEdit = (article) => {
     setActiveArticle(article);
     setFormData({
-      image: article.image ?? "",
       title: article.title ?? "",
       description: article.description ?? "",
       content: article.content ?? "",
-      newImages: [],
+      status: article.status ?? "draft",
+      tags: article.tags?.map((t) => t.id) || [],
+      image: article.image ?? null,
+      newImage: null,
     });
+    setErrors({});
     setIsEditOpen(true);
   };
 
@@ -88,110 +102,217 @@ export default function Artikel() {
     setIsDeleteOpen(false);
     setActiveArticle(null);
     setFormData(emptyForm);
+    setErrors({});
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, type, checked } = e.target;
+
+    if (name === "tags") {
+      const tagId = parseInt(value);
+      setFormData((prev) => {
+        const currentTags = prev.tags || [];
+        const newTags = currentTags.includes(tagId)
+          ? currentTags.filter((id) => id !== tagId)
+          : [...currentTags, tagId];
+        return { ...prev, tags: newTags };
+      });
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: type === "checkbox" ? checked : value,
+      }));
+    }
+
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
   };
 
   const handleImageChange = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length + formData.newImages.length > 10) {
-      alert("Maksimal 10 gambar diperbolehkan");
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("❌ Maksimal ukuran gambar 5MB");
       return;
     }
+
     setFormData((prev) => ({
       ...prev,
-      newImages: [...prev.newImages, ...files],
+      newImage: file,
     }));
   };
 
-  const handleRemoveNewImage = (index) => {
+  const handleRemoveImage = () => {
     setFormData((prev) => ({
       ...prev,
-      newImages: prev.newImages.filter((_, i) => i !== index),
+      image: null,
+      newImage: null,
     }));
   };
 
-  const handleRemoveExistingImage = () => {
-    setFormData((prev) => ({
-      ...prev,
-      image: "",
-    }));
+  // 🔹 Prepare FormData untuk upload
+  const prepareFormData = (jsonPayload) => {
+    const formDataToSend = new FormData();
+
+    Object.keys(jsonPayload).forEach((key) => {
+      if (key === "tags" && Array.isArray(jsonPayload[key])) {
+        jsonPayload[key].forEach((tagId) => {
+          formDataToSend.append("tags[]", tagId);
+        });
+      } else if (jsonPayload[key] !== null && jsonPayload[key] !== undefined) {
+        formDataToSend.append(key, jsonPayload[key]);
+      }
+    });
+
+    if (formData.newImage) {
+      formDataToSend.append("image", formData.newImage);
+    }
+
+    if (!formData.newImage && formData.image === null && activeArticle?.image) {
+      formDataToSend.append("image_to_delete", "1");
+    }
+
+    return formDataToSend;
   };
 
-  const handleCreate = (e) => {
+  // 🔹 Handle Create Article
+  const handleCreate = async (e) => {
     e.preventDefault();
-    const previewImage = formData.newImages[0]
-      ? URL.createObjectURL(formData.newImages[0])
-      : formData.image;
-    const timestamp = new Date().toISOString();
-    const next = {
-      id: Date.now(),
-      user_id: 0,
-      image: previewImage || "",
-      title: formData.title,
-      slug: slugify(formData.title),
-      description: formData.description,
-      content: formData.content,
-      created_at: timestamp,
-      updated_at: timestamp,
-    };
-    setArticles((prev) => [next, ...prev]);
-    closeAll();
+    setFormLoading(true);
+    setErrors({});
+
+    try {
+      const payload = formData.newImage
+        ? prepareFormData(formData)
+        : { ...formData, image: null };
+
+      const config = formData.newImage ? {} : {};
+
+      const response = await api.post("/admin/articles", payload, config);
+      alert("✅ Article created successfully!");
+      await fetchArticles();
+      closeAll();
+    } catch (error) {
+      console.error("Error creating article:", error);
+      if (error.response?.status === 422) {
+        setErrors(error.response.data.errors || {});
+        const firstError = Object.values(
+          error.response.data.errors || {},
+        )[0]?.[0];
+        alert(`❌ Validation: ${firstError}`);
+      } else if (error.response?.status === 403) {
+        alert("❌ Unauthorized - Admin access required");
+      } else {
+        alert("❌ Failed to create article");
+      }
+    } finally {
+      setFormLoading(false);
+    }
   };
 
-  const handleUpdate = (e) => {
+  // 🔹 Handle Update Article
+  const handleUpdate = async (e) => {
     e.preventDefault();
-    const previewImage = formData.newImages[0]
-      ? URL.createObjectURL(formData.newImages[0])
-      : formData.image || activeArticle?.image || "";
-    setArticles((prev) =>
-      prev.map((item) =>
-        item.id === activeArticle?.id
-          ? {
-              ...item,
-              image: previewImage,
-              title: formData.title,
-              slug: slugify(formData.title),
-              description: formData.description,
-              content: formData.content,
-              updated_at: new Date().toISOString(),
-            }
-          : item,
-      ),
-    );
-    closeAll();
-  };
-
-  const handleDelete = () => {
     if (!activeArticle?.id) return;
-    setArticles((prev) => prev.filter((item) => item.id !== activeArticle.id));
-    closeAll();
+
+    setFormLoading(true);
+    setErrors({});
+
+    try {
+      const payload =
+        formData.newImage || formData.image === null
+          ? prepareFormData(formData)
+          : { ...formData, image: null };
+
+      const config = formData.newImage || formData.image === null ? {} : {};
+
+      const response = await api.put(
+        `/admin/articles/${activeArticle.id}`,
+        payload,
+        config,
+      );
+      alert("✅ Article updated successfully!");
+      await fetchArticles();
+      closeAll();
+    } catch (error) {
+      console.error("Error updating article:", error);
+      if (error.response?.status === 422) {
+        setErrors(error.response.data.errors || {});
+        const firstError = Object.values(
+          error.response.data.errors || {},
+        )[0]?.[0];
+        alert(`❌ Validation: ${firstError}`);
+      } else if (error.response?.status === 403) {
+        alert("❌ Unauthorized - Admin access required");
+      } else {
+        alert("❌ Failed to update article");
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // 🔹 Handle Delete Article
+  const handleDelete = async () => {
+    if (!activeArticle?.id) return;
+
+    setFormLoading(true);
+
+    try {
+      await api.delete(`/admin/articles/${activeArticle.id}`);
+      alert("✅ Article deleted successfully!");
+      await fetchArticles();
+      closeAll();
+    } catch (error) {
+      console.error("Error deleting article:", error);
+      if (error.response?.status === 403) {
+        alert("❌ Unauthorized - Admin access required");
+      } else {
+        alert("❌ Failed to delete article");
+      }
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Format tanggal Indonesia
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("id-ID", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
 
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
-        <div className="row">
+        {/* Filters Section - Sama seperti Faq.jsx */}
+        <div className="row mb-3">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
-                  Article Status:<span>*</span>
+                  Status:<span>*</span>
                 </label>
-                <select className="form-control">
-                  <option>All</option>
-                  <option>published</option>
-                  <option>draft</option>
-                </select>
+                {/* ✅ DropdownSelect untuk Status Filter */}
+                <DropdownSelect
+                  options={["All", "published", "draft"]}
+                  value={filters.status}
+                  onChange={(value) => {
+                    setFilters((prev) => ({ ...prev, status: value }));
+                  }}
+                  name="status"
+                  addtionalParentClass=""
+                />
               </fieldset>
             </form>
           </div>
+
           <div className="col-md-9">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
@@ -200,14 +321,19 @@ export default function Artikel() {
                 </label>
                 <input
                   type="text"
+                  name="search"
                   className="form-control"
                   placeholder="Search by title..."
+                  value={filters.search}
+                  onChange={(e) => {
+                    setFilters((prev) => ({ ...prev, search: e.target.value }));
+                  }}
                 />
               </fieldset>
             </form>
           </div>
         </div>
-
+        {/* Article List */}
         <div className="widget-box-2 wd-listing mt-20">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
             <h3 className="title">My Articles</h3>
@@ -215,6 +341,7 @@ export default function Artikel() {
               type="button"
               className="tf-btn style-border pd-23"
               onClick={openCreate}
+              disabled={formLoading}
             >
               Create Article
             </button>
@@ -222,7 +349,12 @@ export default function Artikel() {
 
           <div className="wrap-table">
             <div className="table-responsive">
-              {articles.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-2 text-gray-500">Memuat artikel...</p>
+                </div>
+              ) : articles.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   No articles found. Click "Create Article" to add one.
                 </div>
@@ -231,8 +363,8 @@ export default function Artikel() {
                   <thead>
                     <tr>
                       <th>Article</th>
-                      <th>Slug</th>
-                      <th>Admin</th>
+                      <th>Tags</th>
+                      <th>Status</th>
                       <th>Updated</th>
                       <th>Action</th>
                     </tr>
@@ -243,10 +375,10 @@ export default function Artikel() {
                         <td>
                           <div className="listing-box">
                             <div className="images">
-                              {article.image ? (
+                              {article.image_url ? (
                                 <Image
                                   alt={article.title}
-                                  src={article.image}
+                                  src={article.image_url}
                                   width={150}
                                   height={100}
                                   className="object-cover rounded"
@@ -266,20 +398,45 @@ export default function Artikel() {
                                   {article.title}
                                 </Link>
                               </div>
-                              <div className="text-date">
-                                {article.description || "No description"}
-                              </div>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <span>{article.slug}</span>
+                          {article.tags?.length > 0 ? (
+                            <div className="flex flex-wrap gap-1">
+                              {article.tags.slice(0, 2).map((tag) => (
+                                <span
+                                  key={tag.id}
+                                  className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded"
+                                >
+                                  {tag.name}
+                                </span>
+                              ))}
+                              {article.tags.length > 2 && (
+                                <span className="text-xs text-gray-500">
+                                  +{article.tags.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
                         <td>
-                          <span>Admin #{article.user_id}</span>
+                          <span
+                            className={`px-3 py-1 text-xs rounded-full ${
+                              article.status === "published"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {article.status}
+                          </span>
                         </td>
                         <td>
-                          <span>{article.updated_at}</span>
+                          <span className="text-sm text-gray-500">
+                            {formatDate(article.updated_at)}
+                          </span>
                         </td>
                         <td>
                           <ul className="list-action">
@@ -288,6 +445,8 @@ export default function Artikel() {
                                 type="button"
                                 className="item"
                                 onClick={() => openEdit(article)}
+                                disabled={formLoading}
+                                title="Edit"
                               >
                                 <svg
                                   width={16}
@@ -303,7 +462,6 @@ export default function Artikel() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                Edit
                               </button>
                             </li>
                             <li>
@@ -311,6 +469,8 @@ export default function Artikel() {
                                 type="button"
                                 className="remove-file item"
                                 onClick={() => openDelete(article)}
+                                disabled={formLoading}
+                                title="Delete"
                               >
                                 <svg
                                   width={16}
@@ -326,7 +486,6 @@ export default function Artikel() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                                Delete
                               </button>
                             </li>
                           </ul>
@@ -338,6 +497,7 @@ export default function Artikel() {
               )}
             </div>
 
+            {/* Pagination */}
             <ul className="wg-pagination">
               <li className="arrow">
                 <a href="#">
@@ -356,6 +516,7 @@ export default function Artikel() {
           </div>
         </div>
 
+        {/* Footer */}
         <div className="footer-dashboard">
           <p>Copyright (c) {new Date().getFullYear()} Propty</p>
           <ul className="list">
@@ -372,11 +533,15 @@ export default function Artikel() {
         </div>
       </div>
 
+      {/* Overlay */}
       <div
-        className={`overlay-dashboard ${isCreateOpen || isEditOpen || isDeleteOpen ? "show" : ""}`}
+        className={`overlay-dashboard ${
+          isCreateOpen || isEditOpen || isDeleteOpen ? "show" : ""
+        }`}
         onClick={closeAll}
       />
 
+      {/* DELETE MODAL */}
       {isDeleteOpen && (
         <div
           className="modal show d-block"
@@ -426,7 +591,6 @@ export default function Artikel() {
                   aria-label="Close"
                 />
               </div>
-
               <div
                 className="modal-body text-center pt-0 pb-4"
                 style={{ padding: "0 1.5rem 1.5rem" }}
@@ -458,7 +622,6 @@ export default function Artikel() {
                     </svg>
                   </div>
                 </div>
-
                 <h4 className="fw-bold mb-2" style={{ color: "#1f2937" }}>
                   Delete Article?
                 </h4>
@@ -473,7 +636,6 @@ export default function Artikel() {
                   This action cannot be undone.
                 </p>
               </div>
-
               <div
                 className="modal-footer border-0 justify-content-center gap-3"
                 style={{ padding: "0 1.5rem 1.5rem" }}
@@ -482,6 +644,7 @@ export default function Artikel() {
                   type="button"
                   className="btn btn-light px-4 py-2"
                   onClick={closeAll}
+                  disabled={formLoading}
                   style={{
                     borderRadius: "8px",
                     fontWeight: "500",
@@ -494,6 +657,7 @@ export default function Artikel() {
                   type="button"
                   className="btn btn-danger px-4 py-2"
                   onClick={handleDelete}
+                  disabled={formLoading}
                   style={{
                     borderRadius: "8px",
                     fontWeight: "500",
@@ -504,7 +668,28 @@ export default function Artikel() {
                     gap: "0.5rem",
                   }}
                 >
-                  Delete
+                  {formLoading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        style={{ width: "1rem", height: "1rem" }}
+                      />{" "}
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="currentColor"
+                      >
+                        <path d="M6.854 7.146a.5.5 0 1 0-.708.708L7.293 9l-1.147 1.146a.5.5 0 0 0 .708.708L8 9.707l1.146 1.147a.5.5 0 0 0 .708-.708L8.707 9l1.147-1.146a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146z" />
+                        <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
+                      </svg>{" "}
+                      Delete
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -512,6 +697,7 @@ export default function Artikel() {
         </div>
       )}
 
+      {/* CREATE/EDIT MODAL */}
       {(isCreateOpen || isEditOpen) && (
         <div className="modal fade show" style={{ display: "block" }}>
           <div className="modal-dialog modal-dialog-centered modal-xl">
@@ -544,20 +730,45 @@ export default function Artikel() {
                       </h6>
                     </div>
 
-                    <div className="col-12">
+                    <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Title</label>
+                        <label>
+                          Title <span className="text-red-500">*</span>
+                        </label>
                         <input
                           type="text"
                           name="title"
-                          className="form-control"
+                          className={`form-control ${
+                            errors.title ? "border-red-500" : ""
+                          }`}
                           placeholder="Judul Artikel"
                           value={formData.title}
                           onChange={handleChange}
                           required
                         />
+                        {errors.title && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {errors.title[0]}
+                          </p>
+                        )}
                       </fieldset>
                     </div>
+
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Status</label>
+                        <DropdownSelect
+                          options={["draft", "published"]}
+                          value={formData.status}
+                          onChange={(value) => {
+                            setFormData((prev) => ({ ...prev, status: value }));
+                          }}
+                          name="status"
+                          addtionalParentClass=""
+                        />
+                      </fieldset>
+                    </div>
+
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Description</label>
@@ -565,7 +776,7 @@ export default function Artikel() {
                           name="description"
                           className="textarea"
                           rows={3}
-                          placeholder="Describe the article highlights..."
+                          placeholder="Ringkasan artikel..."
                           value={formData.description}
                           onChange={handleChange}
                         />
@@ -574,16 +785,49 @@ export default function Artikel() {
 
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Content</label>
+                        <label>
+                          Content <span className="text-red-500">*</span>
+                        </label>
                         <textarea
                           name="content"
                           className="textarea"
-                          rows={6}
-                          placeholder="Write the full article content..."
+                          rows={8}
+                          placeholder="Tulis konten artikel lengkap..."
                           value={formData.content}
                           onChange={handleChange}
                           required
                         />
+                        {errors.content && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {errors.content[0]}
+                          </p>
+                        )}
+                      </fieldset>
+                    </div>
+
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Tags</label>
+                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-2 border rounded">
+                          {allTags.map((tag) => (
+                            <label
+                              key={tag.id}
+                              className="flex items-center gap-1 text-sm"
+                            >
+                              <input
+                                type="checkbox"
+                                name="tags"
+                                value={tag.id}
+                                checked={formData.tags?.includes(tag.id)}
+                                onChange={handleChange}
+                              />
+                              {tag.name}
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Pilih tag yang relevan
+                        </p>
                       </fieldset>
                     </div>
 
@@ -593,23 +837,31 @@ export default function Artikel() {
                       </h6>
                     </div>
 
-                    {isEditOpen && formData.image && (
+                    {/* Existing Image */}
+                    {isEditOpen && formData.image && !formData.newImage && (
                       <div className="col-12 mb-3">
                         <p className="text-sm text-gray-600 mb-2">
                           Existing image:
                         </p>
                         <div className="box-img-upload">
-                          <div className="item-upload file-delete">
-                            <Image
-                              src={formData.image}
-                              alt="Article"
-                              width={615}
-                              height={405}
-                            />
+                          <div className="item-upload file-delete relative">
+                            {activeArticle?.image_url ? (
+                              <Image
+                                src={activeArticle.image_url}
+                                alt="Article"
+                                width={615}
+                                height={405}
+                                className="rounded"
+                              />
+                            ) : (
+                              <div className="w-full h-64 bg-gray-200 rounded flex items-center justify-center text-gray-400">
+                                No Image
+                              </div>
+                            )}
                             <button
                               type="button"
-                              className="icon icon-trashcan1 remove-file"
-                              onClick={handleRemoveExistingImage}
+                              className="icon icon-trashcan1 remove-file absolute top-2 right-2"
+                              onClick={handleRemoveImage}
                               aria-label="Remove image"
                             />
                           </div>
@@ -617,12 +869,13 @@ export default function Artikel() {
                       </div>
                     )}
 
+                    {/* Upload New Image */}
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Upload New Images</label>
+                        <label>Upload Image</label>
                         <div className="box-uploadfile text-center">
                           <div className="uploadfile">
-                            <label className="tf-btn bg-color-primary pd-10 btn-upload mx-auto">
+                            <label className="tf-btn bg-color-primary pd-10 btn-upload mx-auto cursor-pointer">
                               <svg
                                 width={21}
                                 height={20}
@@ -638,45 +891,51 @@ export default function Artikel() {
                                   strokeLinejoin="round"
                                 />
                               </svg>
-                              Select photos
+                              Select image
                               <input
                                 type="file"
-                                name="images"
-                                multiple
+                                name="image"
                                 accept="image/*"
                                 onChange={handleImageChange}
-                                className="ip-file"
+                                className="ip-file hidden"
                               />
                             </label>
                             <p className="file-name fw-5">
-                              or drag photos here <br />
-                              <span>(Up to 10 photos)</span>
+                              or drag image here <br />
+                              <span>(Max 5MB)</span>
                             </p>
                           </div>
                         </div>
 
-                        {formData.newImages?.length > 0 && (
-                          <div className="box-img-upload">
-                            {Array.from(formData.newImages).map((file, idx) => (
-                              <div
-                                key={idx}
-                                className="item-upload file-delete"
-                              >
-                                <Image
-                                  src={URL.createObjectURL(file)}
-                                  alt={`Preview ${idx + 1}`}
-                                  width={615}
-                                  height={405}
-                                />
-                                <button
-                                  type="button"
-                                  className="icon icon-trashcan1 remove-file"
-                                  onClick={() => handleRemoveNewImage(idx)}
-                                  aria-label="Remove image"
-                                />
-                              </div>
-                            ))}
+                        {/* Preview new image */}
+                        {formData.newImage && (
+                          <div className="box-img-upload mt-3">
+                            <div className="item-upload file-delete relative">
+                              <Image
+                                src={URL.createObjectURL(formData.newImage)}
+                                alt="Preview"
+                                width={615}
+                                height={405}
+                                className="rounded"
+                              />
+                              <button
+                                type="button"
+                                className="icon icon-trashcan1 remove-file absolute top-2 right-2"
+                                onClick={() =>
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    newImage: null,
+                                  }))
+                                }
+                                aria-label="Remove image"
+                              />
+                            </div>
                           </div>
+                        )}
+                        {errors.image && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {errors.image[0]}
+                          </p>
                         )}
                       </fieldset>
                     </div>
@@ -687,11 +946,22 @@ export default function Artikel() {
                       type="button"
                       className="tf-btn style-border"
                       onClick={closeAll}
+                      disabled={formLoading}
                     >
                       Cancel
                     </button>
-                    <button type="submit" className="tf-btn">
-                      {isCreateOpen ? "Create" : "Update"}
+                    <button
+                      type="submit"
+                      className="tf-btn"
+                      disabled={formLoading}
+                    >
+                      {formLoading
+                        ? isCreateOpen
+                          ? "Creating..."
+                          : "Updating..."
+                        : isCreateOpen
+                          ? "Create"
+                          : "Update"}
                     </button>
                   </div>
                 </form>
