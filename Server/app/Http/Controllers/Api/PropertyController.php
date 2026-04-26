@@ -74,7 +74,8 @@ class PropertyController extends Controller
             $query->where('status', 'published');
         }
 
-        $properties = $query->latest()->paginate($request->get('per_page', 12));
+        $per_page = $request->input('per_page', 12);
+        $properties = $query->latest()->paginate($per_page);
 
         // ✅ TRIGGER ACCESSOR untuk full_url
         $this->appendImageUrls($properties);
@@ -82,9 +83,6 @@ class PropertyController extends Controller
         return response()->json($properties);
     }
 
-    /**
-     * Display a listing of properties for admin (All statuses)
-     */
     public function adminIndex(Request $request)
     {
         if (!$request->user()?->isAdmin()) {
@@ -106,7 +104,8 @@ class PropertyController extends Controller
             });
         }
 
-        $properties = $query->latest()->paginate($request->get('per_page', 12));
+        $per_page = $request->input('per_page', 12);
+        $properties = $query->latest()->paginate($per_page);
 
         // ✅ TRIGGER ACCESSOR untuk full_url
         $this->appendImageUrls($properties);

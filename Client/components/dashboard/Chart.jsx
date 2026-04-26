@@ -6,8 +6,9 @@ import {
   LineElement,
   PointElement,
   LinearScale,
-  Title,
   CategoryScale,
+  Tooltip,
+  Filler,
 } from "chart.js";
 
 Chart.register(
@@ -16,78 +17,106 @@ Chart.register(
   PointElement,
   LinearScale,
   CategoryScale,
-  Title
+  Tooltip,
+  Filler
 );
 
-const LineChart = () => {
+const LineChart = ({ chartData, height = 300 }) => {
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
   useEffect(() => {
-    if (chartInstance.current) {
-      chartInstance.current.destroy(); // Destroy previous instance to avoid duplicates
-    }
+    if (!chartRef.current) return;
 
     const ctx = chartRef.current.getContext("2d");
 
-    // Create gradient
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, "rgba(21, 99, 223,0.2)");
-    gradient.addColorStop(1, "rgba(21, 99, 223,0)");
+    // Destroy previous instance
+    if (chartInstance.current) {
+      chartInstance.current.destroy();
+    }
 
-    // Chart data
+    const labels = chartData?.labels ?? [];
+    const datasets = chartData?.datasets ?? [];
+
+    // ❌ Kalau tidak ada data
+    if (labels.length === 0 || datasets.length === 0) {
+      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+      ctx.font = "14px sans-serif";
+      ctx.fillStyle = "#6b7280";
+      ctx.textAlign = "center";
+      ctx.fillText(
+        "Belum ada data views",
+        ctx.canvas.width / 2,
+        ctx.canvas.height / 2
+      );
+      return;
+    }
+
+    // Gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, height);
+    gradient.addColorStop(0, "rgba(241, 145, 61, 0.2)");
+    gradient.addColorStop(1, "rgba(241, 145, 61, 0)");
+
+    // ✅ FIX DI SINI (pakai data:)
     chartInstance.current = new Chart(ctx, {
       type: "line",
       data: {
-        labels: [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ],
-        datasets: [
-          {
-            data: [
-              42, 45, 70, 65, 140, 130, 145, 145, 160, 135, 140, 130, 135, 140,
-              250,
-            ],
-            backgroundColor: gradient,
-            borderColor: "#f1913d",
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-          },
-        ],
+        labels,
+        datasets: datasets.map((dataset, idx) => ({
+          ...dataset,
+          backgroundColor:
+            idx === 0 ? gradient : dataset.backgroundColor,
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+        })),
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          legend: {
-            display: false,
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: "#1f2937",
+            callbacks: {
+              label: (ctx) => `Views: ${ctx.parsed.y}`,
+            },
           },
         },
         scales: {
           y: {
             beginAtZero: true,
+            grid: { color: "rgba(0,0,0,0.05)" },
+            ticks: {
+              color: "#6b7280",
+              callback: (val) =>
+                val >= 1000
+                  ? (val / 1000).toFixed(1) + "K"
+                  : val,
+            },
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: "#6b7280",
+              maxRotation: 45,
+              minRotation: 45,
+            },
           },
         },
       },
     });
 
-    return () => {
-      chartInstance.current.destroy(); // Cleanup on unmount
-    };
-  }, []);
+    return () => chartInstance.current?.destroy();
+  }, [chartData, height]);
 
-  return <canvas ref={chartRef} id="lineChart"></canvas>;
+  return (
+    <canvas
+      ref={chartRef}
+      style={{ width: "100%", height: `${height}px` }}
+    />
+  );
 };
 
 export default LineChart;

@@ -1,17 +1,83 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import LineChart from "./Chart";
-import Link from "next/link";
-import Image from "next/image";
-import { properties5 } from "@/data/properties";
+import { api } from "@/lib/api";
+
 export default function Dashboard() {
+  const [stats, setStats] = useState({
+    properties: { total: 0, published: 0, views: 0 },
+    articles: { total: 0, published: 0, views: 0 },
+    users: { total: 0 },
+    platform: { total_views: 0 },
+  });
+  const [analytics, setAnalytics] = useState({
+    labels: [],
+    datasets: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [chartPeriod, setChartPeriod] = useState("day");
+
+  // 🔹 Fetch dashboard stats
+  const fetchStats = async () => {
+    try {
+      const { data } = await api.get("/admin/dashboard/stats");
+      if (data.success) {
+        setStats(data.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch stats:", error);
+    }
+  };
+
+  // 🔹 Fetch analytics chart data
+  const fetchAnalytics = async (period = "day") => {
+    try {
+      const { data } = await api.get("/admin/dashboard/analytics", {
+        params: { period },
+      });
+      if (data.success) {
+        setAnalytics({
+          labels: data.data.labels,
+          datasets: data.data.datasets,
+        });
+      }
+    } catch (error) {
+      console.error("Failed to fetch analytics:", error);
+    }
+  };
+
+  // ✅ Fetch data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchStats(), fetchAnalytics(chartPeriod)]);
+      setLoading(false);
+    };
+    loadData();
+  }, [chartPeriod]);
+
+  // 🔹 Handle period change
+  const handlePeriodChange = (period) => {
+    setChartPeriod(period);
+  };
+
+  // Format angka ke Rupiah / Ribuan
+  const formatNumber = (num) => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + "M";
+    if (num >= 1000) return (num / 1000).toFixed(1) + "K";
+    return num.toString();
+  };
+
   return (
     <div className="main-content w-100">
       <div className="main-content-inner">
         <div className="button-show-hide show-mb">
           <span className="body-1">Show Dashboard</span>
         </div>
+
+        {/* 🔹 Counter Boxes */}
         <div className="flat-counter-v2 tf-counter">
+          {/* Properties */}
           <div className="counter-box">
             <div className="box-icon">
               <span className="icon">
@@ -70,11 +136,17 @@ export default function Dashboard() {
             <div className="content-box">
               <div className="title-count text-variant-1">Jumlah Properti</div>
               <div className="box-count d-flex align-items-end">
-                <div className="number">32</div>
-                <span className="text">/50 remaining</span>
+                <div className="number">
+                  {loading ? "..." : stats.properties.total}
+                </div>
+                <span className="text">
+                  / {stats.properties.published} published
+                </span>
               </div>
             </div>
           </div>
+
+          {/* Users */}
           <div className="counter-box">
             <div className="box-icon">
               <span className="icon">
@@ -119,10 +191,14 @@ export default function Dashboard() {
             <div className="content-box">
               <div className="title-count text-variant-1">Jumlah User</div>
               <div className="box-count d-flex align-items-end">
-                <div className="number">02</div>
+                <div className="number">
+                  {loading ? "..." : stats.users.total}
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Articles */}
           <div className="counter-box">
             <div className="box-icon">
               <span className="icon">
@@ -160,10 +236,14 @@ export default function Dashboard() {
             <div className="content-box">
               <div className="title-count text-variant-1">Jumlah Artikel</div>
               <div className="d-flex align-items-end">
-                <div className="number">06</div>
+                <div className="number">
+                  {loading ? "..." : stats.articles.total}
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Platform Views */}
           <div className="counter-box">
             <div className="box-icon">
               <span className="icon">
@@ -201,56 +281,88 @@ export default function Dashboard() {
             <div className="content-box">
               <div className="title-count text-variant-1">Views Platform</div>
               <div className="d-flex align-items-end">
-                <div className="number">1.483</div>
+                <div className="number">
+                  {loading ? "..." : formatNumber(stats.platform.total_views)}
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* 🔹 Chart Section */}
         <div className="row">
           <div className="col-xl-12">
             <div className="widget-box-2 wd-chart">
               <h5 className="title">Page Inside</h5>
+
+              {/* Filter Period */}
               <div className="wd-filter-date">
                 <div className="left">
-                  <div className="dates active">Day</div>
-                  <div className="dates">Week</div>
-                  <div className="dates">Month</div>
-                  <div className="dates">Year</div>
+                  {["day", "week", "month", "year"].map((p) => (
+                    <div
+                      key={p}
+                      className={`dates ${chartPeriod === p ? "active" : ""}`}
+                      onClick={() => handlePeriodChange(p)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </div>
+                  ))}
                 </div>
                 <div className="right">
-                  <form>
+                  <form onSubmit={(e) => e.preventDefault()}>
                     <fieldset className="ip-group icon">
                       <input
-                        type="text"
-                        id="datepicker3"
+                        type="date"
                         className="ip-datepicker icon"
                         placeholder="From Date"
+                        onChange={(e) => {
+                          // Optional: handle custom date range
+                        }}
                       />
                     </fieldset>
                   </form>
-                  <form>
+                  <form onSubmit={(e) => e.preventDefault()}>
                     <fieldset className="ip-group icon">
                       <input
-                        type="text"
-                        id="datepicker4"
+                        type="date"
                         className="ip-datepicker icon"
                         placeholder="To Date"
+                        onChange={(e) => {
+                          // Optional: handle custom date range
+                        }}
                       />
                     </fieldset>
                   </form>
                 </div>
               </div>
+
+              {/* Chart */}
               <div className="chart-box">
-                <LineChart />
+                {loading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-2 text-gray-500">Memuat chart...</p>
+                  </div>
+                ) : (
+                  <LineChart
+                    chartData={{
+                      labels: analytics.labels,
+                      datasets: analytics.datasets,
+                    }}
+                    height={300}
+                  />
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Footer */}
         <div className="row">
           <div className="col-xl-9">
-            {/* .footer-dashboard */}
             <div className="footer-dashboard">
-              <p>Copyright © {new Date().getFullYear()} Popty</p>
+              <p>Copyright © {new Date().getFullYear()} Propty</p>
               <ul className="list">
                 <li>
                   <a href="#">Privacy</a>
@@ -263,7 +375,6 @@ export default function Dashboard() {
                 </li>
               </ul>
             </div>
-            {/* .footer-dashboard */}
           </div>
         </div>
       </div>
