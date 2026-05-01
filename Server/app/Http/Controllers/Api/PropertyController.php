@@ -47,6 +47,17 @@ class PropertyController extends Controller
         return $data;
     }
 
+    private function applySortOrder($query, Request $request)
+    {
+        $sortOrder = strtolower((string) $request->input('sort_order', 'desc'));
+
+        if (in_array($sortOrder, ['asc', 'oldest', 'terlama'], true)) {
+            return $query->orderBy('created_at', 'asc');
+        }
+
+        return $query->latest();
+    }
+
     /**
      * Display a listing of properties (Public)
      */
@@ -58,6 +69,7 @@ class PropertyController extends Controller
         if ($request->has('type')) $query->where('type', $request->type);
         if ($request->has('listing_type')) $query->where('listing_type', $request->listing_type);
         if ($request->has('city')) $query->where('city', $request->city);
+        if ($request->has('status')) $query->where('status', $request->status);
         if ($request->has('min_price')) $query->where('price', '>=', $request->min_price);
         if ($request->has('max_price')) $query->where('price', '<=', $request->max_price);
         if ($request->has('search')) {
@@ -75,7 +87,7 @@ class PropertyController extends Controller
         }
 
         $per_page = $request->input('per_page', 12);
-        $properties = $query->latest()->paginate($per_page);
+        $properties = $this->applySortOrder($query, $request)->paginate($per_page);
 
         // ✅ TRIGGER ACCESSOR untuk full_url
         $this->appendImageUrls($properties);
@@ -105,7 +117,7 @@ class PropertyController extends Controller
         }
 
         $per_page = $request->input('per_page', 12);
-        $properties = $query->latest()->paginate($per_page);
+        $properties = $this->applySortOrder($query, $request)->paginate($per_page);
 
         // ✅ TRIGGER ACCESSOR untuk full_url
         $this->appendImageUrls($properties);
@@ -176,6 +188,7 @@ class PropertyController extends Controller
                 'detail.listrik_type' => 'nullable|in:overground,underground',
                 'detail.wifi_provider' => 'nullable|string|max:255',
                 'images' => 'nullable',
+                'primary_new_index' => 'nullable|integer|min:0',
             ]);
 
             Log::info('Validation passed');
@@ -204,7 +217,14 @@ class PropertyController extends Controller
             Log::info('Property detail created');
 
             // ✅ Upload Images ke Cloudflare R2
-            $uploadedCount = $this->handleImageUpload($property, $request, 0);
+            $primaryNewIndex = $request->input('primary_new_index');
+            $uploadedCount = $this->handleImageUpload(
+                $property,
+                $request,
+                0,
+                $primaryNewIndex,
+                $primaryNewIndex !== null
+            );
             if ($uploadedCount === 0 && $request->hasFile('images')) {
                 Log::warning('⚠️ Images uploaded to R2 but NOT saved to database! Count: 0');
             }
@@ -289,6 +309,8 @@ class PropertyController extends Controller
                 'images_to_delete.*' => 'integer|exists:property_images,id',
                 'images' => 'nullable|array',
                 'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
+                'primary_image_id' => 'nullable|integer|exists:property_images,id',
+                'primary_new_index' => 'nullable|integer|min:0',
             ]);
 
             // Update main property fields
@@ -309,6 +331,21 @@ class PropertyController extends Controller
             }
 
             $property->save();
+
+            if ($request->filled('primary_image_id')) {
+                $primaryImage = $property->images()
+                    ->where('id', $request->primary_image_id)
+                    ->first();
+
+                if (!$primaryImage) {
+                    return response()->json([
+                        'message' => 'Primary image not found for this property',
+                    ], 422);
+                }
+
+                $property->images()->update(['is_primary' => false]);
+                $primaryImage->update(['is_primary' => true]);
+            }
 
             // Update detail
             if (isset($validated['detail'])) {
@@ -335,7 +372,17 @@ class PropertyController extends Controller
             }
 
             // ✅ Handle new images upload ke R2
-            $uploadedCount = $this->handleImageUpload($property, $request, $property->images()->count());
+            $primaryNewIndex = $request->input('primary_new_index');
+            if ($primaryNewIndex !== null) {
+                $property->images()->update(['is_primary' => false]);
+            }
+            $uploadedCount = $this->handleImageUpload(
+                $property,
+                $request,
+                $property->images()->count(),
+                $primaryNewIndex,
+                $primaryNewIndex !== null
+            );
             if ($uploadedCount === 0 && $request->hasFile('images')) {
                 Log::warning('⚠️ Update: Images uploaded to R2 but NOT saved to database!');
             }
@@ -437,7 +484,13 @@ class PropertyController extends Controller
     /**
      * ✅ HANDLE IMAGE UPLOAD KE CLOUDFLARE R2
      */
-    private function handleImageUpload(Property $property, Request $request, int $startIndex = 0): int
+    private function handleImageUpload(
+        Property $property,
+        Request $request,
+        int $startIndex = 0,
+        ?int $primaryNewIndex = null,
+        bool $forcePrimary = false
+    ): int
     {
         if (!$request->hasFile('images')) {
             return 0;
@@ -458,6 +511,9 @@ class PropertyController extends Controller
         Log::info('Uploading ' . count($images) . ' images to R2 for property #' . $property->id);
         $successCount = 0;
         $hasPrimary = $property->images()->where('is_primary', true)->exists();
+        if ($forcePrimary) {
+            $hasPrimary = false;
+        }
 
         foreach ($images as $index => $image) {
             try {
@@ -481,10 +537,18 @@ class PropertyController extends Controller
                 }
 
                 // ✅ SIMPAN PATH RELATIF KE DATABASE
+                $isPrimary = $primaryNewIndex !== null
+                    ? $index === (int) $primaryNewIndex
+                    : (!$hasPrimary && $index === 0);
+
                 $imageRecord = $property->images()->create([
                     'image_url' => $r2Path,
-                    'is_primary' => !$hasPrimary && $index === 0,
+                    'is_primary' => $isPrimary,
                 ]);
+
+                if ($isPrimary) {
+                    $hasPrimary = true;
+                }
 
                 Log::info('✅ Image record created! ID: ' . $imageRecord->id . ' | R2 Path: ' . $r2Path);
                 $successCount++;

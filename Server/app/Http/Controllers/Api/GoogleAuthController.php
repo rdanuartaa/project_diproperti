@@ -63,7 +63,7 @@ class GoogleAuthController extends Controller
             // 5. Redirect ke Frontend (Next.js) bawa token
             return redirect(
                 env('FRONTEND_URL', 'http://localhost:3000') .
-                    '/home02?token=' . $token . '&status=success'
+                    '/?token=' . $token . '&status=success'
             );
 
         }

@@ -168,7 +168,7 @@ class ArticleController extends Controller
             }
 
             return response()->json($article);
-            
+
         } catch (\Exception $e) {
             Log::error('Error fetching article: ' . $e->getMessage());
             return response()->json(['message' => 'Article not found'], 404);
@@ -308,4 +308,24 @@ class ArticleController extends Controller
             Log::error('Failed to delete image from R2: ' . $e->getMessage());
         }
     }
+
+    public function popular(Request $request)
+{
+    try {
+        $limit = $request->input('limit', 3);
+
+        $articles = Article::with(['tags:id,name,slug', 'user:id,name'])
+            ->where('status', 'published')
+            ->orderBy('views', 'desc')
+            ->limit($limit)
+            ->get();
+
+        $this->appendImageUrls($articles);
+
+        return response()->json($articles);
+    } catch (\Exception $e) {
+        Log::error('Error fetching popular articles: ' . $e->getMessage());
+        return response()->json([], 200);
+    }
+}
 }

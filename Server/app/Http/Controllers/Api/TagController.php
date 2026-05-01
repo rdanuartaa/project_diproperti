@@ -9,6 +9,10 @@ use Illuminate\Support\Facades\Log;
 
 class TagController extends Controller
 {
+    /**
+     * Public endpoint untuk sidebar - return simple array (no pagination)
+     * Response: [{ id, name, slug, articles_count }, ...]
+     */
     public function index(Request $request)
     {
         try {
@@ -16,9 +20,9 @@ class TagController extends Controller
                 ->when($request->search, fn($q) =>
                     $q->where('name', 'like', "%{$request->search}%")
                 )
-                ->withCount('articles') // 🔥 penting
-                ->latest()
-                ->paginate($request->input('per_page', 20));
+                ->withCount('articles') // ✅ articles_count untuk sidebar
+                ->latest('name')
+                ->get(); // ✅ Return collection, bukan paginate
 
             return response()->json($tags);
         } catch (\Exception $e) {
@@ -27,6 +31,9 @@ class TagController extends Controller
         }
     }
 
+    /**
+     * Admin endpoint - return paginated untuk management
+     */
     public function adminIndex(Request $request)
     {
         if (!$request->user()?->isAdmin()) {
@@ -61,12 +68,12 @@ class TagController extends Controller
 
         try {
             $tag = Tag::create([
-                'name' => $validated['name'], // slug auto dari model
+                'name' => $validated['name'], // slug auto dari Model
             ]);
 
             return response()->json([
                 'message' => 'Tag created',
-                'data' => $tag
+                'data' => $tag->loadCount('articles')
             ], 201);
 
         } catch (\Exception $e) {
@@ -105,7 +112,7 @@ class TagController extends Controller
 
             return response()->json([
                 'message' => 'Tag updated',
-                'data' => $tag
+                'data' => $tag->loadCount('articles')
             ]);
         } catch (\Exception $e) {
             Log::error('Update tag error: ' . $e->getMessage());

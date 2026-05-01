@@ -17,9 +17,11 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 Route::get('/properties', [PropertyController::class, 'index']);
 Route::get('/properties/{slug}', [PropertyController::class, 'show']);
 Route::get('/articles', [ArticleController::class, 'index']);
+Route::get('/articles/popular', [ArticleController::class, 'popular']);
 Route::get('/articles/{slug}', [ArticleController::class, 'show']);
-Route::get('/tags', [TagController::class, 'index']); 
+Route::get('/tags', [TagController::class, 'index']);
 Route::get('/tags/{tag:slug}', [TagController::class, 'show']); 
+Route::get('/faqs', [FaqController::class, 'index']);
 
 // ✅ PROTECTED (Butuh Login)
 Route::middleware('auth:sanctum')->group(function () {
@@ -42,10 +44,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/admin/articles', [ArticleController::class, 'store']);
         Route::put('/admin/articles/{article}', [ArticleController::class, 'update']);
         Route::delete('/admin/articles/{article}', [ArticleController::class, 'destroy']);
-        Route::get('/admin/tags', [TagController::class, 'adminIndex']);     
-        Route::post('/admin/tags', [TagController::class, 'store']);          
-        Route::get('/admin/tags/{tag}', [TagController::class, 'show']);      
-        Route::put('/admin/tags/{tag}', [TagController::class, 'update']);    
+        Route::get('/admin/tags', [TagController::class, 'adminIndex']);
+        Route::post('/admin/tags', [TagController::class, 'store']);
+        Route::get('/admin/tags/{tag}', [TagController::class, 'show']);
+        Route::put('/admin/tags/{tag}', [TagController::class, 'update']);
         Route::delete('/admin/tags/{tag}', [TagController::class, 'destroy']);
         Route::get('/admin/faqs', [FaqController::class, 'index']);
         Route::post('/admin/faqs', [FaqController::class, 'store']);
