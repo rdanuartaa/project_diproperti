@@ -4,6 +4,7 @@ import api from "@/lib/api";
 import DropdownSelect from "../common/DropdownSelect";
 import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
+import AttentionModal from "../common/AttentionModal";
 
 const emptyForm = {
   question: "",
@@ -15,6 +16,7 @@ const emptyForm = {
 export default function Faq() {
   const [faqs, setFaqs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [formLoading, setFormLoading] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState(null);
@@ -26,6 +28,8 @@ export default function Faq() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showAttentionModal, setShowAttentionModal] = useState(false);
+  const [attentionMessage, setAttentionMessage] = useState("");
 
   // Fetch FAQs from API
   const fetchFaqs = async () => {
@@ -94,8 +98,19 @@ export default function Faq() {
     setTimeout(() => setShowSuccessModal(false), 2500);
   };
 
+  const showAttention = (message) => {
+    setAttentionMessage(message);
+    setShowAttentionModal(true);
+  };
+
+  const formatFieldErrors = (fieldErrors) =>
+    Object.entries(fieldErrors || {})
+      .map(([field, messages]) => `${field}: ${messages?.[0] || "Invalid"}`)
+      .join(" | ");
+
   const handleCreate = async (e) => {
     e.preventDefault();
+    setFormLoading(true);
     try {
       const { data } = await api.post('/admin/faqs', formData);
       
@@ -106,14 +121,21 @@ export default function Faq() {
       }
     } catch (error) {
       console.error("Create failed:", error);
-      alert("Gagal menambahkan FAQ");
+      if (error.response?.status === 422) {
+        const errorMessage = formatFieldErrors(error.response.data.errors);
+        showAttention(errorMessage || "Validasi gagal.");
+      } else {
+        showAttention("Gagal menambahkan FAQ.");
+      }
+    } finally {
+      setFormLoading(false);
     }
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!activeFaq?.id) return;
-    
+    setFormLoading(true);
     try {
       const { data } = await api.put(`/admin/faqs/${activeFaq.id}`, formData);
       
@@ -128,7 +150,14 @@ export default function Faq() {
       }
     } catch (error) {
       console.error("Update failed:", error);
-      alert("Gagal memperbarui FAQ");
+      if (error.response?.status === 422) {
+        const errorMessage = formatFieldErrors(error.response.data.errors);
+        showAttention(errorMessage || "Validasi gagal.");
+      } else {
+        showAttention("Gagal memperbarui FAQ.");
+      }
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -147,7 +176,7 @@ export default function Faq() {
       }
     } catch (error) {
       console.error("Delete failed:", error);
-      alert("Gagal menghapus FAQ");
+      showAttention("Gagal menghapus FAQ.");
     } finally {
       setIsDeleting(false);
     }
@@ -185,6 +214,13 @@ export default function Faq() {
           isLoading={isDeleting}
         />
 
+        <AttentionModal
+          isOpen={showAttentionModal}
+          onClose={() => setShowAttentionModal(false)}
+          title="Perhatian"
+          message={attentionMessage}
+        />
+
         {/* Filters */}
         <div className="row mb-3">
           <div className="col-md-3">
@@ -193,7 +229,7 @@ export default function Faq() {
                 <label>Status:<span>*</span></label>
                 <DropdownSelect
                   options={["All", "published", "draft"]}
-                  value={filters.status}
+                  selectedValue={filters.status}
                   onChange={(value) => {
                     setFilters((prev) => ({ ...prev, status: value }));
                   }}
@@ -228,10 +264,16 @@ export default function Faq() {
             <h3 className="title">FAQ</h3>
             <button
               type="button"
-              className="tf-btn style-border pd-23"
+              className={`tf-btn style-border pd-23${
+                formLoading ? " is-loading" : ""
+              }`}
               onClick={openCreate}
+              disabled={formLoading}
             >
-              Create FAQ
+              {formLoading && (
+                <span className="btn-spinner" aria-hidden="true" />
+              )}
+              <span>Tambah FAQ</span>
             </button>
           </div>
 
@@ -347,7 +389,7 @@ export default function Faq() {
             <div className="modal-content">
               <div className="modal-header modal-header-title">
                 <h5 className="modal-title">
-                  {isCreateOpen ? "Create FAQ" : `Edit: ${activeTitle}`}
+                  {isCreateOpen ? "Tambah FAQ" : `Ubah: ${activeTitle}`}
                 </h5>
                 <button type="button" className="btn-close" onClick={closeAll} aria-label="Close" />
               </div>
@@ -393,7 +435,7 @@ export default function Faq() {
                         <label>Topic<span>*</span></label>
                         <DropdownSelect
                           options={["properti", "kpr", "platform", "umum"]}
-                          value={formData.topic}
+                          selectedValue={formData.topic}
                           onChange={(value) => {
                             setFormData((prev) => ({ ...prev, topic: value }));
                           }}
@@ -408,7 +450,7 @@ export default function Faq() {
                         <label>Status<span>*</span></label>
                         <DropdownSelect
                           options={["draft", "published"]}
-                          value={formData.status}
+                          selectedValue={formData.status}
                           onChange={(value) => {
                             setFormData((prev) => ({ ...prev, status: value }));
                           }}
@@ -419,10 +461,34 @@ export default function Faq() {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-end gap-12 mt-20">
-                    <button type="button" className="tf-btn style-border" onClick={closeAll}>Cancel</button>
-                    <button type="submit" className="tf-btn">
-                      {isCreateOpen ? "Create" : "Update"}
+                  <div className="modal-footer border-top">
+                    <button
+                      type="button"
+                      className="tf-btn style-border pd-23 btn-cancel-danger"
+                      onClick={closeAll}
+                      disabled={formLoading}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className={`tf-btn style-border pd-23${
+                        formLoading ? " is-loading" : ""
+                      }`}
+                      disabled={formLoading}
+                    >
+                      {formLoading && (
+                        <span className="btn-spinner" aria-hidden="true" />
+                      )}
+                      <span>
+                        {formLoading
+                          ? isCreateOpen
+                            ? "Menambah..."
+                            : "Menyimpan..."
+                          : isCreateOpen
+                            ? "Tambah"
+                            : "Simpan"}
+                      </span>
                     </button>
                   </div>
                 </form>

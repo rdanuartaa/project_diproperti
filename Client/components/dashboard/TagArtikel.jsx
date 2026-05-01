@@ -2,6 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import DropdownSelect from "../common/DropdownSelect";
+import SuccessModal from "../common/SuccesModal";
+import ConfirmModal from "../common/ConfirmModal";
+import AttentionModal from "../common/AttentionModal";
 
 const emptyForm = {
   name: "",
@@ -15,9 +19,15 @@ export default function TagArtikel() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeTag, setActiveTag] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showAttentionModal, setShowAttentionModal] = useState(false);
+  const [attentionMessage, setAttentionMessage] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -41,6 +51,7 @@ export default function TagArtikel() {
       };
 
       if (searchQuery) params.search = searchQuery;
+      if (statusFilter !== "All") params.status = statusFilter;
 
       const response = await api.get("/admin/tags", { params });
 
@@ -85,17 +96,32 @@ export default function TagArtikel() {
 
   const openDelete = (tag) => {
     setActiveTag(tag);
-    setIsDeleteOpen(true);
+    setShowConfirmModal(true);
   };
 
   const closeAll = () => {
     setIsCreateOpen(false);
     setIsEditOpen(false);
-    setIsDeleteOpen(false);
     setActiveTag(null);
     setFormData(emptyForm);
     setErrors({});
   };
+
+  const showSuccess = (message) => {
+    setSuccessMessage(message);
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 2500);
+  };
+
+  const showAttention = (message) => {
+    setAttentionMessage(message);
+    setShowAttentionModal(true);
+  };
+
+  const formatFieldErrors = (fieldErrors) =>
+    Object.entries(fieldErrors || {})
+      .map(([field, messages]) => `${field}: ${messages?.[0] || "Invalid"}`)
+      .join(" | ");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -113,14 +139,16 @@ export default function TagArtikel() {
 
     try {
       await api.post("/admin/tags", formData);
-      alert("✅ Tag created successfully!");
-      await fetchTags();
       closeAll();
+      showSuccess("Tag berhasil ditambahkan");
+      await fetchTags();
     } catch (error) {
       if (error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
+        const errorMessage = formatFieldErrors(error.response.data.errors);
+        showAttention(errorMessage || "Validasi gagal.");
       } else {
-        alert("❌ Failed to create tag");
+        showAttention("Gagal menambahkan tag.");
       }
     } finally {
       setFormLoading(false);
@@ -136,14 +164,16 @@ export default function TagArtikel() {
 
     try {
       await api.put(`/admin/tags/${activeTag.id}`, formData);
-      alert("✅ Tag updated successfully!");
-      await fetchTags();
       closeAll();
+      showSuccess("Tag berhasil diperbarui");
+      await fetchTags();
     } catch (error) {
       if (error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
+        const errorMessage = formatFieldErrors(error.response.data.errors);
+        showAttention(errorMessage || "Validasi gagal.");
       } else {
-        alert("❌ Failed to update tag");
+        showAttention("Gagal memperbarui tag.");
       }
     } finally {
       setFormLoading(false);
@@ -153,21 +183,22 @@ export default function TagArtikel() {
   const handleDelete = async () => {
     if (!activeTag?.id) return;
 
-    setFormLoading(true);
+    setIsDeleting(true);
 
     try {
       await api.delete(`/admin/tags/${activeTag.id}`);
-      alert("✅ Tag deleted successfully!");
-      await fetchTags();
+      setShowConfirmModal(false);
       closeAll();
+      showSuccess("Tag berhasil dihapus");
+      await fetchTags();
     } catch (error) {
       if (error.response?.status === 409) {
-        alert(error.response.data.message);
+        showAttention(error.response.data.message || "Tidak bisa menghapus tag.");
       } else {
-        alert("❌ Failed to delete tag");
+        showAttention("Gagal menghapus tag.");
       }
     } finally {
-      setFormLoading(false);
+      setIsDeleting(false);
     }
   };
 
@@ -201,31 +232,51 @@ export default function TagArtikel() {
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          message={successMessage}
+        />
+
+        <ConfirmModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={handleDelete}
+          title="Konfirmasi Hapus"
+          message={`Apakah kamu yakin ingin menghapus tag "${activeTitle}"?`}
+          confirmText="Hapus"
+          cancelText="Batal"
+          isLoading={isDeleting}
+        />
+
+        <AttentionModal
+          isOpen={showAttentionModal}
+          onClose={() => setShowAttentionModal(false)}
+          title="Perhatian"
+          message={attentionMessage}
+        />
+
         {/* Filter & Search */}
-        <div className="row">
+        <div className="row mb-3">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>
-                  Status:<span>*</span>
-                </label>
-                <select
-                  className="form-control"
-                  value={statusFilter}
-                  onChange={handleFilterChange}
-                >
-                  <option>All</option>
-                  <option>active</option>
-                </select>
+                <label>Status:<span>*</span></label>
+                <DropdownSelect
+                  options={["All", "active"]}
+                  selectedValue={statusFilter}
+                  onChange={(value) => {
+                    setStatusFilter(value);
+                  }}
+                  addtionalParentClass=""
+                />
               </fieldset>
             </form>
           </div>
           <div className="col-md-9">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>
-                  Search:<span>*</span>
-                </label>
+                <label>Search:<span>*</span></label>
                 <input
                   type="text"
                   className="form-control"
@@ -244,11 +295,16 @@ export default function TagArtikel() {
             <h3 className="title">Tag Artikel</h3>
             <button
               type="button"
-              className="tf-btn style-border pd-23"
+              className={`tf-btn style-border pd-23${
+                formLoading ? " is-loading" : ""
+              }`}
               onClick={openCreate}
               disabled={formLoading}
             >
-              Create Tag
+              {formLoading && (
+                <span className="btn-spinner" aria-hidden="true" />
+              )}
+              <span>Tambah Tag</span>
             </button>
           </div>
 
@@ -305,12 +361,10 @@ export default function TagArtikel() {
                         <td>
                           <ul className="list-action">
                             <li>
-                              <button
-                                type="button"
+                              <a
                                 className="item"
-                                onClick={() => openEdit(tag)}
-                                disabled={formLoading}
-                                title="Edit"
+                                onClick={() => !formLoading && openEdit(tag)}
+                                style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
                               >
                                 <svg
                                   width={16}
@@ -326,15 +380,14 @@ export default function TagArtikel() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                              </button>
+                                Edit
+                              </a>
                             </li>
                             <li>
-                              <button
-                                type="button"
+                              <a
                                 className="remove-file item"
-                                onClick={() => openDelete(tag)}
-                                disabled={formLoading}
-                                title="Delete"
+                                onClick={() => !formLoading && openDelete(tag)}
+                                style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
                               >
                                 <svg
                                   width={16}
@@ -350,7 +403,8 @@ export default function TagArtikel() {
                                     strokeLinejoin="round"
                                   />
                                 </svg>
-                              </button>
+                                Delete
+                              </a>
                             </li>
                           </ul>
                         </td>
@@ -399,168 +453,9 @@ export default function TagArtikel() {
 
       {/* Overlay */}
       <div
-        className={`overlay-dashboard ${isCreateOpen || isEditOpen || isDeleteOpen ? "show" : ""}`}
+        className={`overlay-dashboard ${isCreateOpen || isEditOpen ? "show" : ""}`}
         onClick={closeAll}
       />
-
-      {/* DELETE MODAL */}
-      {isDeleteOpen && (
-        <div
-          className="modal show d-block"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-          onClick={closeAll}
-        >
-          <div
-            className="modal-dialog modal-dialog-centered"
-            style={{
-              maxWidth: "500px",
-              width: "100%",
-              margin: "0 auto",
-              pointerEvents: "none",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="modal-content"
-              style={{
-                pointerEvents: "auto",
-                borderRadius: "12px",
-                border: "none",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-              }}
-            >
-              <div
-                className="modal-header border-0 pb-0"
-                style={{ padding: "1.5rem 1.5rem 0" }}
-              >
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={closeAll}
-                  style={{ position: "absolute", right: "1rem", top: "1rem" }}
-                  aria-label="Close"
-                />
-              </div>
-
-              <div
-                className="modal-body text-center pt-0 pb-4"
-                style={{ padding: "0 1.5rem 1.5rem" }}
-              >
-                <div className="mb-4">
-                  <div
-                    className="mx-auto d-flex align-items-center justify-content-center"
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      borderRadius: "50%",
-                      backgroundColor: "#fef2f2",
-                      color: "#dc2626",
-                    }}
-                  >
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                <h4 className="fw-bold mb-2" style={{ color: "#1f2937" }}>
-                  Delete Tag?
-                </h4>
-                <p
-                  className="text-gray-600 mb-1"
-                  style={{ fontSize: "1rem", lineHeight: "1.5" }}
-                >
-                  Are you sure you want to delete{" "}
-                  <strong style={{ color: "#111827" }}>{activeTitle}</strong>?
-                </p>
-                <p className="text-sm" style={{ color: "#6b7280" }}>
-                  This action cannot be undone.
-                </p>
-              </div>
-
-              <div
-                className="modal-footer border-0 justify-content-center gap-3"
-                style={{ padding: "0 1.5rem 1.5rem" }}
-              >
-                <button
-                  type="button"
-                  className="btn btn-light px-4 py-2"
-                  onClick={closeAll}
-                  disabled={formLoading}
-                  style={{
-                    borderRadius: "8px",
-                    fontWeight: "500",
-                    border: "1px solid #e5e7eb",
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger px-4 py-2"
-                  onClick={handleDelete}
-                  disabled={formLoading}
-                  style={{
-                    borderRadius: "8px",
-                    fontWeight: "500",
-                    backgroundColor: "#dc2626",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {formLoading ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        style={{ width: "1rem", height: "1rem" }}
-                      />
-                      Deleting...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                      >
-                        <path d="M6.854 7.146a.5.5 0 1 0-.708.708L7.293 9l-1.147 1.146a.5.5 0 0 0 .708.708L8 9.707l1.146 1.147a.5.5 0 0 0 .708-.708L8.707 9l1.147-1.146a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146z" />
-                        <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
-                      </svg>
-                      Delete
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* CREATE/EDIT MODAL */}
       {(isCreateOpen || isEditOpen) && (
@@ -569,8 +464,8 @@ export default function TagArtikel() {
             <div className="modal-content">
               <div className="modal-header modal-header-title">
                 <h5 className="modal-title">
-                  {isCreateOpen && "Create Tag"}
-                  {isEditOpen && `Edit: ${activeTitle}`}
+                  {isCreateOpen && "Tambah Tag"}
+                  {isEditOpen && `Ubah: ${activeTitle}`}
                 </h5>
                 <button
                   type="button"
@@ -625,27 +520,34 @@ export default function TagArtikel() {
                     </div>
                   </div>
 
-                  <div className="d-flex justify-content-end gap-12 mt-20">
+                  <div className="modal-footer border-top">
                     <button
                       type="button"
-                      className="tf-btn style-border"
+                      className="tf-btn style-border pd-23 btn-cancel-danger"
                       onClick={closeAll}
                       disabled={formLoading}
                     >
-                      Cancel
+                      Batal
                     </button>
                     <button
                       type="submit"
-                      className="tf-btn"
+                      className={`tf-btn style-border pd-23${
+                        formLoading ? " is-loading" : ""
+                      }`}
                       disabled={formLoading}
                     >
-                      {formLoading
-                        ? isCreateOpen
-                          ? "Creating..."
-                          : "Updating..."
-                        : isCreateOpen
-                          ? "Create"
-                          : "Update"}
+                      {formLoading && (
+                        <span className="btn-spinner" aria-hidden="true" />
+                      )}
+                      <span>
+                        {formLoading
+                          ? isCreateOpen
+                            ? "Menambah..."
+                            : "Menyimpan..."
+                          : isCreateOpen
+                            ? "Tambah"
+                            : "Simpan"}
+                      </span>
                     </button>
                   </div>
                 </form>

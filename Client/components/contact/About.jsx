@@ -2,18 +2,18 @@ import React from "react";
 import Image from "next/image";
 export default function About() {
   return (
-    <section className="section-contact style-4 tf-spacing-1 pb-0">
+    <section className="section-contact style-4  pb-0">
       <div className="tf-container">
         <div className="row">
           <div className="col-md-6">
             <div className="box-contact">
               <div className="heading-section mb-48">
                 <h2 className="title split-text split-lines-transform">
-                  We provide the most suitable and quality real estate.
+                  Menyediakan properti terbaik untuk kebutuhan Anda
                 </h2>
                 <p className="text-1">
-                  Estimate your payment with our easy-to-use loan calculator.
-                  Then get pre-qualified to buy by a local lender.
+                  Kami membantu Anda menemukan, membandingkan, dan mendapatkan
+                  properti terbaik dengan proses yang mudah, cepat, dan transparan.
                 </p>
               </div>
               <ul className="list-info">
@@ -47,8 +47,8 @@ export default function About() {
                     </svg>
                   </div>
                   <div className="content">
-                    <div className="sub">Office address</div>
-                    <p>102 Ingraham St, Brooklyn, NY 11237</p>
+                    <div className="sub">Area Layanan</div>
+                    <p>Jember & sekitarnya</p>
                   </div>
                 </li>
                 <li>
@@ -91,8 +91,8 @@ export default function About() {
                     </svg>
                   </div>
                   <div className="content">
-                    <div className="sub">Office address</div>
-                    <div className="phone">(603) 555-0123</div>
+                    <div className="sub">Kontak Kami</div>
+                    <div className="phone">62+ 812-3477-6677</div>
                   </div>
                 </li>
                 <li>
@@ -167,8 +167,8 @@ export default function About() {
                     </svg>
                   </div>
                   <div className="content">
-                    <div className="sub">Office address</div>
-                    <a href="#">themesflat@gmail.com</a>
+                    <div className="sub">Email Kami</div>
+                    <a href="#">di.properti@gmail.com</a>
                   </div>
                 </li>
               </ul>

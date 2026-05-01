@@ -2,12 +2,12 @@
 @use "../abstracts/variable";
 
 #footer {
-    background-color: #000000;
+    background-color: var(--Primary);
     padding-top: 60px;
     &.style-2 {
-        background-color: #000000;
+        background-color: var(--Primary);
         .footer-menu-list ul li a {
-            background-color: #000000 !important;
+            background-color: var(--Primary) !important;
         }
     }
     .footer-top {

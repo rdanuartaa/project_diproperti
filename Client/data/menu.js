@@ -1,3 +1,5 @@
+import { allProperties } from "./properties";
+
 export const homes = [
   { href: "/", label: "Home Page 02", isCurrent: true },
 ];
@@ -48,7 +50,10 @@ export const propertyLinks = [
   {
     title: "Listing Details",
     submenu: [
-      { href: "/property-detail-v1/1", label: "Property Details 1" },
+      {
+        href: `/properti/${allProperties[0]?.slug}`,
+        label: "Property Details 1",
+      },
       { href: "/property-detail-v2/1", label: "Property Details 2" },
       { href: "/property-detail-v3/1", label: "Property Details 3" },
       { href: "/property-detail-v4/1", label: "Property Details 4" },

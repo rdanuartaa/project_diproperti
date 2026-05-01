@@ -141,7 +141,7 @@ export default function Sidebar() {
               </div>
               <div className="content">
                 <div className="text-1 title fw-5 lh-20">
-                  <Link href={`/property-detail-v1/${property.id}`}>
+                  <Link href={`/properti/${property.slug}`}>
                     {property.title}
                   </Link>
                 </div>

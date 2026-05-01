@@ -1,6 +1,5 @@
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
-import Cta from "@/components/otherPages/BungaFlat/Cta";
 import Facts from "@/components/otherPages/BungaFlat/Facts";
 import LoanCalculator from "@/components/otherPages/BungaFlat/LoanCalculator";
 import PageTitle from "@/components/otherPages/BungaFlat/PageTitle";
@@ -22,7 +21,6 @@ export default function page() {
           <Facts />
           <Process />
           <LoanCalculator />
-          <Cta />
         </div>
         <Footer1 />
       </div>

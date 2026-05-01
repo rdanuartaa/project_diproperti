@@ -5,25 +5,28 @@ import Nav from "./Nav";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
+import { API_URL } from "@/lib/api"; // ✅ Import API_URL dari api.js
 
 export default function Header1({ parentClass = "header" }) {
   const { isAuthenticated, user, isAdmin, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // ✅ Google Login - Gunakan API_URL dari api.js (tanpa hardcoded)
   const handleGoogleLogin = (e) => {
     e.preventDefault();
-    window.location.href = "http://localhost:8000/api/auth/google/redirect";
+    window.location.href = `${API_URL}/auth/google/redirect`;
   };
 
   const handleLogout = async (e) => {
     e.preventDefault();
-    await logout();
+    await logout(); // ✅ logout() dari useAuth sudah pakai api.js internally
     setDropdownOpen(false);
   };
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
+
   return (
     <header id="header-main" className={parentClass}>
       <div className="header-inner">
@@ -64,6 +67,8 @@ export default function Header1({ parentClass = "header" }) {
                             borderRadius: "50%",
                             overflow: "hidden",
                           }}
+                          aria-label="User menu"
+                          aria-expanded={dropdownOpen}
                         >
                           {user.avatar ? (
                             <Image
@@ -89,7 +94,7 @@ export default function Header1({ parentClass = "header" }) {
                                 fontSize: "16px",
                               }}
                             >
-                              {user.name.charAt(0).toUpperCase()}
+                              {user.name?.charAt(0).toUpperCase() || "U"}
                             </div>
                           )}
                         </button>
@@ -165,7 +170,7 @@ export default function Header1({ parentClass = "header" }) {
                         onClick={handleGoogleLogin}
                         className="nav-link-style"
                         style={{
-                          color: "#ffffff",
+                          color: "var(--Primary, #4285F4)",
                           padding: "29px 0",
                           fontWeight: "400",
                           fontSize: "16px",
@@ -178,13 +183,15 @@ export default function Header1({ parentClass = "header" }) {
                           e.currentTarget.style.color = "var(--Primary)";
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.color = "#ffffff";
+                          e.currentTarget.style.color = "var(--Primary, #4285F4)";
                         }}
                       >
                         Masuk
                       </Link>
                     )}
                   </div>
+
+                  {/* ✅ TOMBOL ADD PROPERTY / HUBUNGI ADMIN */}
                   <div className="btn-add">
                     {isAuthenticated && isAdmin ? (
                       <Link
@@ -195,18 +202,17 @@ export default function Header1({ parentClass = "header" }) {
                       </Link>
                     ) : (
                       <a
-                        href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20menambahkan%20properti"
+                        href={`https://wa.me/6281234776677?text=${encodeURIComponent('Halo Admin, saya ingin menambahkan properti')}`}
                         className="tf-btn style-border pd-23"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{
-                          cursor: "pointer",
-                        }}
+                        style={{ cursor: "pointer" }}
                       >
                         Hubungi Admin
                       </a>
                     )}
                   </div>
+
                   <div
                     className="mobile-button"
                     data-bs-toggle="offcanvas"

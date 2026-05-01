@@ -1,33 +1,33 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Nav from "./Nav";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { API_URL } from "@/lib/api"; // ✅ Import API_URL dari api.js
 
 export default function Header2() {
   const pathname = usePathname();
   const { isAuthenticated, user, isAdmin, logout } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  // ✅ Google Login - Gunakan API_URL dari api.js (tanpa hardcoded)
   const handleGoogleLogin = (e) => {
     e.preventDefault();
-    window.location.href = "http://localhost:8000/api/auth/google/redirect";
+    window.location.href = `${API_URL}/auth/google/redirect`;
   };
 
   const handleLogout = async (e) => {
     e.preventDefault();
-    await logout();
+    await logout(); // ✅ logout() dari useAuth sudah pakai api.js internally
     setDropdownOpen(false);
   };
 
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
-
-  console.log('Header2 - Auth state:', { isAuthenticated, user, isAdmin });
 
   return (
     <header id="header-main" className="header style-2">
@@ -40,7 +40,7 @@ export default function Header2() {
                   <Link href={`/`} className="site-logo">
                     <Image
                       className="img-default"
-                      alt=""
+                      alt="Logo"
                       width={272}
                       height={84}
                       src="/images/logo/logo-3@2x.png"
@@ -57,7 +57,6 @@ export default function Header2() {
                   {/* ✅ BAGIAN LOGIN/USER */}
                   <div className="nav-login-item" style={{ marginRight: "20px" }}>
                     {isAuthenticated && user ? (
-                      // User sudah login - Tampilkan avatar + dropdown
                       <div className="user-avatar-dropdown" style={{ position: "relative" }}>
                         <button
                           onClick={toggleDropdown}
@@ -69,6 +68,8 @@ export default function Header2() {
                             borderRadius: "50%",
                             overflow: "hidden",
                           }}
+                          aria-label="User menu"
+                          aria-expanded={dropdownOpen}
                         >
                           {user.avatar ? (
                             <Image
@@ -94,12 +95,11 @@ export default function Header2() {
                                 fontSize: "16px",
                               }}
                             >
-                              {user.name.charAt(0).toUpperCase()}
+                              {user.name?.charAt(0).toUpperCase() || "U"}
                             </div>
                           )}
                         </button>
 
-                        {/* Dropdown Menu */}
                         {dropdownOpen && (
                           <div
                             className="dropdown-menu show"
@@ -116,11 +116,11 @@ export default function Header2() {
                               padding: "8px 0",
                             }}
                           >
-                            <div style={{ padding: "8px 16px", borderBottom: "1px solid #e5e7eb", fontSize: "16px", fontWeight: "400"}}>
-                              <p style={{ margin: 0, fontWeight: "600", color: "#1f2937" }}>
+                            <div style={{ padding: "8px 16px", borderBottom: "1px solid #e5e7eb" }}>
+                              <p style={{ margin: 0, fontWeight: "600", color: "#1f2937", fontSize: "16px" }}>
                                 {user.name}
                               </p>
-                              <p style={{ margin: "4px 0 0", fontSize: "16px", color: "#6b7280", fontWeight: "400" }}>
+                              <p style={{ margin: "4px 0 0", fontSize: "14px", color: "#6b7280" }}>
                                 {user.email}
                               </p>
                             </div>
@@ -136,8 +136,7 @@ export default function Header2() {
                                 color: "#dc2626",
                                 textAlign: "left",
                                 cursor: "pointer",
-                                fontSize: "16px",
-                                fontWeight: "400",
+                                fontSize: "14px",
                               }}
                             >
                               Logout
@@ -146,7 +145,6 @@ export default function Header2() {
                         )}
                       </div>
                     ) : (
-                      // User belum login - Tampilkan tombol "Masuk"
                       <Link
                         href="/login"
                         onClick={handleGoogleLogin}
@@ -176,7 +174,6 @@ export default function Header2() {
                   {/* ✅ TOMBOL ADD PROPERTY / HUBUNGI ADMIN */}
                   <div className="btn-add">
                     {isAuthenticated && isAdmin ? (
-                      // Admin sudah login - Tampilkan "Add property"
                       <Link
                         className="tf-btn style-border pd-23"
                         href={`/admin/add-properti`}
@@ -184,15 +181,12 @@ export default function Header2() {
                         Add property
                       </Link>
                     ) : (
-                      // Belum login atau bukan admin - Tampilkan "Hubungi Admin"
                       <a
-                        href="https://wa.me/6281234567890?text=Halo%20Admin,%20saya%20ingin%20menambahkan%20properti"
+                        href={`https://wa.me/6281234776677?text=${encodeURIComponent('Halo Admin, saya ingin menambahkan properti')}`}
                         className="tf-btn style-border pd-23"
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{
-                          cursor: "pointer",
-                        }}
+                        style={{ cursor: "pointer" }}
                       >
                         Hubungi Admin
                       </a>

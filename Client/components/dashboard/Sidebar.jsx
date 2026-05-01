@@ -1,10 +1,18 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import React from "react";
+import { usePathname, useRouter } from "next/navigation";
+import React, { useState } from "react";
+import ConfirmModal from "../common/ConfirmModal";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirm(false);
+    router.push("/logout");
+  };
   return (
     <div className="wrap-sidebar">
       <div className="sidebar-menu-dashboard">
@@ -322,12 +330,12 @@ export default function Sidebar() {
                 Kelola faq
               </Link>
             </li>
-            <li
-              className={`nav-menu-item ${
-                pathname == "/logout" ? "active" : ""
-              } `}
-            >
-              <Link className="nav-menu-link" href={`/logout`}>
+            <li className="nav-menu-item">
+              <button
+                type="button"
+                className="nav-menu-link nav-menu-button"
+                onClick={() => setShowLogoutConfirm(true)}
+              >
                 <svg
                   width={20}
                   height={20}
@@ -358,11 +366,21 @@ export default function Sidebar() {
                   />
                 </svg>
                 Logout
-              </Link>
+              </button>
             </li>
           </ul>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Konfirmasi Logout"
+        message="Apakah kamu yakin ingin logout?"
+        confirmText="Logout"
+        cancelText="Batal"
+      />
     </div>
   );
 }

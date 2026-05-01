@@ -4,6 +4,9 @@ import React, { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import api from "@/lib/api"; // ✅ Instance api sudah ada interceptor auth_token
 import DropdownSelect from "../common/DropdownSelect";
+import SuccessModal from "../common/SuccesModal";
+import ConfirmModal from "../common/ConfirmModal";
+import AttentionModal from "../common/AttentionModal";
 
 const emptyForm = { role: "user" };
 
@@ -11,10 +14,17 @@ export default function User() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeUser, setActiveUser] = useState(null);
   const [formData, setFormData] = useState(emptyForm);
   const [filters, setFilters] = useState({ role: "All", search: "" });
+  const [formLoading, setFormLoading] = useState(false);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showAttentionModal, setShowAttentionModal] = useState(false);
+  const [attentionMessage, setAttentionMessage] = useState("");
 
   // ✅ Fetch users from API - FIX: Hapus manual token & gunakan relative URL
   const fetchUsers = async () => {
@@ -48,6 +58,12 @@ export default function User() {
     [activeUser],
   );
 
+  const isEditDirty = useMemo(() => {
+    if (!activeUser) return false;
+    const currentRole = activeUser.role ?? "user";
+    return formData.role !== currentRole;
+  }, [activeUser, formData.role]);
+
   const openEdit = (user) => {
     setActiveUser(user);
     setFormData({ role: user.role ?? "user" });
@@ -56,14 +72,24 @@ export default function User() {
 
   const openDelete = (user) => {
     setActiveUser(user);
-    setIsDeleteOpen(true);
+    setShowConfirmModal(true);
   };
 
   const closeAll = () => {
     setIsEditOpen(false);
-    setIsDeleteOpen(false);
     setActiveUser(null);
     setFormData(emptyForm);
+  };
+
+  const showSuccess = (message) => {
+    setSuccessMessage(message);
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 2500);
+  };
+
+  const showAttention = (message) => {
+    setAttentionMessage(message);
+    setShowAttentionModal(true);
   };
 
   // ✅ Handler untuk input/select biasa (menerima event)
@@ -80,9 +106,10 @@ export default function User() {
   // ✅ FIX 4: Hapus manual token, gunakan api instance
   const handleUpdate = async (e) => {
     e.preventDefault();
-    if (!activeUser?.id) return;
+    if (!activeUser?.id || !isEditDirty) return;
 
     try {
+      setFormLoading(true);
       // ✅ Relative URL + token auto-attach via interceptor
       const { data } = await api.put(
         `/admin/users/${activeUser.id}`,
@@ -96,9 +123,13 @@ export default function User() {
           ),
         );
         closeAll();
+        showSuccess("Role user berhasil diperbarui");
       }
     } catch (error) {
       console.error("Update failed:", error);
+      showAttention("Gagal memperbarui role user.");
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -106,15 +137,21 @@ export default function User() {
   const handleDelete = async () => {
     if (!activeUser?.id) return;
 
+    setIsDeleting(true);
     try {
       const { data } = await api.delete(`/admin/users/${activeUser.id}`);
 
       if (data.success) {
         setUsers((prev) => prev.filter((item) => item.id !== activeUser.id));
+        setShowConfirmModal(false);
         closeAll();
+        showSuccess("User berhasil dihapus");
       }
     } catch (error) {
       console.error("Delete failed:", error);
+      showAttention("Gagal menghapus user.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -127,8 +164,32 @@ export default function User() {
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          message={successMessage}
+        />
+
+        <ConfirmModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={handleDelete}
+          title="Konfirmasi Hapus"
+          message={`Apakah kamu yakin ingin menghapus user "${activeTitle}"?`}
+          confirmText="Hapus"
+          cancelText="Batal"
+          isLoading={isDeleting}
+        />
+
+        <AttentionModal
+          isOpen={showAttentionModal}
+          onClose={() => setShowAttentionModal(false)}
+          title="Perhatian"
+          message={attentionMessage}
+        />
+
         {/* Filters */}
-        <div className="row">
+        <div className="row mb-3">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
@@ -320,142 +381,9 @@ export default function User() {
 
       {/* Overlay */}
       <div
-        className={`overlay-dashboard ${isEditOpen || isDeleteOpen ? "show" : ""}`}
+        className={`overlay-dashboard ${isEditOpen ? "show" : ""}`}
         onClick={closeAll}
       />
-
-      {/* Delete Modal */}
-      {isDeleteOpen && (
-        <div
-          className="modal show d-block"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-          onClick={closeAll}
-        >
-          <div
-            className="modal-dialog modal-dialog-centered"
-            style={{
-              maxWidth: "500px",
-              width: "100%",
-              margin: "0 auto",
-              pointerEvents: "none",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="modal-content"
-              style={{
-                pointerEvents: "auto",
-                borderRadius: "12px",
-                border: "none",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-              }}
-            >
-              <div
-                className="modal-header border-0 pb-0"
-                style={{ padding: "1.5rem 1.5rem 0" }}
-              >
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={closeAll}
-                  style={{ position: "absolute", right: "1rem", top: "1rem" }}
-                  aria-label="Close"
-                />
-              </div>
-              <div
-                className="modal-body text-center pt-0 pb-4"
-                style={{ padding: "0 1.5rem 1.5rem" }}
-              >
-                <div className="mb-4">
-                  <div
-                    className="mx-auto d-flex align-items-center justify-content-center"
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      borderRadius: "50%",
-                      backgroundColor: "#fef2f2",
-                      color: "#dc2626",
-                    }}
-                  >
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-                <h4 className="fw-bold mb-2" style={{ color: "#1f2937" }}>
-                  Delete User?
-                </h4>
-                <p
-                  className="text-gray-600 mb-1"
-                  style={{ fontSize: "1rem", lineHeight: "1.5" }}
-                >
-                  Are you sure you want to delete{" "}
-                  <strong style={{ color: "#111827" }}>{activeTitle}</strong>?
-                </p>
-                <p className="text-sm" style={{ color: "#6b7280" }}>
-                  This action cannot be undone.
-                </p>
-              </div>
-              <div
-                className="modal-footer border-0 justify-content-center gap-3"
-                style={{ padding: "0 1.5rem 1.5rem" }}
-              >
-                <button
-                  type="button"
-                  className="btn btn-light px-4 py-2"
-                  onClick={closeAll}
-                  style={{
-                    borderRadius: "8px",
-                    fontWeight: "500",
-                    border: "1px solid #e5e7eb",
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger px-4 py-2"
-                  onClick={handleDelete}
-                  style={{
-                    borderRadius: "8px",
-                    fontWeight: "500",
-                    backgroundColor: "#dc2626",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Edit Modal */}
       {isEditOpen && (
@@ -485,28 +413,40 @@ export default function User() {
                     <div className="col-md-12">
                       <fieldset className="box-fieldset">
                         <label>Role</label>
-                        <select
+                        <DropdownSelect
+                          options={["admin", "user"]}
+                          selectedValue={formData.role}
+                          onChange={(value) => {
+                            setFormData((prev) => ({ ...prev, role: value }));
+                          }}
                           name="role"
-                          className="form-control"
-                          value={formData.role}
-                          onChange={handleChange}
-                        >
-                          <option value="admin">admin</option>
-                          <option value="user">user</option>
-                        </select>
+                          addtionalParentClass=""
+                        />
                       </fieldset>
                     </div>
                   </div>
-                  <div className="d-flex justify-content-end gap-12 mt-20">
+                  <div className="modal-footer border-top">
                     <button
                       type="button"
-                      className="tf-btn style-border"
+                      className="tf-btn style-border pd-23 btn-cancel-danger"
                       onClick={closeAll}
+                      disabled={formLoading}
                     >
-                      Cancel
+                      Batal
                     </button>
-                    <button type="submit" className="tf-btn">
-                      Update
+                    <button
+                      type="submit"
+                      className={`tf-btn style-border pd-23${
+                        formLoading ? " is-loading" : ""
+                      }`}
+                      disabled={formLoading || !isEditDirty}
+                    >
+                      {formLoading && (
+                        <span className="btn-spinner" aria-hidden="true" />
+                      )}
+                      <span>
+                        {formLoading ? "Menyimpan..." : "Simpan"}
+                      </span>
                     </button>
                   </div>
                 </form>

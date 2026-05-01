@@ -5,6 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import DropdownSelect from "../common/DropdownSelect";
 import { api } from "@/lib/api";
+import SuccessModal from "../common/SuccesModal";
+import ConfirmModal from "../common/ConfirmModal";
+import AttentionModal from "../common/AttentionModal";
 
 export default function Properti() {
   // State untuk data & UI
@@ -19,8 +22,17 @@ export default function Properti() {
   // State untuk modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [activeProperty, setActiveProperty] = useState(null);
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showAttentionModal, setShowAttentionModal] = useState(false);
+  const [attentionMessage, setAttentionMessage] = useState("");
+  const [filters, setFilters] = useState({ status: "All", search: "" });
+  const [primaryExistingId, setPrimaryExistingId] = useState(null);
+  const [initialSnapshot, setInitialSnapshot] = useState(null);
 
   // State untuk form
   const [formData, setFormData] = useState({
@@ -62,12 +74,44 @@ export default function Properti() {
     [activeProperty],
   );
 
-  // 🔹 Fetch properties dari API (dipanggil sekali saat mount)
+  const filteredProperties = useMemo(() => {
+    const statusFilter = filters.status?.toLowerCase();
+    const searchQuery = filters.search?.toLowerCase().trim();
+
+    return properties.filter((property) => {
+      const matchesStatus =
+        !statusFilter || statusFilter === "all"
+          ? true
+          : (property.status || "").toLowerCase() === statusFilter;
+
+      if (!searchQuery) {
+        return matchesStatus;
+      }
+
+      const title = (property.title || "").toLowerCase();
+      const description = (property.description || "").toLowerCase();
+      const kecamatan = (property.kecamatan || "").toLowerCase();
+
+      const matchesSearch =
+        title.includes(searchQuery) ||
+        description.includes(searchQuery) ||
+        kecamatan.includes(searchQuery);
+
+      return matchesStatus && matchesSearch;
+    });
+  }, [properties, filters]);
+
+  // 🔹 Fetch properties dari API
   const fetchProperties = async () => {
     try {
       setLoading(true);
+      const params = new URLSearchParams();
+
+      if (filters.status !== "All") params.append("status", filters.status);
+      if (filters.search) params.append("search", filters.search);
+
       // ✅ Interceptor di api.js sudah auto-attach token, tidak perlu header manual
-      const response = await api.get("/admin/properties");
+      const response = await api.get(`/admin/properties?${params}`);
       setProperties(response.data.data || response.data);
     } catch (error) {
       console.error("Failed to fetch properties:", error);
@@ -76,10 +120,10 @@ export default function Properti() {
     }
   };
 
-  // ✅ SINGLE useEffect untuk fetch data
+  // ✅ Fetch data saat filter berubah
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [filters]);
 
   // 🔹 Handle input change
   const handleChange = (e) => {
@@ -106,21 +150,42 @@ export default function Properti() {
     }
   };
 
+  const formatThousands = (rawValue) => {
+    const digits = String(rawValue ?? "").replace(/\D/g, "");
+    if (!digits) return "";
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  const handlePriceChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, "");
+    setFormData((prev) => ({ ...prev, price: digits }));
+    if (errors.price) {
+      setErrors((prev) => ({ ...prev, price: null }));
+    }
+  };
+
   // 🔹 Handle image upload
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length + formData.newImages.length > 10) {
-      alert("Maksimal 10 gambar diperbolehkan");
+      showAttention("Maksimal 10 gambar diperbolehkan.");
       return;
-    }
-    if (primaryNewIndex === null && files.length > 0) {
-      setPrimaryNewIndex(formData.newImages.length);
     }
     setFormData((prev) => ({
       ...prev,
       newImages: [...prev.newImages, ...files],
     }));
   };
+
+  const showAttention = (message) => {
+    setAttentionMessage(message);
+    setShowAttentionModal(true);
+  };
+
+  const formatFieldErrors = (fieldErrors) =>
+    Object.entries(fieldErrors || {})
+      .map(([field, messages]) => `${field}: ${messages?.[0] || "Invalid"}`)
+      .join(" | ");
 
   // 🔹 Remove new image
   const handleRemoveNewImage = (index) => {
@@ -143,15 +208,20 @@ export default function Properti() {
         ...prev,
         existingImages: prev.existingImages.filter((img) => img.id !== imageId),
       }));
+      if (primaryExistingId === imageId) {
+        setPrimaryExistingId(null);
+      }
       alert("✅ Gambar berhasil dihapus");
     } catch (error) {
-      alert("❌ Gagal menghapus gambar");
+      showAttention("Gagal menghapus gambar.");
     }
   };
 
   // 🔹 Reset form
   const resetForm = () => {
     setPrimaryNewIndex(null);
+    setPrimaryExistingId(null);
+    setInitialSnapshot(null);
     setFormData({
       title: "",
       price: "",
@@ -194,61 +264,119 @@ export default function Properti() {
     setIsCreateOpen(true);
   };
 
+  const mapPropertyToFormData = (property) => ({
+    title: property.title || "",
+    price: property.price || "",
+    type: property.type || "rumah",
+    building_type:
+      property.building_type !== null && property.building_type !== undefined
+        ? property.building_type
+        : "",
+    listing_type: property.listing_type || "jual",
+    kecamatan: property.kecamatan || "",
+    city: property.city || "Jember",
+    certificate_type: property.certificate_type || "SHM",
+    certificate_status: property.certificate_status || "lunas",
+    status: property.status || "draft",
+    description: property.description || "",
+    detail: {
+      luas_tanah: property.detail?.luas_tanah || "",
+      luas_bangunan: property.detail?.luas_bangunan || "",
+      floors: property.detail?.floors || 1,
+      bedrooms: property.detail?.bedrooms || 0,
+      bathrooms: property.detail?.bathrooms || 0,
+      kitchens: property.detail?.kitchens || 0,
+      living_rooms: property.detail?.living_rooms || 0,
+      carport: property.detail?.carport || false,
+      garden: property.detail?.garden || false,
+      electricity_capacity: property.detail?.electricity_capacity || "",
+      water: property.detail?.water || "pdam",
+      one_gate_system: property.detail?.one_gate_system || false,
+      security_24jam: property.detail?.security_24jam || false,
+      listrik_type: property.detail?.listrik_type || "overground",
+      wifi_provider: property.detail?.wifi_provider || "",
+    },
+    newImages: [],
+    existingImages: property.images || [],
+    imagesToDelete: [],
+  });
+
   const openEdit = (property) => {
     setPrimaryNewIndex(null);
     setActiveProperty(property);
-    setFormData({
-      title: property.title || "",
-      price: property.price || "",
-      type: property.type || "rumah",
-      building_type:
-        property.building_type !== null && property.building_type !== undefined
-          ? property.building_type
-          : "",
-      listing_type: property.listing_type || "jual",
-      kecamatan: property.kecamatan || "",
-      city: property.city || "Jember",
-      certificate_type: property.certificate_type || "SHM",
-      certificate_status: property.certificate_status || "lunas",
-      status: property.status || "draft",
-      description: property.description || "",
-      detail: {
-        luas_tanah: property.detail?.luas_tanah || "",
-        luas_bangunan: property.detail?.luas_bangunan || "",
-        floors: property.detail?.floors || 1,
-        bedrooms: property.detail?.bedrooms || 0,
-        bathrooms: property.detail?.bathrooms || 0,
-        kitchens: property.detail?.kitchens || 0,
-        living_rooms: property.detail?.living_rooms || 0,
-        carport: property.detail?.carport || false,
-        garden: property.detail?.garden || false,
-        electricity_capacity: property.detail?.electricity_capacity || "",
-        water: property.detail?.water || "pdam",
-        one_gate_system: property.detail?.one_gate_system || false,
-        security_24jam: property.detail?.security_24jam || false,
-        listrik_type: property.detail?.listrik_type || "overground",
-        wifi_provider: property.detail?.wifi_provider || "",
-      },
-      newImages: [],
-      existingImages: property.images || [],
-      imagesToDelete: [],
-    });
+    const nextFormData = mapPropertyToFormData(property);
+    const currentPrimaryId = property.images?.find((img) => img.is_primary)?.id || null;
+    setPrimaryExistingId(currentPrimaryId);
+    setFormData(nextFormData);
+    setInitialSnapshot(buildSnapshot(nextFormData, currentPrimaryId, null));
     setErrors({});
     setIsEditOpen(true);
   };
 
   const openDelete = (property) => {
     setActiveProperty(property);
-    setIsDeleteOpen(true);
+    setShowConfirmModal(true);
   };
 
   const closeAll = () => {
     setIsCreateOpen(false);
     setIsEditOpen(false);
-    setIsDeleteOpen(false);
     setActiveProperty(null);
     setPrimaryNewIndex(null);
     resetForm();
+  };
+
+  const showSuccess = (message) => {
+    setSuccessMessage(message);
+    setShowSuccessModal(true);
+    setTimeout(() => setShowSuccessModal(false), 2500);
+  };
+
+  const buildSnapshot = (data, primaryId, primaryIndex) => ({
+    title: data.title?.trim() || "",
+    price: String(data.price ?? ""),
+    type: data.type || "",
+    building_type: data.building_type ?? "",
+    listing_type: data.listing_type || "",
+    kecamatan: data.kecamatan || "",
+    city: data.city || "",
+    certificate_type: data.certificate_type || "",
+    certificate_status: data.certificate_status || "",
+    status: data.status || "",
+    description: data.description || "",
+    detail: {
+      luas_tanah: data.detail?.luas_tanah ?? "",
+      luas_bangunan: data.detail?.luas_bangunan ?? "",
+      floors: data.detail?.floors ?? 1,
+      bedrooms: data.detail?.bedrooms ?? 0,
+      bathrooms: data.detail?.bathrooms ?? 0,
+      kitchens: data.detail?.kitchens ?? 0,
+      living_rooms: data.detail?.living_rooms ?? 0,
+      carport: !!data.detail?.carport,
+      garden: !!data.detail?.garden,
+      electricity_capacity: data.detail?.electricity_capacity ?? "",
+      water: data.detail?.water ?? "",
+      one_gate_system: !!data.detail?.one_gate_system,
+      security_24jam: !!data.detail?.security_24jam,
+      listrik_type: data.detail?.listrik_type ?? "",
+      wifi_provider: data.detail?.wifi_provider ?? "",
+    },
+    existingImageIds: (data.existingImages || []).map((img) => img.id).sort(),
+    imagesToDelete: (data.imagesToDelete || []).slice().sort(),
+    newImagesCount: data.newImages?.length || 0,
+    primaryExistingId: primaryId || null,
+    primaryNewIndex: primaryIndex ?? null,
+  });
+
+  const isEditDirty =
+    isEditOpen &&
+    initialSnapshot &&
+    JSON.stringify(buildSnapshot(formData, primaryExistingId, primaryNewIndex)) !==
+      JSON.stringify(initialSnapshot);
+
+  const handleSetPrimaryExisting = (imageId) => {
+    setPrimaryExistingId(imageId);
+    setPrimaryNewIndex(null);
   };
 
   const updateField = (field, value) => {
@@ -383,9 +511,12 @@ export default function Properti() {
 
       // ✅ 2. Tentukan payload & config
       const hasImages = formData.newImages?.length > 0;
+      const primaryPayload =
+        primaryNewIndex !== null ? { primary_new_index: primaryNewIndex } : {};
+
       const payload = hasImages 
-        ? prepareFormData(jsonPayload) 
-        : jsonPayload;
+        ? prepareFormData({ ...jsonPayload, ...primaryPayload }) 
+        : { ...jsonPayload, ...primaryPayload };
 
       const config = hasImages 
         ? { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
@@ -394,27 +525,27 @@ export default function Properti() {
       console.log("🚀 Sending request...");
       
       // ✅ 3. Kirim request SEKALI SAJA
+      if (hasImages && payload instanceof FormData && primaryNewIndex !== null) {
+        payload.append("primary_new_index", primaryNewIndex);
+      }
+
       const response = await api.post("/admin/properties", payload, config);
 
       console.log("✅ Success:", response.data);
-      alert("✅ Property created successfully!");
+      showSuccess("Properti berhasil ditambahkan");
       closeAll();
       await fetchProperties(); // Refresh list
       
     } catch (error) {
-      console.error("❌ Error:", error);
-      console.error("❌ Error response:", error.response);
-      console.error("❌ Error data:", error.response?.data);
-
       if (error.response?.status === 422) {
         const errors = error.response.data.errors || {};
         setErrors(errors);
-        const firstError = Object.values(errors)[0]?.[0];
-        alert(`❌ Validation: ${firstError}`);
+        const errorMessage = formatFieldErrors(errors);
+        showAttention(errorMessage || "Validasi gagal.");
       } else if (error.response?.status === 500) {
-        alert("❌ Server error. Check logs.");
+        showAttention("Server error. Check logs.");
       } else {
-        alert(`❌ Error: ${error.message}`);
+        showAttention(error.message || "Terjadi kesalahan.");
       }
     } finally {
       setFormLoading(false);
@@ -426,12 +557,17 @@ export default function Properti() {
     e.preventDefault();
     if (!activeProperty?.id) return;
 
+    if (!isEditDirty) {
+      showAttention("Tidak ada perubahan untuk disimpan.");
+      return;
+    }
+
     setFormLoading(true);
     setErrors({});
 
     const requiredError = validateRequiredFields();
     if (requiredError) {
-      alert(`❌ ${requiredError}`);
+      showAttention(requiredError);
       setFormLoading(false);
       return;
     }
@@ -453,24 +589,46 @@ export default function Properti() {
       const isMultipart =
         formData.newImages.length > 0 || formData.imagesToDelete.length > 0;
 
+      const primaryPayload = primaryExistingId
+        ? { primary_image_id: primaryExistingId }
+        : primaryNewIndex !== null
+          ? { primary_new_index: primaryNewIndex }
+          : {};
+
       const payload = isMultipart
-        ? prepareFormData(jsonPayload)
-        : jsonPayload;
+        ? prepareFormData({ ...jsonPayload, ...primaryPayload })
+        : { ...jsonPayload, ...primaryPayload };
+
+      if (isMultipart && payload instanceof FormData) {
+        if (primaryPayload.primary_image_id) {
+          payload.append("primary_image_id", primaryPayload.primary_image_id);
+        }
+        if (primaryPayload.primary_new_index !== undefined) {
+          payload.append("primary_new_index", primaryPayload.primary_new_index);
+        }
+      }
 
       const config = isMultipart
-        ? { headers: { "Content-Type": "multipart/form-data" } }
-        : {};
+        ? { headers: { "Content-Type": "multipart/form-data" }, timeout: 120000 }
+        : { timeout: 30000 };
 
-      await api.put(`/admin/properties/${activeProperty.id}`, payload, config);
+      if (isMultipart && payload instanceof FormData) {
+        payload.append("_method", "PUT");
+        await api.post(`/admin/properties/${activeProperty.id}`, payload, config);
+      } else {
+        await api.put(`/admin/properties/${activeProperty.id}`, payload, config);
+      }
 
-      alert("✅ Property updated successfully!");
+      showSuccess("Properti berhasil diperbarui");
       closeAll();
       fetchProperties();
     } catch (error) {
       if (error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
+        const errorMessage = formatFieldErrors(error.response.data.errors);
+        showAttention(errorMessage || "Validasi gagal.");
       } else {
-        alert("❌ Failed to update property");
+        showAttention("Gagal memperbarui properti.");
       }
     } finally {
       setFormLoading(false);
@@ -482,41 +640,90 @@ export default function Properti() {
   const handleDelete = async () => {
     if (!activeProperty?.id) return;
 
-    setFormLoading(true);
+    setIsDeleting(true);
     try {
       await api.delete(`/admin/properties/${activeProperty.id}`);
-      alert("✅ Property deleted successfully!");
+      setShowConfirmModal(false);
+      showSuccess("Properti berhasil dihapus");
       closeAll();
       fetchProperties();
     } catch (error) {
-      alert("❌ Failed to delete property");
+      showAttention("Gagal menghapus properti.");
     } finally {
-      setFormLoading(false);
+      setIsDeleting(false);
     }
   };
 
-  // 🔹 Format harga ke Rupiah
-  const formatRupiah = (amount) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
+  const formatCompactId = (amount) => {
+    const value = Number(amount);
+    if (!value) return "0";
+
+    const formatUnit = (num) => {
+      const rounded = Math.round(num * 10) / 10;
+      const text =
+        rounded % 1 === 0
+          ? String(rounded).replace(/\.0$/, "")
+          : String(rounded);
+      return text.replace(".", ",");
+    };
+
+    if (value >= 1_000_000_000) {
+      return `${formatUnit(value / 1_000_000_000)} milyar`;
+    }
+    if (value >= 1_000_000) {
+      return `${formatUnit(value / 1_000_000)} juta`;
+    }
+    if (value >= 1_000) {
+      return `${formatUnit(value / 1_000)} ribu`;
+    }
+    return String(value);
+  };
+
+  const formatFullRupiah = (amount) => {
+    const digits = String(amount ?? "").replace(/\D/g, "");
+    if (!digits) return "Rp 0";
+    return `Rp ${formatThousands(digits)}`;
   };
 
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
+        <SuccessModal
+          isOpen={showSuccessModal}
+          onClose={() => setShowSuccessModal(false)}
+          message={successMessage}
+        />
+
+        <ConfirmModal
+          isOpen={showConfirmModal}
+          onClose={() => setShowConfirmModal(false)}
+          onConfirm={handleDelete}
+          title="Konfirmasi Hapus"
+          message={`Apakah kamu yakin ingin menghapus properti "${activeTitle}"?`}
+          confirmText="Hapus"
+          cancelText="Batal"
+          isLoading={isDeleting}
+        />
+
+        <AttentionModal
+          isOpen={showAttentionModal}
+          onClose={() => setShowAttentionModal(false)}
+          title="Perhatian"
+          message={attentionMessage}
+        />
+
         {/* Filter & Search */}
-        <div className="row">
+        <div className="row mb-3">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>
-                  Status Posting:<span>*</span>
-                </label>
+                <label>Status:<span>*</span></label>
                 <DropdownSelect
                   options={["All", "published", "draft", "sold"]}
+                  selectedValue={filters.status}
+                  onChange={(value) => {
+                    setFilters((prev) => ({ ...prev, status: value }));
+                  }}
                   addtionalParentClass=""
                 />
               </fieldset>
@@ -525,13 +732,15 @@ export default function Properti() {
           <div className="col-md-9">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>
-                  Cari:<span>*</span>
-                </label>
+                <label>Search:<span>*</span></label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Cari berdasarkan judul..."
+                  placeholder="Search by title..."
+                  value={filters.search}
+                  onChange={(e) => {
+                    setFilters((prev) => ({ ...prev, search: e.target.value }));
+                  }}
                 />
               </fieldset>
             </form>
@@ -544,11 +753,16 @@ export default function Properti() {
             <h3 className="title">Properti Saya</h3>
             <button
               type="button"
-              className="tf-btn style-border pd-23"
+              className={`tf-btn style-border pd-23${
+                formLoading ? " is-loading" : ""
+              }`}
               onClick={openCreate}
               disabled={formLoading}
             >
-              Tambah Properti
+              {formLoading && (
+                <span className="btn-spinner" aria-hidden="true" />
+              )}
+              <span>Tambah Properti</span>
             </button>
           </div>
 
@@ -559,7 +773,7 @@ export default function Properti() {
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
                   <p className="mt-2 text-gray-500">Memuat properti...</p>
                 </div>
-              ) : properties.length === 0 ? (
+              ) : filteredProperties.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
                   Belum ada properti. Klik "Tambah Properti" untuk menambah.
                 </div>
@@ -574,7 +788,7 @@ export default function Properti() {
                     </tr>
                   </thead>
                   <tbody>
-                    {properties.map((property) => (
+                    {filteredProperties.map((property) => (
                       <tr key={property.id} className="file-delete">
                         <td>
                           <div className="listing-box">
@@ -585,10 +799,10 @@ export default function Properti() {
                                   src={property.images[0].full_url}
                                   width={150}
                                   height={100}
-                                  className="object-cover rounded"
+                                  className="listing-image"
                                 />
                               ) : (
-                                <div className="w-[150px] h-[100px] bg-gray-200 rounded flex items-center justify-center text-gray-400 text-sm">
+                                <div className="listing-image-placeholder">
                                   Tidak ada gambar
                                 </div>
                               )}
@@ -596,7 +810,7 @@ export default function Properti() {
                             <div className="content">
                               <div className="title">
                                 <Link
-                                  href={`/property-detail-v1/${property.slug}`}
+                                  href={`/properti/${property.slug}`}
                                   className="link"
                                 >
                                   {property.title}
@@ -622,18 +836,20 @@ export default function Properti() {
                           </span>
                         </td>
                         <td>
-                          <span className="font-semibold text-blue-600">
-                            {formatRupiah(property.price)}
+                          <span
+                            className="font-semibold text-blue-600"
+                            title={formatFullRupiah(property.price)}
+                          >
+                            {formatCompactId(property.price)}
                           </span>
                         </td>
                         <td>
                           <ul className="list-action">
                             <li>
-                              <button
-                                type="button"
+                              <a
                                 className="item"
-                                onClick={() => openEdit(property)}
-                                disabled={formLoading}
+                                onClick={() => !formLoading && openEdit(property)}
+                                style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
                               >
                                 <svg
                                   width={16}
@@ -650,14 +866,13 @@ export default function Properti() {
                                   />
                                 </svg>
                                 Ubah
-                              </button>
+                              </a>
                             </li>
                             <li>
-                              <button
-                                type="button"
+                              <a
                                 className="remove-file item"
-                                onClick={() => openDelete(property)}
-                                disabled={formLoading}
+                                onClick={() => !formLoading && openDelete(property)}
+                                style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
                               >
                                 <svg
                                   width={16}
@@ -674,7 +889,7 @@ export default function Properti() {
                                   />
                                 </svg>
                                 Hapus
-                              </button>
+                              </a>
                             </li>
                           </ul>
                         </td>
@@ -723,168 +938,9 @@ export default function Properti() {
 
       {/* Overlay */}
       <div
-        className={`overlay-dashboard ${isCreateOpen || isEditOpen || isDeleteOpen ? "show" : ""}`}
+        className={`overlay-dashboard ${isCreateOpen || isEditOpen ? "show" : ""}`}
         onClick={closeAll}
       />
-
-      {/* DELETE MODAL */}
-      {isDeleteOpen && (
-        <div
-          className="modal show d-block"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.5)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "1rem",
-          }}
-          onClick={closeAll}
-        >
-          <div
-            className="modal-dialog modal-dialog-centered"
-            style={{
-              maxWidth: "500px",
-              width: "100%",
-              margin: "0 auto",
-              pointerEvents: "none",
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              className="modal-content"
-              style={{
-                pointerEvents: "auto",
-                borderRadius: "12px",
-                border: "none",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-              }}
-            >
-              <div
-                className="modal-header border-0 pb-0"
-                style={{ padding: "1.5rem 1.5rem 0" }}
-              >
-                <button
-                  type="button"
-                  className="btn-close"
-                  onClick={closeAll}
-                  style={{ position: "absolute", right: "1rem", top: "1rem" }}
-                  aria-label="Close"
-                />
-              </div>
-
-              <div
-                className="modal-body text-center pt-0 pb-4"
-                style={{ padding: "0 1.5rem 1.5rem" }}
-              >
-                <div className="mb-4">
-                  <div
-                    className="mx-auto d-flex align-items-center justify-content-center"
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      borderRadius: "50%",
-                      backgroundColor: "#fef2f2",
-                      color: "#dc2626",
-                    }}
-                  >
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                      />
-                    </svg>
-                  </div>
-                </div>
-
-                <h4 className="fw-bold mb-2" style={{ color: "#1f2937" }}>
-                  Hapus Properti?
-                </h4>
-                <p
-                  className="text-gray-600 mb-1"
-                  style={{ fontSize: "1rem", lineHeight: "1.5" }}
-                >
-                  Yakin ingin menghapus{" "}
-                  <strong style={{ color: "#111827" }}>{activeTitle}</strong>?
-                </p>
-                <p className="text-sm" style={{ color: "#6b7280" }}>
-                  Tindakan ini tidak dapat dibatalkan.
-                </p>
-              </div>
-
-              <div
-                className="modal-footer border-0 justify-content-center gap-3"
-                style={{ padding: "0 1.5rem 1.5rem" }}
-              >
-                <button
-                  type="button"
-                  className="btn btn-light px-4 py-2"
-                  onClick={closeAll}
-                  disabled={formLoading}
-                  style={{
-                    borderRadius: "8px",
-                    fontWeight: "500",
-                    border: "1px solid #e5e7eb",
-                  }}
-                >
-                  Batal
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-danger px-4 py-2"
-                  onClick={handleDelete}
-                  disabled={formLoading}
-                  style={{
-                    borderRadius: "8px",
-                    fontWeight: "500",
-                    backgroundColor: "#dc2626",
-                    border: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  {formLoading ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        style={{ width: "1rem", height: "1rem" }}
-                      />
-                      Menghapus...
-                    </>
-                  ) : (
-                    <>
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 16 16"
-                        fill="currentColor"
-                      >
-                        <path d="M6.854 7.146a.5.5 0 1 0-.708.708L7.293 9l-1.147 1.146a.5.5 0 0 0 .708.708L8 9.707l1.146 1.147a.5.5 0 0 0 .708-.708L8.707 9l1.147-1.146a.5.5 0 0 0-.708-.708L8 8.293 6.854 7.146z" />
-                        <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z" />
-                      </svg>
-                      Hapus
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL: Tambah / Edit */}
       {(isCreateOpen || isEditOpen) && (
@@ -948,12 +1004,13 @@ export default function Properti() {
                       <fieldset className="box-fieldset">
                         <label>Harga (IDR)</label>
                         <input
-                          type="number"
+                          type="text"
+                          inputMode="numeric"
                           name="price"
                           className={`form-control ${errors.price ? "border-red-500" : ""}`}
                           placeholder="Contoh: 500000000"
-                          value={formData.price}
-                          onChange={handleChange}
+                          value={formatThousands(formData.price)}
+                          onChange={handlePriceChange}
                           required
                         />
                         {errors.price && (
@@ -1329,22 +1386,45 @@ export default function Properti() {
                           Gambar tersimpan:
                         </p>
                         <div className="box-img-upload">
-                          {formData.existingImages.map((img) => (
+                          {formData.existingImages.map((img) => {
+                            const isPrimary = primaryExistingId
+                              ? img.id === primaryExistingId
+                              : img.is_primary;
+                            return (
                             <div
                               key={img.id}
-                              className="item-upload file-delete"
+                              className={`item-upload file-delete${
+                                isPrimary ? " is-primary" : ""
+                              }`}
                             >
-                              {img.is_primary && (
-                                <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
-                                  Primary
-                                </span>
-                              )}
                               <Image
                                 src={img.full_url}
                                 alt="Property"
                                 width={615}
                                 height={405}
                               />
+                              <button
+                                type="button"
+                                className="icon primary-toggle"
+                                onClick={() => handleSetPrimaryExisting(img.id)}
+                                aria-label="Jadikan utama"
+                              >
+                                <svg
+                                  width={16}
+                                  height={16}
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M12 3.5L14.7 8.97L20.75 9.85L16.37 14.1L17.4 20.12L12 17.28L6.6 20.12L7.63 14.1L3.25 9.85L9.3 8.97L12 3.5Z"
+                                    stroke="white"
+                                    strokeWidth="1.6"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </button>
                               <button
                                 type="button"
                                 className="icon icon-trashcan1 remove-file"
@@ -1354,7 +1434,8 @@ export default function Properti() {
                                 aria-label="Remove image"
                               />
                             </div>
-                          ))}
+                          );
+                          })}
                         </div>
                       </div>
                     )}
@@ -1403,13 +1484,10 @@ export default function Properti() {
                             {Array.from(formData.newImages).map((file, idx) => (
                               <div
                                 key={idx}
-                                className="item-upload file-delete"
+                                className={`item-upload file-delete${
+                                  primaryNewIndex === idx ? " is-primary" : ""
+                                }`}
                               >
-                                {primaryNewIndex === idx && (
-                                  <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                                    Utama (upload pertama)
-                                  </span>
-                                )}
                                 <Image
                                   src={URL.createObjectURL(file)}
                                   alt={`Preview ${idx + 1}`}
@@ -1418,10 +1496,28 @@ export default function Properti() {
                                 />
                                 <button
                                   type="button"
-                                  className="tf-btn style-border pd-10"
-                                  onClick={() => setPrimaryNewIndex(idx)}
+                                  className="icon primary-toggle"
+                                  onClick={() => {
+                                    setPrimaryNewIndex(idx);
+                                    setPrimaryExistingId(null);
+                                  }}
+                                  aria-label="Jadikan utama"
                                 >
-                                  Jadikan utama
+                                  <svg
+                                    width={16}
+                                    height={16}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M12 3.5L14.7 8.97L20.75 9.85L16.37 14.1L17.4 20.12L12 17.28L6.6 20.12L7.63 14.1L3.25 9.85L9.3 8.97L12 3.5Z"
+                                      stroke="white"
+                                      strokeWidth="1.6"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
                                 </button>
                                 <button
                                   type="button"
@@ -1442,32 +1538,38 @@ export default function Properti() {
                       </fieldset>
                     </div>
                   </div>
-                </form>
-              </div>
 
-              <div className="modal-footer border-top">
-                <button
-                  type="button"
-                  className="tf-btn style-border pd-23 btn-cancel-danger"
-                  onClick={closeAll}
-                  disabled={formLoading}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="tf-btn style-border pd-23"
-                  disabled={formLoading}
-                  onClick={isCreateOpen ? handleCreate : handleUpdate}
-                >
-                  {formLoading
-                    ? isCreateOpen
-                      ? "Membuat..."
-                      : "Menyimpan..."
-                    : isCreateOpen
-                      ? "Tambah"
-                      : "Simpan Perubahan"}
-                </button>
+                  <div className="modal-footer border-top">
+                    <button
+                      type="button"
+                      className="tf-btn style-border pd-23 btn-cancel-danger"
+                      onClick={closeAll}
+                      disabled={formLoading}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className={`tf-btn style-border pd-23${
+                        formLoading ? " is-loading" : ""
+                      }`}
+                      disabled={formLoading || (isEditOpen && !isEditDirty)}
+                    >
+                      {formLoading && (
+                        <span className="btn-spinner" aria-hidden="true" />
+                      )}
+                      <span>
+                        {formLoading
+                          ? isCreateOpen
+                            ? "Menambah..."
+                            : "Menyimpan..."
+                          : isCreateOpen
+                            ? "Tambah"
+                            : "Simpan"}
+                      </span>
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

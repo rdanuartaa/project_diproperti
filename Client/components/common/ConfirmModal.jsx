@@ -127,42 +127,17 @@ export default function ConfirmModal({
           >
             <button 
               type="button" 
-              className="btn"
+              className="tf-btn style-border pd-23 btn-cancel-danger"
               onClick={onClose} 
               disabled={isLoading}
-              style={{ 
-                borderRadius: "8px", 
-                fontWeight: "500", 
-                border: "1px solid #e5e7eb",
-                padding: "1rem 2rem",
-                fontSize: "1.5rem",
-                backgroundColor: "white",
-                color: "#374151",
-                cursor: isLoading ? "not-allowed" : "pointer",
-                opacity: isLoading ? 0.6 : 1
-              }}
             >
               {cancelText}
             </button>
             <button 
               type="button" 
-              className="btn"
+              className="tf-btn style-border pd-23 btn-cancel-danger"
               onClick={onConfirm} 
               disabled={isLoading}
-              style={{ 
-                borderRadius: "8px", 
-                fontWeight: "500", 
-                backgroundColor: "#dc2626", 
-                border: "none",
-                padding: "1rem 2rem",
-                fontSize: "1.5rem",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                cursor: isLoading ? "not-allowed" : "pointer",
-                opacity: isLoading ? 0.6 : 1
-              }}
             >
               {isLoading ? (
                 <>

@@ -1,32 +1,77 @@
 import React from "react";
 
 export default function PropertyOverview({ property }) {
+  // ✅ Fallback jika property belum ada
+  if (!property) {
+    return (
+      <div className="heading flex justify-between">
+        <div className="title text-5 fw-6 text-color-heading">
+          Memuat detail properti...
+        </div>
+      </div>
+    );
+  }
+
+  // Format harga dengan fungsi yang sudah kita buat sebelumnya
+  const formatPrice = (value) => {
+    const num = Number(value);
+    if (isNaN(num) || num === 0) return "Hubungi Agen";
+
+    const formatUnit = (n) => {
+      const rounded = Math.round(n * 10) / 10;
+      const text =
+        rounded % 1 === 0
+          ? String(rounded).replace(/\.0$/, "")
+          : String(rounded);
+      return text.replace(".", ",");
+    };
+
+    if (num >= 1_000_000_000) {
+      return `Rp ${formatUnit(num / 1_000_000_000)} milyar`;
+    }
+    if (num >= 1_000_000) {
+      return `Rp ${formatUnit(num / 1_000_000)} juta`;
+    }
+    if (num >= 1_000) {
+      return `Rp ${formatUnit(num / 1_000)} ribu`;
+    }
+    return `Rp ${num}`;
+  };
+
   return (
     <>
       <div className="heading flex justify-between">
-        <div className="title text-5 fw-6 text-color-heading">
-          {property.title}
+        <div className="title text-5 fw-5 text-color-heading">
+          {property.title || "Properti Tidak Diketahui"}
         </div>
-        <div className="price text-5 fw-6 text-color-heading">
-          $250,00{" "}
-          <span className="h5 lh-30 fw-4 text-color-default">/month</span>
+        <div className="price text-5 fw-5 text-color-heading">
+          {formatPrice(property.price || 0)}
+          
         </div>
       </div>
       <div className="info flex justify-between">
         <div className="feature">
           <p className="location text-1 flex items-center gap-10">
             <i className="icon-location" />
-            102 102 Ingraham St, Brooklyn, NY 11237
+            <span className="fw-5">
+              {[property.kecamatan, property.city].filter(Boolean).join(", ") ||
+                "Alamat tidak tersedia"}
+            </span>
           </p>
           <ul className="meta-list flex">
+            {/* KT - dari property.detail.bedrooms */}
             <li className="text-1 flex">
-              <span>3</span>Bed
+              <span className="fw-5">{property.detail?.bedrooms ?? 0}</span> KT
             </li>
+
+            {/* KM - dari property.detail.bathrooms */}
             <li className="text-1 flex">
-              <span>3</span>Bath
+              <span className="fw-5">{property.detail?.bathrooms ?? 0}</span> KM
             </li>
+
+            {/* Tipe - dari property.type (dengan mapping Bahasa Indonesia) */}
             <li className="text-1 flex">
-              <span>4,043</span>Sqft
+              <span className="fw-5">{property.building_type ?? 0}</span> m²
             </li>
           </ul>
         </div>
@@ -42,45 +87,7 @@ export default function PropertyOverview({ property }) {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M15.75 6.1875C15.75 4.32375 14.1758 2.8125 12.234 2.8125C10.7828 2.8125 9.53625 3.657 9 4.86225C8.46375 3.657 7.21725 2.8125 5.76525 2.8125C3.825 2.8125 2.25 4.32375 2.25 6.1875C2.25 11.6025 9 15.1875 9 15.1875C9 15.1875 15.75 11.6025 15.75 6.1875Z"
-                    stroke="#5C5E61"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </a>
-            </li>
-            <li>
-              <a href="#">
-                <svg
-                  width={18}
-                  height={18}
-                  viewBox="0 0 18 18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
                     d="M5.625 15.75L2.25 12.375M2.25 12.375L5.625 9M2.25 12.375H12.375M12.375 2.25L15.75 5.625M15.75 5.625L12.375 9M15.75 5.625H5.625"
-                    stroke="#5C5E61"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </a>
-            </li>
-            <li>
-              <a href="#">
-                <svg
-                  width={18}
-                  height={18}
-                  viewBox="0 0 18 18"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M5.04 10.3718C4.86 10.3943 4.68 10.4183 4.5 10.4438M5.04 10.3718C7.66969 10.0418 10.3303 10.0418 12.96 10.3718M5.04 10.3718L4.755 13.5M12.96 10.3718C13.14 10.3943 13.32 10.4183 13.5 10.4438M12.96 10.3718L13.245 13.5L13.4167 15.3923C13.4274 15.509 13.4136 15.6267 13.3762 15.7378C13.3388 15.8489 13.2787 15.951 13.1996 16.0376C13.1206 16.1242 13.0244 16.1933 12.9172 16.2407C12.8099 16.288 12.694 16.3125 12.5767 16.3125H5.42325C4.92675 16.3125 4.53825 15.8865 4.58325 15.3923L4.755 13.5M4.755 13.5H3.9375C3.48995 13.5 3.06072 13.3222 2.74426 13.0057C2.42779 12.6893 2.25 12.2601 2.25 11.8125V7.092C2.25 6.28125 2.826 5.58075 3.62775 5.46075C4.10471 5.3894 4.58306 5.32764 5.0625 5.2755M13.2435 13.5H14.0618C14.2834 13.5001 14.5029 13.4565 14.7078 13.3718C14.9126 13.287 15.0987 13.1627 15.2555 13.006C15.4123 12.8493 15.5366 12.6632 15.6215 12.4585C15.7063 12.2537 15.75 12.0342 15.75 11.8125V7.092C15.75 6.28125 15.174 5.58075 14.3723 5.46075C13.8953 5.38941 13.4169 5.32764 12.9375 5.2755M12.9375 5.2755C10.3202 4.99073 7.67978 4.99073 5.0625 5.2755M12.9375 5.2755V2.53125C12.9375 2.0655 12.5595 1.6875 12.0938 1.6875H5.90625C5.4405 1.6875 5.0625 2.0655 5.0625 2.53125V5.2755M13.5 7.875H13.506V7.881H13.5V7.875ZM11.25 7.875H11.256V7.881H11.25V7.875Z"
                     stroke="#5C5E61"
                     strokeWidth="1.5"
                     strokeLinecap="round"
@@ -118,37 +125,10 @@ export default function PropertyOverview({ property }) {
               <i className="icon-HouseLine" />
             </div>
             <div className="content">
-              <div className="text-4 text-color-default">ID:</div>
-              <div className="text-1 text-color-heading">2297</div>
-            </div>
-          </div>
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-Bathtub" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Bathrooms:</div>
-              <div className="text-1 text-color-heading">2 Rooms</div>
-            </div>
-          </div>
-        </div>
-        <div className="wrap-box">
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-SlidersHorizontal" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Type:</div>
-              <div className="text-1 text-color-heading">Hourse</div>
-            </div>
-          </div>
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-Crop" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Land Size:</div>
-              <div className="text-1 text-color-heading">2,000 SqFt</div>
+              <div className="text-4 text-color-default">Kategori:</div>
+              <div className="text-1 text-color-heading">
+                {property.type || "N/A"}
+              </div>
             </div>
           </div>
         </div>
@@ -158,44 +138,40 @@ export default function PropertyOverview({ property }) {
               <i className="icon-Garage-1" />
             </div>
             <div className="content">
-              <div className="text-4 text-color-default">Garages</div>
-              <div className="text-1 text-color-heading">1</div>
-            </div>
-          </div>
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-Hammer" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Year Built:</div>
-              <div className="text-1 text-color-heading">2023</div>
+              <div className="text-4 text-color-default">Penawaran</div>
+              <div className="text-1 text-color-heading">
+                Di{property.listing_type || 1}
+              </div>
             </div>
           </div>
         </div>
         <div className="wrap-box">
           <div className="box-icon">
             <div className="icons">
-              <i className="icon-Bed-2" />
+              <i className="icon-SlidersHorizontal" />
             </div>
             <div className="content">
-              <div className="text-4 text-color-default">Bedrooms:</div>
-              <div className="text-1 text-color-heading">2 Rooms</div>
+              <div className="text-4 text-color-default">Tipe Bangunan:</div>
+              <div className="text-1 text-color-heading">
+                {property.building_type || "N/A"}m²
+              </div>
             </div>
           </div>
+        </div>
+        <div className="wrap-box">
           <div className="box-icon">
             <div className="icons">
               <i className="icon-Ruler" />
             </div>
             <div className="content">
-              <div className="text-4 text-color-default">Size:</div>
-              <div className="text-1 text-color-heading">900 SqFt</div>
+              <div className="text-4 text-color-default">Sertifikat:</div>
+              <div className="text-1 text-color-heading">
+                {property.certificate_type || "N/A"}
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <a href="#" className="tf-btn bg-color-primary pd-21 fw-6">
-        Ask a question
-      </a>
     </>
   );
 }

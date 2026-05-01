@@ -741,10 +741,12 @@
   }
   &.style-list {
     @include mixin.d-flex();
+    gap: 24px;
     box-shadow: unset;
     .image-wrap {
       max-width: 290px;
       flex: none;
+      aspect-ratio: 600 / 401;
       .box-tag {
         top: 8px;
       }

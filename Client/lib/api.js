@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -71,7 +71,9 @@ api.interceptors.response.use(
     } else if (error.code === 'ECONNABORTED') {
       console.error('⏱️ [API] Request timeout:', url);
     } else if (error.message === 'Network Error') {
-      console.error('🌐 [API] Network Error - Cek CORS atau koneksi server');
+      console.error('🌐 [API] Network Error - Periksa koneksi internet atau server tidak aktif');
+    } else if (!error.response) {
+      console.error('🌐 [API] Network Error - Tidak dapat terhubung ke server:', error.message);
     }
 
     return Promise.reject(error);

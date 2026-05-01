@@ -843,3 +843,34 @@ export const allProperties = [
   ...properties11,
   ...propertySlidesData,
 ];
+
+const propertyCollections = [
+  properties,
+  properties2,
+  properties3,
+  properties4,
+  properties5,
+  properties6,
+  properties7,
+  properties8,
+  properties9,
+  properties10,
+  properties11,
+  propertySlidesData,
+];
+
+const slugifyProperty = (value) =>
+  String(value || "property")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+propertyCollections.forEach((collection) => {
+  collection.forEach((property, index) => {
+    if (!property.slug) {
+      const baseSlug = slugifyProperty(property.title || property.location);
+      property.slug = `${baseSlug}-${property.id ?? index + 1}`;
+    }
+  });
+});

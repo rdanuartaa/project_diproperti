@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
     
     try {
       await loadUser(); // Langsung load user setelah login
-      router.push('/home02');
+      router.push('/');
     } catch (error) {
       console.error('Login failed:', error);
       localStorage.removeItem('auth_token');
@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('auth_token');
       window._authTokenCache = null;
       setUser(null);
-      router.push('/home02');
+      router.push('/');
     }
   };
 

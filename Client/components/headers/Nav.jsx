@@ -20,11 +20,12 @@ export default function Nav() {
     );
   return (
     <>
-      <li className={pathname === "/home02" ? "current-menu" : ""}>
-        <Link href="/home02">Home</Link>
+      <li className={pathname === "/" ? "current-menu" : ""}>
+        <Link href="/">Home</Link>
       </li>
-      <li className={pathname === "/property-gird-right-sidebar" ? "current-menu" : ""}>
-        <Link href="/property-gird-right-sidebar">Properti</Link>
+      <li
+        className={pathname === "/list-properti" ? "current-menu" : ""}>
+        <Link href="/list-properti">Properti</Link>
       </li>
       <li className={pathname === "/compare" ? "current-menu" : ""}>
         <Link href="/compare">Komparasi</Link>
@@ -32,8 +33,8 @@ export default function Nav() {
       <li className={pathname === "/bunga-flat" ? "current-menu" : ""}>
         <Link href="/bunga-flat">Bunga Flat</Link>
       </li>
-      <li className={pathname.startsWith("/blog") ? "current-menu" : ""}>
-        <Link href="/blog-grid">Artikel</Link>
+      <li className={pathname === "/list-artikel" ? "current-menu" : ""}>
+        <Link href="/list-artikel">Artikel</Link>
       </li>
     </>
   );
