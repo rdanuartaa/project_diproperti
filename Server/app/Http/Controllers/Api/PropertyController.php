@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
@@ -9,16 +8,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class PropertyController extends Controller
 {
     /**
      * Helper: Trigger accessor full_url untuk semua images
-     * Memastikan URL Cloudflare R2 ter-generate dan masuk ke JSON response
      */
-    private function appendImageUrls($data)
+    private function appendImageUrls(Property|Collection|LengthAwarePaginator $data): Property|Collection|LengthAwarePaginator
     {
-        if ($data instanceof \Illuminate\Pagination\LengthAwarePaginator) {
+        if ($data instanceof LengthAwarePaginator) {
             $data->getCollection()->transform(function($property) {
                 if ($property->relationLoaded('images')) {
                     $property->images->each(function($image) {
@@ -28,7 +29,7 @@ class PropertyController extends Controller
                 }
                 return $property;
             });
-        } elseif ($data instanceof \Illuminate\Database\Eloquent\Collection) {
+        } elseif ($data instanceof Collection) {
             $data->each(function($property) {
                 if ($property->relationLoaded('images')) {
                     $property->images->each(function($image) {
@@ -43,41 +44,125 @@ class PropertyController extends Controller
                 });
             }
         }
-
         return $data;
     }
 
-    private function applySortOrder($query, Request $request)
+    /**
+     * Apply sort order to query
+     */
+    private function applySortOrder(Builder $query, Request $request): Builder
     {
         $sortOrder = strtolower((string) $request->input('sort_order', 'desc'));
-
         if (in_array($sortOrder, ['asc', 'oldest', 'terlama'], true)) {
             return $query->orderBy('created_at', 'asc');
         }
-
         return $query->latest();
     }
 
     /**
      * Display a listing of properties (Public)
+     * ✅ FIX: Handle ALL filter fields from frontend
      */
-    public function index(Request $request)
+    public function index(Request $request): \Illuminate\Http\JsonResponse
     {
         $query = Property::with(['user', 'detail', 'images']);
 
-        // Filter basic
-        if ($request->has('type')) $query->where('type', $request->type);
-        if ($request->has('listing_type')) $query->where('listing_type', $request->listing_type);
-        if ($request->has('city')) $query->where('city', $request->city);
-        if ($request->has('status')) $query->where('status', $request->status);
-        if ($request->has('min_price')) $query->where('price', '>=', $request->min_price);
-        if ($request->has('max_price')) $query->where('price', '<=', $request->max_price);
-        if ($request->has('search')) {
+        // ====== BASIC FILTERS ======
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('listing_type')) {
+            $query->where('listing_type', $request->listing_type);
+        }
+        if ($request->filled('city')) {
+            $query->where('city', $request->city);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', (int) $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', (int) $request->max_price);
+        }
+        if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', "%{$request->search}%")
                   ->orWhere('description', 'like', "%{$request->search}%")
                   ->orWhere('kecamatan', 'like', "%{$request->search}%");
             });
+        }
+
+        // ====== ADVANCED FILTERS FROM SIDEBAR ======
+
+        // Kecamatan
+        if ($request->filled('kecamatan')) {
+            $query->where('kecamatan', 'like', "%{$request->kecamatan}%");
+        }
+
+        // Filter via property_details table
+        if ($request->filled('bedrooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('bedrooms', '>=', (int) $request->bedrooms);
+            });
+        }
+
+        if ($request->filled('bathrooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('bathrooms', '>=', (int) $request->bathrooms);
+            });
+        }
+
+        if ($request->filled('living_rooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('living_rooms', '>=', (int) $request->living_rooms);
+            });
+        }
+
+        if ($request->filled('kitchens')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('kitchens', '>=', (int) $request->kitchens);
+            });
+        }
+
+        if ($request->filled('floors')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('floors', '>=', (int) $request->floors);
+            });
+        }
+
+        // Certificate type (di properties table)
+        if ($request->filled('certificate_type')) {
+            $query->where('certificate_type', $request->certificate_type);
+        }
+
+        // Water source (di property_details)
+        if ($request->filled('water')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('water', $request->water);
+            });
+        }
+
+        // Listrik type (di property_details)
+        if ($request->filled('listrik_type')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('listrik_type', $request->listrik_type);
+            });
+        }
+
+        // ✅ Amenities checkboxes (di property_details)
+        if ($request->filled('amenities')) {
+            $amenities = explode(',', $request->amenities);
+            foreach ($amenities as $amenity) {
+                $amenity = trim($amenity);
+                if (!empty($amenity)) {
+                    $query->whereHas('detail', function($q) use ($amenity) {
+                        // Handle boolean amenities: carport, garden, dll
+                        $q->where($amenity, true);
+                    });
+                }
+            }
         }
 
         // Filter status: hanya published untuk non-admin
@@ -95,7 +180,10 @@ class PropertyController extends Controller
         return response()->json($properties);
     }
 
-    public function adminIndex(Request $request)
+    /**
+     * Admin index
+     */
+    public function adminIndex(Request $request): \Illuminate\Http\JsonResponse
     {
         if (!$request->user()?->isAdmin()) {
             return response()->json(['message' => 'Unauthorized'], 403);
@@ -103,12 +191,13 @@ class PropertyController extends Controller
 
         $query = Property::with(['user', 'detail', 'images']);
 
-        if ($request->has('type')) $query->where('type', $request->type);
-        if ($request->has('listing_type')) $query->where('listing_type', $request->listing_type);
-        if ($request->has('city')) $query->where('city', $request->city);
-        if ($request->has('min_price')) $query->where('price', '>=', $request->min_price);
-        if ($request->has('max_price')) $query->where('price', '<=', $request->max_price);
-        if ($request->has('search')) {
+        // Basic filters
+        if ($request->filled('type')) $query->where('type', $request->type);
+        if ($request->filled('listing_type')) $query->where('listing_type', $request->listing_type);
+        if ($request->filled('city')) $query->where('city', $request->city);
+        if ($request->filled('min_price')) $query->where('price', '>=', (int) $request->min_price);
+        if ($request->filled('max_price')) $query->where('price', '<=', (int) $request->max_price);
+        if ($request->filled('search')) {
             $query->where(function($q) use ($request) {
                 $q->where('title', 'like', "%{$request->search}%")
                   ->orWhere('description', 'like', "%{$request->search}%")
@@ -116,10 +205,62 @@ class PropertyController extends Controller
             });
         }
 
+        // ✅ Advanced filters (sama seperti public index)
+        if ($request->filled('kecamatan')) {
+            $query->where('kecamatan', 'like', "%{$request->kecamatan}%");
+        }
+        if ($request->filled('bedrooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('bedrooms', '>=', (int) $request->bedrooms);
+            });
+        }
+        if ($request->filled('bathrooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('bathrooms', '>=', (int) $request->bathrooms);
+            });
+        }
+        if ($request->filled('living_rooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('living_rooms', '>=', (int) $request->living_rooms);
+            });
+        }
+        if ($request->filled('kitchens')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('kitchens', '>=', (int) $request->kitchens);
+            });
+        }
+        if ($request->filled('floors')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('floors', '>=', (int) $request->floors);
+            });
+        }
+        if ($request->filled('certificate_type')) {
+            $query->where('certificate_type', $request->certificate_type);
+        }
+        if ($request->filled('water')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('water', $request->water);
+            });
+        }
+        if ($request->filled('listrik_type')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('listrik_type', $request->listrik_type);
+            });
+        }
+        if ($request->filled('amenities')) {
+            $amenities = explode(',', $request->amenities);
+            foreach ($amenities as $amenity) {
+                $amenity = trim($amenity);
+                if (!empty($amenity)) {
+                    $query->whereHas('detail', function($q) use ($amenity) {
+                        $q->where($amenity, true);
+                    });
+                }
+            }
+        }
+
         $per_page = $request->input('per_page', 12);
         $properties = $this->applySortOrder($query, $request)->paginate($per_page);
-
-        // ✅ TRIGGER ACCESSOR untuk full_url
         $this->appendImageUrls($properties);
 
         return response()->json($properties);
@@ -128,13 +269,12 @@ class PropertyController extends Controller
     /**
      * Display the specified property (Public)
      */
-    public function show($slug)
+    public function show(string $slug): \Illuminate\Http\JsonResponse
     {
         $property = Property::with(['user', 'detail', 'images'])
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // ✅ TRIGGER ACCESSOR untuk full_url
         $this->appendImageUrls($property);
 
         if (!request()->user()?->isAdmin()) {
@@ -147,7 +287,7 @@ class PropertyController extends Controller
     /**
      * Store a newly created property (Admin Only)
      */
-    public function store(Request $request)
+    public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             Log::info('=== CREATE PROPERTY START ===');
@@ -214,6 +354,7 @@ class PropertyController extends Controller
             // Create Property Detail
             $detailData = $this->prepareDetailData($validated['detail'], $property->id);
             $property->detail()->create($detailData);
+
             Log::info('Property detail created');
 
             // ✅ Upload Images ke Cloudflare R2
@@ -225,6 +366,7 @@ class PropertyController extends Controller
                 $primaryNewIndex,
                 $primaryNewIndex !== null
             );
+
             if ($uploadedCount === 0 && $request->hasFile('images')) {
                 Log::warning('⚠️ Images uploaded to R2 but NOT saved to database! Count: 0');
             }
@@ -264,7 +406,7 @@ class PropertyController extends Controller
     /**
      * Update the specified property (Admin Only)
      */
-    public function update(Request $request, Property $property)
+    public function update(Request $request, Property $property): \Illuminate\Http\JsonResponse
     {
         try {
             if (!$request->user()->isAdmin() && $property->user_id !== $request->user()->id) {
@@ -376,6 +518,7 @@ class PropertyController extends Controller
             if ($primaryNewIndex !== null) {
                 $property->images()->update(['is_primary' => false]);
             }
+
             $uploadedCount = $this->handleImageUpload(
                 $property,
                 $request,
@@ -383,6 +526,7 @@ class PropertyController extends Controller
                 $primaryNewIndex,
                 $primaryNewIndex !== null
             );
+
             if ($uploadedCount === 0 && $request->hasFile('images')) {
                 Log::warning('⚠️ Update: Images uploaded to R2 but NOT saved to database!');
             }
@@ -413,6 +557,7 @@ class PropertyController extends Controller
                 'message' => 'Server error: ' . $e->getMessage(),
             ], 500);
         }
+
         Log::info($request->all());
         Log::info('FILES:', $request->allFiles());
     }
@@ -420,7 +565,7 @@ class PropertyController extends Controller
     /**
      * Remove the specified property (Admin Only)
      */
-    public function destroy(Request $request, Property $property)
+    public function destroy(Request $request, Property $property): \Illuminate\Http\JsonResponse
     {
         try {
             if (!$request->user()->isAdmin() && $property->user_id !== $request->user()->id) {
@@ -454,7 +599,7 @@ class PropertyController extends Controller
     /**
      * Delete specific image from property
      */
-    public function deleteImage(Request $request, PropertyImage $image)
+    public function deleteImage(Request $request, PropertyImage $image): \Illuminate\Http\JsonResponse
     {
         try {
             if (!$request->user()->isAdmin() && $image->property->user_id !== $request->user()->id) {
@@ -497,7 +642,6 @@ class PropertyController extends Controller
         }
 
         $images = $request->file('images');
-
         if (!is_array($images)) {
             $images = [$images];
         }
@@ -509,8 +653,10 @@ class PropertyController extends Controller
         }
 
         Log::info('Uploading ' . count($images) . ' images to R2 for property #' . $property->id);
+
         $successCount = 0;
         $hasPrimary = $property->images()->where('is_primary', true)->exists();
+
         if ($forcePrimary) {
             $hasPrimary = false;
         }
@@ -562,7 +708,6 @@ class PropertyController extends Controller
                 if (app()->environment('local')) {
                     throw $qe;
                 }
-
             } catch (\Exception $e) {
                 Log::error('❌ GENERAL ERROR: ' . $e->getMessage());
                 Log::error('Trace: ' . $e->getTraceAsString());

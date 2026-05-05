@@ -200,7 +200,7 @@ export default function DetailArtikel({ slug }) {
             </div>
 
             {/* Featured Image dengan Zoom Effect */}
-            <div className="image-box image-zoom-container">
+            <div className="image-box image-zoom-container mb-20">
               <Image
                 alt={article.title}
                 src={article.image_url || "/images/default.jpg"}
@@ -213,15 +213,20 @@ export default function DetailArtikel({ slug }) {
             </div>
 
             {/* Description */}
-            <p className="fw-5 text-color-heading mb-30">
+            <p
+              className="fw-5 text-color-heading mb-20"
+              style={{ fontSize: "20px", fontWeight: 600, lineHeight: "1.7" }}
+            >
               {article.description}
             </p>
 
             {/* Article Content */}
             <div
               className="wrap-content mb-20"
-              dangerouslySetInnerHTML={{ __html: article.content }}
-            />
+              style={{ whiteSpace: "pre-line" }}
+            >
+              {article.content}
+            </div>
 
             {/* Tags & Social Share */}
             <div className="tag-wrap flex justify-between items-center flex-wrap gap-4">

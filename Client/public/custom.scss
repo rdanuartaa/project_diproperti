@@ -97,6 +97,46 @@
   }
 }
 
+.header.style-2 .header-logo img,
+.header.style-2 .header-logo .img-default {
+  width: 180px;
+  height: auto;
+}
+
+.header .header-logo img,
+.header .header-logo .logo_header {
+  width: 180px;
+  height: auto;
+}
+
+#footer .footer-logo img {
+  width: 220px;
+  height: auto;
+}
+
+/* ========================================
+   MOBILE MENU SOCIAL (PRIMARY DEFAULT)
+   ======================================== */
+.inner-mobile-nav .wrap-social .tf-social {
+  li {
+    a {
+      color: var(--Primary);
+      border-color: var(--Primary);
+      background-color: transparent;
+    }
+    &:hover {
+      a {
+        background-color: var(--Primary);
+        color: var(--Text-white);
+      }
+    }
+  }
+}
+
+.inner-mobile-nav .mobile-footer-block .wrap-social {
+  margin-top: 16px;
+}
+
 /* ========================================
    MISC UTILITIES
    ======================================== */
@@ -358,6 +398,12 @@ select.form-control-equal {
 .tf-btn.style-border.btn-cancel-danger:focus {
   color: #fff;
   border-color: #dc2626;
+}
+
+.compare-bar .tf-btn:focus,
+.compare-bar .tf-btn:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 /* ========================================

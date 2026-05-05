@@ -201,19 +201,24 @@ export default function Properti() {
   };
 
   // 🔹 Remove existing image
-  const handleRemoveExistingImage = async (imageId) => {
-    try {
-      await api.delete(`/property-images/${imageId}`);
-      setFormData((prev) => ({
+  const handleRemoveExistingImage = (imageId) => {
+    setFormData((prev) => {
+      const nextExistingImages = prev.existingImages.filter(
+        (img) => img.id !== imageId,
+      );
+      const nextImagesToDelete = prev.imagesToDelete.includes(imageId)
+        ? prev.imagesToDelete
+        : [...prev.imagesToDelete, imageId];
+
+      return {
         ...prev,
-        existingImages: prev.existingImages.filter((img) => img.id !== imageId),
-      }));
-      if (primaryExistingId === imageId) {
-        setPrimaryExistingId(null);
-      }
-      alert("✅ Gambar berhasil dihapus");
-    } catch (error) {
-      showAttention("Gagal menghapus gambar.");
+        existingImages: nextExistingImages,
+        imagesToDelete: nextImagesToDelete,
+      };
+    });
+
+    if (primaryExistingId === imageId) {
+      setPrimaryExistingId(null);
     }
   };
 
@@ -782,6 +787,7 @@ export default function Properti() {
                   <thead>
                     <tr>
                       <th>Properti</th>
+                      <th>Tipe</th>
                       <th>Status</th>
                       <th>Harga</th>
                       <th>Aksi</th>
@@ -821,6 +827,11 @@ export default function Properti() {
                               </div>
                             </div>
                           </div>
+                        </td>
+                        <td>
+                          <span className="text-sm text-gray-600">
+                            {property.type || "-"}
+                          </span>
                         </td>
                         <td>
                           <span

@@ -1,12 +1,14 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import SidebarArtikel from "./SidebarArtikel";
 
 export default function Blogs1() {
+  const PAGE_SIZE = 5;
   const { isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const [articles, setArticles] = useState([]);
@@ -24,6 +26,24 @@ export default function Blogs1() {
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
 
+  const getPageItems = (currentPage, lastPage) => {
+    if (lastPage <= 1) return [1];
+    const pages = new Set([1, lastPage, currentPage - 1, currentPage, currentPage + 1]);
+    return Array.from(pages)
+      .filter((pageNumber) => pageNumber >= 1 && pageNumber <= lastPage)
+      .sort((a, b) => a - b)
+      .flatMap((pageNumber, index, array) => {
+        const previous = array[index - 1];
+        if (previous && pageNumber - previous > 1) return ["...", pageNumber];
+        return [pageNumber];
+      });
+  };
+
+  const pageItems = useMemo(
+    () => getPageItems(meta.current_page, meta.last_page),
+    [meta.current_page, meta.last_page]
+  );
+
   const fetchArticles = async () => {
     try {
       setLoading(true);
@@ -31,6 +51,7 @@ export default function Blogs1() {
       const res = await api.get("/articles", {
         params: {
           page,
+          per_page: PAGE_SIZE,
           search,
           tag,
         },
@@ -114,6 +135,17 @@ export default function Blogs1() {
     fetchPopularArticles();
   };
 
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    setPage(1);
+    fetchArticles();
+  };
+
+  const handleTagSelect = (tagSlug) => {
+    setTag(tagSlug);
+    setPage(1);
+  };
+
   useEffect(() => {
     if (!authLoading) {
       fetchArticles();
@@ -142,14 +174,7 @@ export default function Blogs1() {
                 <h4 className="sidebar-title" style={{ marginBottom: "16px" }}>
                   Cari Artikel
                 </h4>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setPage(1);
-                    fetchArticles();
-                  }}
-                  className="form-search"
-                >
+                <form onSubmit={handleSearchSubmit} className="form-search">
                   <fieldset>
                     <input
                       type="text"
@@ -168,7 +193,7 @@ export default function Blogs1() {
               <div className="box-title">
                 <h2>Daftar List Artikel</h2>
                 <div className="group-layout">
-                  <a href="blog-list" className="btn-layout list active">
+                  <a href="#" className="btn-layout list active">
                     <svg
                       width={25}
                       height={25}
@@ -313,7 +338,7 @@ export default function Blogs1() {
                           href={`/artikel/${post.slug}`}
                           className="tf-btn-link"
                         >
-                          <span> Read More </span>
+                          <span>Lanjut Baca</span>
                           <svg
                             width={20}
                             height={20}
@@ -324,21 +349,21 @@ export default function Blogs1() {
                             <g clipPath="url(#clip0_2450_13860)">
                               <path
                                 d="M10.0013 18.3334C14.6037 18.3334 18.3346 14.6024 18.3346 10C18.3346 5.39765 14.6037 1.66669 10.0013 1.66669C5.39893 1.66669 1.66797 5.39765 1.66797 10C1.66797 14.6024 5.39893 18.3334 10.0013 18.3334Z"
-                                stroke="#F1913D"
+                                stroke="var(--Primary)"
                                 strokeWidth="1.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               />
                               <path
                                 d="M6.66797 10H13.3346"
-                                stroke="#F1913D"
+                                stroke="var(--Primary)"
                                 strokeWidth="1.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                               />
                               <path
                                 d="M10 13.3334L13.3333 10L10 6.66669"
-                                stroke="#F1913D"
+                                stroke="var(--Primary)"
                                 strokeWidth="1.5"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
@@ -360,75 +385,36 @@ export default function Blogs1() {
               {/* PAGINATION */}
               {meta.last_page > 1 && (
                 <ul className="wg-pagination">
-                  <li className="arrow">
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (meta.current_page > 1)
-                          setPage(meta.current_page - 1);
-                      }}
+                  <li className={`arrow ${meta.current_page <= 1 ? "disabled" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => setPage((current) => Math.max(1, current - 1))}
+                      disabled={meta.current_page <= 1 || loading}
                     >
                       <i className="icon-arrow-left" />
-                    </a>
+                    </button>
                   </li>
-                  <li className={meta.current_page === 1 ? "active" : ""}>
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setPage(1);
-                      }}
-                    >
-                      1
-                    </a>
-                  </li>
-                  {meta.last_page >= 2 && (
-                    <li className={meta.current_page === 2 ? "active" : ""}>
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setPage(2);
-                        }}
-                      >
-                        2
-                      </a>
-                    </li>
+                  {pageItems.map((item, index) =>
+                    item === "..." ? (
+                      <li key={`ellipsis-${index}`}>
+                        <span>...</span>
+                      </li>
+                    ) : (
+                      <li key={item} className={item === meta.current_page ? "active" : ""}>
+                        <button type="button" onClick={() => setPage(item)} disabled={loading}>
+                          {item}
+                        </button>
+                      </li>
+                    )
                   )}
-                  {meta.last_page > 3 && (
-                    <li>
-                      <a href="#">...</a>
-                    </li>
-                  )}
-                  {meta.last_page > 1 && (
-                    <li
-                      className={
-                        meta.current_page === meta.last_page ? "active" : ""
-                      }
-                    >
-                      <a
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setPage(meta.last_page);
-                        }}
-                      >
-                        {meta.last_page}
-                      </a>
-                    </li>
-                  )}
-                  <li className="arrow">
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (meta.current_page < meta.last_page)
-                          setPage(meta.current_page + 1);
-                      }}
+                  <li className={`arrow ${meta.current_page >= meta.last_page ? "disabled" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => setPage((current) => Math.min(meta.last_page, current + 1))}
+                      disabled={meta.current_page >= meta.last_page || loading}
                     >
                       <i className="icon-arrow-right" />
-                    </a>
+                    </button>
                   </li>
                 </ul>
               )}
@@ -437,116 +423,16 @@ export default function Blogs1() {
 
           {/* SIDEBAR */}
           <div className="col-lg-4">
-            <div className="tf-sidebar">
-              {/* SEARCH - Desktop only (responsive via CSS) */}
-              <div className="sidebar-search sidebar-item">
-                <h4 className="sidebar-title">Cari Artikel</h4>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    setPage(1);
-                    fetchArticles();
-                  }}
-                  className="form-search"
-                >
-                  <fieldset>
-                    <input
-                      className=""
-                      type="text"
-                      placeholder="Masukkan Kata Kunci atau Judul Artikel..."
-                      name="text"
-                      tabIndex={2}
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      aria-required="true"
-                      required
-                    />
-                  </fieldset>
-                  <div className="button-submit">
-                    <button className="" type="submit">
-                      <i className="icon-MagnifyingGlass" />
-                    </button>
-                  </div>
-                </form>
-              </div>
-
-              {/* CATEGORIES - Dynamic Tags with Count */}
-              <div className="sidebar-item sidebar-categories">
-                <h4 className="sidebar-title">Penggunaan Kategori Tag</h4>
-                <ul className="list-categories">
-                  {Array.isArray(allTags) &&
-                    allTags.map((tagItem) => (
-                      <li
-                        key={tagItem.id}
-                        className="flex items-center justify-between"
-                      >
-                        <a
-                          href="#"
-                          className={`text-1 lh-20 fw-5 ${tag === tagItem.slug ? "active" : ""}`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setTag(tagItem.slug);
-                            setPage(1);
-                          }}
-                        >
-                          {tagItem.name}
-                        </a>
-                        <div className="number">
-                          ({tagItem.articles_count || 0})
-                        </div>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-
-              {/* MOST POPULAR ARTICLES */}
-              <div className="sidebar-item sidebar-featured ">
-                <h4 className="sidebar-title">Paling Sering Dibaca</h4>
-                <ul>
-                  {Array.isArray(popularArticles) &&
-                    popularArticles.map((item) => (
-                      <li key={item.id} className="box-listings hover-img">
-                        <div className="image-wrap">
-                          <Image
-                            className="lazyload"
-                            alt={item.title || ""}
-                            src={item.image_url || "/images/default.jpg"}
-                            fill
-                            style={{ objectFit: "cover" }}
-                            sizes="(max-width: 768px) 90px, 120px"
-                          />
-                        </div>
-                        <div className="content">
-                          <div className="text-1 title fw-5">
-                            <Link href={`/artikel/${item.slug}`}>
-                              {item.title}
-                            </Link>
-                          </div>
-                          <p>
-                            <span className="icon">
-                              <svg
-                                width={16}
-                                height={17}
-                                viewBox="0 0 16 17"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M4.5 2.5V4M11.5 2.5V4M2 13V5.5C2 5.10218 2.15804 4.72064 2.43934 4.43934C2.72064 4.15804 3.10218 4 3.5 4H12.5C12.8978 4 13.2794 4.15804 13.5607 4.43934C13.842 4.72064 14 5.10218 14 5.5V13M2 13C2 13.3978 2.15804 13.7794 2.43934 14.0607C2.72064 14.342 3.10218 14.5 3.5 14.5H12.5C12.8978 14.5 13.2794 14.342 13.5607 14.0607C13.842 13.7794 14 13.3978 14 13M2 13V8C2 7.60218 2.15804 7.22064 2.43934 6.93934C2.72064 6.65804 3.10218 6.5 3.5 6.5H12.5C12.8978 6.5 13.2794 6.65804 13.5607 6.93934C13.842 7.22064 14 7.60218 14 8V13"
-                                  stroke="#A8ABAE"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>{" "}
-                            </span>
-                            {formatDate(item.created_at)}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            </div>
+            <SidebarArtikel
+              search={search}
+              onSearchChange={(event) => setSearch(event.target.value)}
+              onSearchSubmit={handleSearchSubmit}
+              allTags={allTags}
+              activeTag={tag}
+              onTagSelect={handleTagSelect}
+              popularArticles={popularArticles}
+              formatDate={formatDate}
+            />
           </div>
         </div>
       </div>

@@ -16,10 +16,10 @@ export async function generateMetadata({ params }) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
   return {
-    title: `${formattedTitle} | Proty Real Estate`,
-    description: `Detail Properti ${formattedTitle} - Proty Real Estate React Nextjs Template`,
+    title: `${formattedTitle} | Diproperti || Real Estate`,
+    description: `Detail Properti ${formattedTitle} - Diproperti || Real Estate React Nextjs Template`,
     openGraph: {
-      title: `${formattedTitle} | Proty Real Estate`,
+      title: `${formattedTitle} | Diproperti || Real Estate`,
       description: `Temukan detail lengkap properti ${formattedTitle}.`,
       type: "website",
     },

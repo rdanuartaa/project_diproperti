@@ -6,8 +6,8 @@ import React from "react";
 
 export const metadata = {
   title:
-    "Property List Left Sidebar || Proty - Real Estate React Nextjs Template",
-  description: "Proty - Real Estate React Nextjs Template",
+    "Property List Left Sidebar || Diproperti - Real Estate",
+  description: "Diproperti || Real Estate",
 };
 export default function page() {
   return (
@@ -23,3 +23,5 @@ export default function page() {
     </>
   );
 }
+
+

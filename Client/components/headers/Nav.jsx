@@ -27,8 +27,8 @@ export default function Nav() {
         className={pathname === "/list-properti" ? "current-menu" : ""}>
         <Link href="/list-properti">Properti</Link>
       </li>
-      <li className={pathname === "/compare" ? "current-menu" : ""}>
-        <Link href="/compare">Komparasi</Link>
+      <li className={pathname === "/komparasi" ? "current-menu" : ""}>
+        <Link href="/komparasi">Komparasi</Link>
       </li>
       <li className={pathname === "/bunga-flat" ? "current-menu" : ""}>
         <Link href="/bunga-flat">Bunga Flat</Link>

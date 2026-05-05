@@ -4,6 +4,17 @@
 #footer {
     background-color: var(--Primary);
     padding-top: 60px;
+    .tf-btn.wa-outline-btn {
+        border: 1px solid var(--White);
+        color: var(--White);
+        background-color: transparent;
+        &::after {
+            background-color: var(--White);
+        }
+        &:hover {
+            color: var(--Primary) !important;
+        }
+    }
     &.style-2 {
         background-color: var(--Primary);
         .footer-menu-list ul li a {
@@ -108,8 +119,8 @@
     }
     .footer-logo {
         img {
-            width: 136px;
-            height: 42px;
+            width: 220px;
+            height: auto;
         }
     }
 }

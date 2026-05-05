@@ -10,42 +10,47 @@ export default function Facts() {
         <div className="row">
           <div className="col-lg-6">
             <div className="content-inner">
+
+              {/* ✅ HEADING BARU */}
               <div className="heading-section mb-48">
                 <h2
                   className="title wow animate__fadeInUp animate__animated"
                   data-wow-duration="1s"
                   data-wow-delay="0s"
                 >
-                  We are here to Help
+                  Simulasi KPR Jadi Lebih Mudah
                 </h2>
               </div>
+
+              {/* ✅ DESKRIPSI BARU */}
               <div
                 className="content mb-48 wow animate__fadeInUp animate__animated"
                 data-wow-duration="1s"
                 data-wow-delay="0s"
               >
                 <p className="text-1 description-1 mb-14">
-                  If you haven't experienced it before, the home loan process
-                  can feel overwhelming, but our agents will help you stay
-                  informed throughout the process, from pre-approval to closing.
-                  The first thing to do is consult with a mortgage specialist.
-                  If you don't already have someone in mind, we partner with
-                  some of the best lenders in the industry, and we'd be happy to
-                  introduce you, so you’ll be taken care of.
+                  Menghitung cicilan KPR bisa terasa membingungkan, terutama
+                  jika Anda belum familiar dengan perhitungan bunga. Dengan
+                  kalkulator KPR bunga flat, Anda bisa mengetahui estimasi
+                  cicilan bulanan dengan cepat dan akurat.
                 </p>
+
                 <p className="description-2 text-1 mb-24">
-                  We stand ready to serve you as your California real estate
-                  team.
+                  Cukup masukkan harga properti, uang muka, bunga, dan tenor —
+                  sistem akan langsung menghitung total cicilan Anda.
                 </p>
+
                 <a
-                  href="#"
+                  href="#calculator"
                   className="tf-btn bg-color-primary fw-7 pd-12 wow animate__fadeInUp animate__animated"
                   data-wow-duration="1s"
                   data-wow-delay="0s"
                 >
-                  Meet The Team
+                  Coba Kalkulator
                 </a>
               </div>
+
+              {/* ✅ COUNTER (TETAP STRUKTUR ASLI) */}
               <div className="wrap-counter">
                 {counters2.map((elm, i) => (
                   <div key={i} className="counter-item style-2">
@@ -65,8 +70,11 @@ export default function Facts() {
                   </div>
                 ))}
               </div>
+
             </div>
           </div>
+
+          {/* ✅ GAMBAR TETAP (TIDAK DIUBAH) */}
           <div className="col-lg-6">
             <div className="wrap-image">
               <div
@@ -76,13 +84,14 @@ export default function Facts() {
               >
                 <Image
                   className="lazyload parallax-img"
-                  data-src="/images/section/section-box-team.jpg"
+                  data-src="/images/diproperti/bungaflat1.jpg"
                   alt=""
                   width={400}
                   height={509}
-                  src="/images/section/section-box-team.jpg"
+                  src="/images/diproperti/bungaflat1.jpg"
                 />
               </div>
+
               <div
                 className="image-wrap img-2 hover-img-wrap wow animate__zoomIn animate__animated"
                 data-wow-duration="1.5s"
@@ -90,15 +99,16 @@ export default function Facts() {
               >
                 <Image
                   className="lazyload parallax-img"
-                  data-src="/images/section/section-box-team-2.jpg"
+                  data-src="/images/diproperti/bungaflat2.jpg"
                   alt=""
                   width={400}
                   height={509}
-                  src="/images/section/section-box-team-2.jpg"
+                  src="/images/diproperti/bungaflat2.jpg"
                 />
               </div>
             </div>
           </div>
+
         </div>
       </div>
     </section>

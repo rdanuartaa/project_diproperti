@@ -7,7 +7,7 @@ import Process from "@/components/otherPages/BungaFlat/Process";
 import React from "react";
 
 export const metadata = {
-  title: "Bunga Flat || Proty - Real Estate React Nextjs Template",
+  title: "Bunga Flat || Diproperti - Real Estate",
   description: "Bunga flat page.",
 };
 
@@ -27,3 +27,5 @@ export default function page() {
     </>
   );
 }
+
+

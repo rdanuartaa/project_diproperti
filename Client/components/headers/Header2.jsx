@@ -41,9 +41,9 @@ export default function Header2() {
                     <Image
                       className="img-default"
                       alt="Logo"
-                      width={272}
-                      height={84}
-                      src="/images/logo/logo-3@2x.png"
+                      width={400}
+                      height={125}
+                      src="/images/diproperti/logofirst.svg"
                     />
                   </Link>
                 </div>

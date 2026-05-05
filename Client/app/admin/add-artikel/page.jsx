@@ -2,8 +2,8 @@ import React from "react";
 import Artikel from "@/components/dashboard/Artikel";
 
 export const metadata = {
-  title: "Artikel || Proty - Real Estate React Nextjs Template",
-  description: "Proty - Real Estate React Nextjs Template",
+  title: "Artikel || Diproperti - Real Estate",
+  description: "Diproperti || Real Estate",
 };
 
 export default function page() {
@@ -13,3 +13,5 @@ export default function page() {
     </>
   );
 }
+
+

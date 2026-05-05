@@ -2,8 +2,8 @@ import React from "react";
 import User from "@/components/dashboard/User";
 
 export const metadata = {
-	title: "User || Proty - Real Estate React Nextjs Template",
-	description: "Proty - Real Estate React Nextjs Template",
+	title: "User || Diproperti - Real Estate",
+	description: "Diproperti || Real Estate",
 };
 
 export default function page() {
@@ -13,3 +13,5 @@ export default function page() {
 		</>
 	);
 }
+
+

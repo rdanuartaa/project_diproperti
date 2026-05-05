@@ -17,7 +17,7 @@ export default function ListingSidebar({
   priceFormatter,
 }) {
   return (
-    <div className="tf-sidebar">
+    <div className="tf-sidebar sticky-sidebar">
       <form
         className="form-advanced-search mb-30"
         onSubmit={(e) => {
@@ -229,4 +229,4 @@ export default function ListingSidebar({
       </div>
     </div>
   );
-}
+}//2

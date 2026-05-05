@@ -6,6 +6,7 @@ import Image from "next/image";
 import SplitTextAnimation from "@/components/common/SplitTextAnimation";
 import { Pagination } from "swiper/modules";
 import { useEffect, useState } from "react";
+import { useCompare } from "@/components/compare/CompareContext";
 import { api } from "@/lib/api";
 import "swiper/css";
 import "swiper/css/pagination";
@@ -70,6 +71,7 @@ export default function Properties() {
   const [activeType, setActiveType] = useState("rumah");
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
 
   // ✅ Fetch properties dari API berdasarkan type filter
   useEffect(() => {
@@ -186,7 +188,11 @@ export default function Properties() {
                       modules={[Pagination]}
                       pagination={{ el: ".spd7" }}
                     >
-                      {properties.map((property) => (
+                      {properties.map((property) => {
+                        const added = isInCompare(property.id);
+                        const disabled = !added && isFull;
+
+                        return (
                         <SwiperSlide className="swiper-slide" key={property.id}>
                           
                           {/* ✅ Property Card - Sama persis seperti RelatedProperties */}
@@ -225,10 +231,26 @@ export default function Properties() {
                               
                               {/* Action Buttons */}
                               <div className="list-btn flex gap-8">
-                                <a href="#" className="btn-icon save hover-tooltip">
+                                <button
+                                  type="button"
+                                  className={`btn-icon save hover-tooltip ${added ? "active" : ""}`}
+                                  onClick={() =>
+                                    added
+                                      ? removeFromCompare(property.id)
+                                      : addToCompare(property)
+                                  }
+                                  disabled={disabled}
+                                  aria-pressed={added}
+                                >
                                   <i className="icon-compare" />
-                                  <span className="tooltip">Komparasi</span>
-                                </a>
+                                  <span className="tooltip">
+                                    {added
+                                      ? "Hapus Komparasi"
+                                      : disabled
+                                      ? "Maks 3 properti"
+                                      : "Komparasi"}
+                                  </span>
+                                </button>
                                 <a href="#" className="btn-icon find hover-tooltip">
                                   <i className="icon-find-plus" />
                                   <span className="tooltip">Quick View</span>
@@ -259,10 +281,20 @@ export default function Properties() {
                               <div className="bot flex justify-between items-center">
                                 <h6 className="price">{formatHarga(property.price)}</h6>
                                 <div className="wrap-btn flex">
-                                  <a href="#" className="compare flex gap-8 items-center text-1">
+                                  <button
+                                    type="button"
+                                    className="compare flex gap-8 items-center text-1"
+                                    onClick={() =>
+                                      added
+                                        ? removeFromCompare(property.id)
+                                        : addToCompare(property)
+                                    }
+                                    disabled={disabled}
+                                    aria-pressed={added}
+                                  >
                                     <i className="icon-compare" />
-                                    Compare
-                                  </a>
+                                    {added ? "Dibandingkan ✓" : "Compare"}
+                                  </button>
                                   <Link
                                     href={`/properti/${property.slug}`}
                                     className="tf-btn style-border pd-4"
@@ -275,7 +307,8 @@ export default function Properties() {
                           </div>
                           
                         </SwiperSlide>
-                      ))}
+                        );
+                      })}
                       
                       <div className="mb-44"></div>
                       <div className="sw-pagination sw-pagination-layout text-center spd7" />

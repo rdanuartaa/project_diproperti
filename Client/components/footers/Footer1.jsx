@@ -40,7 +40,11 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
             <div className="footer-top">
               <div className="footer-logo">
                 <Link href={`/`}>
-                  <Image alt="logo-footer" src={logo} width={200} height={60} />
+                  <Image 
+                  alt="logo-footer" 
+                  src="/images/diproperti/logofirst.svg" 
+                  width={500} 
+                  height={156} />
                 </Link>
               </div>
 
@@ -89,7 +93,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                       <Link href="/list-properti">Properti</Link>
                     </li>
                     <li>
-                      <Link href="/compare">Komparasi</Link>
+                      <Link href="/komparasi">Komparasi</Link>
                     </li>
                     <li>
                       <Link href="/bunga-flat">Simulasi KPR</Link>
@@ -118,7 +122,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                       </Link>
                     </li>
                     <li>
-                      <Link href="/compare">Bandingkan Properti</Link>
+                      <Link href="/komparasi">Bandingkan Properti</Link>
                     </li>
                     <li>
                       <Link href="/bunga-flat">Hitung KPR</Link>

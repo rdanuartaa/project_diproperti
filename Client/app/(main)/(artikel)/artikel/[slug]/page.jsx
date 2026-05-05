@@ -1,5 +1,5 @@
 import DetailArtikel from "@/components/artikel/DetailArtikel";
-import RelatedBlogs from "@/components/blogs/RelatedBlogs";
+import RelatedArtikel from "@/components/artikel/RelatedArtikel";
 import Breadcumb from "@/components/common/Breadcumb";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
@@ -9,8 +9,8 @@ import React from "react";
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   return {
-    title: `${slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} | Proty Real Estate`,
-    description: "Detail Artikel Proty - Real Estate React Nextjs Template",
+    title: `${slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} | Diproperti || Real Estate`,
+    description: "Detail Artikel Diproperti || Real Estate",
   };
 }
 
@@ -25,7 +25,7 @@ export default async function page({ params }) {
         <div className="main-content">
           <Breadcumb pageName="Detail Artikel" />
           <DetailArtikel slug={slug} />
-          <RelatedBlogs />
+          <RelatedArtikel/>
         </div>
         <Footer1 />
       </div>

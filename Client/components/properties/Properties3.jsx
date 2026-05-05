@@ -65,8 +65,6 @@ function getPageItems(currentPage, lastPage) {
 export default function Properties3({ defaultGrid = false }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  
-  // ✅ Baca filter awal dari URL
   const getFiltersFromUrl = () => {
     const filters = { ...EMPTY_FILTERS };
     Object.keys(EMPTY_FILTERS).forEach((key) => {
@@ -83,12 +81,8 @@ export default function Properties3({ defaultGrid = false }) {
     return filters;
   };
 
-  // ✅ DUA STATE: 
-  // - filters: nilai sementara dari Sidebar (belum diterapkan)
-  // - appliedFilters: nilai yang sudah diterapkan ke API
   const [filters, setFilters] = useState(getFiltersFromUrl);
   const [appliedFilters, setAppliedFilters] = useState(getFiltersFromUrl);
-  
   const [sortOrder, setSortOrder] = useState(() => searchParams?.get("sort_order") === "asc" ? "asc" : "desc");
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,7 +92,6 @@ export default function Properties3({ defaultGrid = false }) {
     current_page: 1, last_page: 1, total: 0, per_page: PAGE_SIZE, from: 0, to: 0,
   });
 
-  // ✅ Sync URL -> appliedFilters (untuk browser back/forward)
   useEffect(() => {
     const newFilters = getFiltersFromUrl();
     setFilters(newFilters);
@@ -301,4 +294,4 @@ export default function Properties3({ defaultGrid = false }) {
       </div>
     </section>
   );
-}
+}//1

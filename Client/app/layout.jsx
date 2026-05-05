@@ -10,9 +10,20 @@ import MobileMenu from "@/components/headers/MobileMenu";
 import Login from "@/components/modals/Login";
 import Register from "@/components/modals/Register";
 import { AuthProvider } from "@/context/AuthContext";
+import { CompareProvider } from "@/components/compare/CompareContext";
+import CompareBar from "@/components/compare/CompareBar";
+
 
 export default function RootLayout({ children }) {
   const pathname = usePathname();
+  const mobileMenuProps = {
+    logoSrc: "/images/diproperti/logofirst.svg",
+    loginLabel: "Masuk",
+    whatsappLabel: "Hubungi Admin",
+    whatsappHref:
+      "https://wa.me/6281234776677?text=Halo%20Admin,%20saya%20ingin%20menambahkan%20properti",
+    supportTitle: "Butuh bantuan?",
+  };
   if (typeof window !== "undefined") {
     import("bootstrap/dist/js/bootstrap.esm").then((module) => {
       // Module is imported, you can access any exported functionality if
@@ -75,11 +86,14 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="popup-loader">
         <AuthProvider>
+        <CompareProvider> 
         {children}
+        <CompareBar/>
         <BackToTop />
-        <MobileMenu />
+        <MobileMenu {...mobileMenuProps} />
         <Login />
         <Register />
+        </CompareProvider>
         </AuthProvider>
       </body>
     </html>

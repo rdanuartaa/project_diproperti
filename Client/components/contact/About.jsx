@@ -175,14 +175,18 @@ export default function About() {
             </div>
           </div>
           <div className="col-md-6">
-            <div className="image-wrap">
+            <div
+              className="image-wrap"
+              style={{ position: "relative", width: "550px", height: "560px" }}
+            >
               <Image
                 className="lazyload"
-                data-src="/images/section/section-contact-2.jpg"
+                data-src="/images/diproperti/contactus.jpg"
                 alt=""
-                width={550}
-                height={560}
-                src="/images/section/section-contact-2.jpg"
+                src="/images/diproperti/contactus.jpg"
+                fill
+                sizes="(max-width: 550px) 100vw, 50vw"
+                style={{ objectFit: "cover" }}
               />
             </div>
           </div>

@@ -3,8 +3,8 @@ import Header1 from "@/components/headers/Header1";
 import React from "react";
 
 export const metadata = {
-  title: "Dashboard || Proty - Real Estate React Nextjs Template",
-  description: "Proty - Real Estate React Nextjs Template",
+  title: "Dashboard || Diproperti - Real Estate",
+  description: "Diproperti || Real Estate",
 };
 export default function page({ children }) {
   return (
@@ -21,3 +21,5 @@ export default function page({ children }) {
     </>
   );
 }
+
+
