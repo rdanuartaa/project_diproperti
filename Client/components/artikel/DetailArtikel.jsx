@@ -221,11 +221,14 @@ export default function DetailArtikel({ slug }) {
             </p>
 
             {/* Article Content */}
-            <div
-              className="wrap-content mb-20"
-              style={{ whiteSpace: "pre-line" }}
-            >
-              {article.content}
+            <div className="wrap-content mb-20">
+              {article.content?.split("\n").map((paragraph, index) => (
+                paragraph.trim() ? (
+                  <p key={index} className="mb-4" style={{ whiteSpace: "pre-line" }}>
+                    {paragraph}
+                  </p>
+                ) : null
+              ))}
             </div>
 
             {/* Tags & Social Share */}
@@ -330,7 +333,7 @@ export default function DetailArtikel({ slug }) {
 
           {/* SIDEBAR */}
           <div className="col-lg-4">
-            <div className="tf-sidebar">
+            <div className="tf-sidebar sticky-sidebar">
               {/* FEATURED LISTINGS - Popular Articles dengan Zoom + Exclude Current */}
               <div className="sidebar-item sidebar-featured pb-36">
                 <h4 className="sidebar-title">Artikel Terpopuler</h4>

@@ -9,14 +9,20 @@ services:
     environment:
       - PHP_UPLOAD_MAX_FILESIZE=50M
       - PHP_POST_MAX_SIZE=100M
+      - DB_HOST=db
+      - DB_DATABASE=properti_db
+      - DB_USERNAME=properti_user
+      - DB_PASSWORD=properti_pass
     volumes:
-      - .:/var/www/html
-      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/uploads.ini
+      # Jangan mount seluruh folder — hanya yang perlu hot-reload
+      - .:/var/www/html                    # ← mount semua kode
+      - /var/www/html/vendor               
+      - ./storage:/var/www/html/storage
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
-
-
     networks:
       - properti-net
+    depends_on:
+      - db
 
   webserver:
     image: nginx:alpine
@@ -58,7 +64,6 @@ services:
       PMA_HOST: db
       PMA_PORT: 3306
       MYSQL_ROOT_PASSWORD: secret
-      PMA_CONFIGURATION_STORAGE: 'false'
     networks:
       - properti-net
     depends_on:
