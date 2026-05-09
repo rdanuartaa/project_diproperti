@@ -219,83 +219,47 @@ const buildProsCons = (properties) => {
       ].includes(row.key),
   );
 
-  const rowAverages = rowsForProsCons.reduce((acc, row) => {
-    const values = properties
-      .map((p) => (row.source === "detail" ? p.detail?.[row.key] : p[row.key]))
-      .map((v) => {
-        if (v === null || v === undefined || v === "") return null;
-        if (row.boolean) return v ? 1 : 0;
-        const num = Number(v);
-        return Number.isFinite(num) ? num : null;
-      })
-      .filter((v) => v !== null);
+  const getBooleanBestIndex = (rowKey) => {
+    const values = properties.map((p) => p.detail?.[rowKey] ?? p[rowKey]);
+    const truthyIndexes = values
+      .map((v, idx) => (v ? idx : null))
+      .filter((idx) => idx !== null);
 
-    if (!values.length) return acc;
-    const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
-    return { ...acc, [row.key]: { avg, row } };
-  }, {});
-
-  const describeAdvantage = (rowKey, rowLabel) => {
-    if (rowKey === "price") return "Harga lebih rendah dari rata-rata.";
-    if (rowKey === "luas_bangunan") return "Luas bangunan lebih besar dari rata-rata.";
-    if (rowKey === "luas_tanah") return "Luas tanah lebih besar dari rata-rata.";
-    if (rowKey === "bedrooms") return "Jumlah kamar tidur lebih banyak dari rata-rata.";
-    if (rowKey === "bathrooms") return "Jumlah kamar mandi lebih banyak dari rata-rata.";
-    if (rowKey === "floors") return "Jumlah lantai lebih banyak dari rata-rata.";
-    if (rowKey === "kitchens") return "Jumlah dapur lebih banyak dari rata-rata.";
-    if (rowKey === "living_rooms") return "Jumlah ruang tamu lebih banyak dari rata-rata.";
-    if (rowKey === "electricity_capacity") return "Daya listrik lebih besar dari rata-rata.";
-    if (rowKey === "carport") return "Ada carport.";
-    if (rowKey === "garden") return "Ada taman.";
-    if (rowKey === "one_gate_system") return "Ada one gate system.";
-    if (rowKey === "security_24jam") return "Ada keamanan 24 jam.";
-    return `${rowLabel} lebih tinggi dari rata-rata.`;
+    if (truthyIndexes.length !== 1) return -1;
+    return truthyIndexes[0];
   };
 
-  const describeLimitation = (rowKey, rowLabel) => {
-    if (rowKey === "price") return "Harga lebih tinggi dari rata-rata.";
-    if (rowKey === "luas_bangunan") return "Luas bangunan lebih kecil dari rata-rata.";
-    if (rowKey === "luas_tanah") return "Luas tanah lebih kecil dari rata-rata.";
-    if (rowKey === "bedrooms") return "Jumlah kamar tidur lebih sedikit dari rata-rata.";
-    if (rowKey === "bathrooms") return "Jumlah kamar mandi lebih sedikit dari rata-rata.";
-    if (rowKey === "floors") return "Jumlah lantai lebih sedikit dari rata-rata.";
-    if (rowKey === "kitchens") return "Jumlah dapur lebih sedikit dari rata-rata.";
-    if (rowKey === "living_rooms") return "Jumlah ruang tamu lebih sedikit dari rata-rata.";
-    if (rowKey === "electricity_capacity") return "Daya listrik lebih kecil dari rata-rata.";
-    if (rowKey === "carport") return "Tidak ada carport.";
-    if (rowKey === "garden") return "Tidak ada taman.";
-    if (rowKey === "one_gate_system") return "Tidak ada one gate system.";
-    if (rowKey === "security_24jam") return "Tidak ada keamanan 24 jam.";
-    return `${rowLabel} lebih rendah dari rata-rata.`;
+  const describeAdvantage = (rowKey, rowLabel, value) => {
+    if (rowKey === "price") return `Harga termurah (${value}).`;
+    return `${rowLabel} terbaik (${value}).`;
   };
 
-  return properties.map((p) => {
+  const describeLimitation = (rowKey, rowLabel, value, bestValue) => {
+    if (rowKey === "price")
+      return `Lebih mahal (${value} vs ${bestValue}).`;
+    return `Kalah di ${rowLabel} (${value} vs ${bestValue}).`;
+  };
+
+  return properties.map((p, idx) => {
     const pros = [];
     const cons = [];
 
     rowsForProsCons.forEach((row) => {
-      const entry = rowAverages[row.key];
-      if (!entry) return;
+      const bestIdx = row.boolean
+        ? getBooleanBestIndex(row.key)
+        : getBestIndex(properties, row);
 
-      const raw = row.source === "detail" ? p.detail?.[row.key] : p[row.key];
-      if (raw === null || raw === undefined || raw === "") return;
+      if (bestIdx === -1) return;
 
-      if (row.boolean) {
-        if (raw) pros.push(describeAdvantage(row.key, row.label));
-        else cons.push(describeLimitation(row.key, row.label));
-        return;
-      }
+      const currentValue = getFieldValue(p, row);
+      const bestValue = getFieldValue(properties[bestIdx], row);
 
-      const num = Number(raw);
-      if (!Number.isFinite(num)) return;
-
-      if (row.key === "price") {
-        if (num <= entry.avg) pros.push(describeAdvantage(row.key, row.label));
-        else cons.push(describeLimitation(row.key, row.label));
-      } else if (num >= entry.avg) {
-        pros.push(describeAdvantage(row.key, row.label));
+      if (bestIdx === idx) {
+        pros.push(describeAdvantage(row.key, row.label, currentValue));
       } else {
-        cons.push(describeLimitation(row.key, row.label));
+        cons.push(
+          describeLimitation(row.key, row.label, currentValue, bestValue),
+        );
       }
     });
 

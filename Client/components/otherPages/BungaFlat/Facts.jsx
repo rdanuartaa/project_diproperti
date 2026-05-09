@@ -31,7 +31,7 @@ export default function Facts() {
                 <p className="text-1 description-1 mb-14">
                   Menghitung cicilan KPR bisa terasa membingungkan, terutama
                   jika Anda belum familiar dengan perhitungan bunga. Dengan
-                  kalkulator KPR bunga flat, Anda bisa mengetahui estimasi
+                  kalkulator simulasi KPR, Anda bisa mengetahui estimasi
                   cicilan bulanan dengan cepat dan akurat.
                 </p>
 

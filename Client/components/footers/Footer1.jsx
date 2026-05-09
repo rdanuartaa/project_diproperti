@@ -2,8 +2,17 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
+  const pathname = usePathname();
+
+  const isActiveLink = (href) => {
+    if (!pathname) return false;
+    const baseHref = href.split("?")[0];
+    return pathname === baseHref;
+  };
+
   useEffect(() => {
     const headings = document.querySelectorAll(".title-mobile");
 
@@ -87,19 +96,65 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                   <h5 className="title title-mobile">Navigasi</h5>
                   <ul className="tf-collapse-content">
                     <li>
-                      <Link href="/">Beranda</Link>
+                      <Link
+                        href="/"
+                        className={isActiveLink("/") ? "is-active" : undefined}
+                        aria-current={isActiveLink("/") ? "page" : undefined}
+                      >
+                        Beranda
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/list-properti">Properti</Link>
+                      <Link
+                        href="/list-properti"
+                        className={
+                          isActiveLink("/list-properti") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/list-properti") ? "page" : undefined
+                        }
+                      >
+                        Properti
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/komparasi">Komparasi</Link>
+                      <Link
+                        href="/komparasi"
+                        className={
+                          isActiveLink("/komparasi") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/komparasi") ? "page" : undefined
+                        }
+                      >
+                        Komparasi
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/bunga-flat">Simulasi KPR</Link>
+                      <Link
+                        href="/simulasi-kpr"
+                        className={
+                          isActiveLink("/simulasi-kpr") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/simulasi-kpr") ? "page" : undefined
+                        }
+                      >
+                        Simulasi KPR
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/list-artikel">Artikel</Link>
+                      <Link
+                        href="/list-artikel"
+                        className={
+                          isActiveLink("/list-artikel") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/list-artikel") ? "page" : undefined
+                        }
+                      >
+                        Artikel
+                      </Link>
                     </li>
                   </ul>
                 </div>
@@ -112,23 +167,69 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                   <h5 className="title title-mobile">Fitur</h5>
                   <ul className="tf-collapse-content">
                     <li>
-                      <Link href="/list-properti?sort=terbaru">
+                      <Link
+                        href="/list-properti?sort=terbaru"
+                        className={
+                          isActiveLink("/list-properti") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/list-properti") ? "page" : undefined
+                        }
+                      >
                         Properti Terbaru
                       </Link>
                     </li>
                     <li>
-                      <Link href="/list-properti?sort=populer">
+                      <Link
+                        href="/list-properti?sort=populer"
+                        className={
+                          isActiveLink("/list-properti") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/list-properti") ? "page" : undefined
+                        }
+                      >
                         Properti Populer
                       </Link>
                     </li>
                     <li>
-                      <Link href="/komparasi">Bandingkan Properti</Link>
+                      <Link
+                        href="/komparasi"
+                        className={
+                          isActiveLink("/komparasi") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/komparasi") ? "page" : undefined
+                        }
+                      >
+                        Bandingkan Properti
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/bunga-flat">Hitung KPR</Link>
+                      <Link
+                        href="/simulasi-kpr"
+                        className={
+                          isActiveLink("/simulasi-kpr") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/simulasi-kpr") ? "page" : undefined
+                        }
+                      >
+                        Hitung KPR
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/list-artikel">Informasi Terbaru</Link>
+                      <Link
+                        href="/list-artikel"
+                        className={
+                          isActiveLink("/list-artikel") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/list-artikel") ? "page" : undefined
+                        }
+                      >
+                        Informasi Terbaru
+                      </Link>
                     </li>
                   </ul>
                 </div>
@@ -141,10 +242,26 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                   <h5 className="title title-mobile">Bantuan</h5>
                   <ul className="tf-collapse-content">
                     <li>
-                      <Link href="/faq">FAQ</Link>
+                      <Link
+                        href="/faq"
+                        className={isActiveLink("/faq") ? "is-active" : undefined}
+                        aria-current={isActiveLink("/faq") ? "page" : undefined}
+                      >
+                        FAQ
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/contact">Kontak</Link>
+                      <Link
+                        href="/contact"
+                        className={
+                          isActiveLink("/contact") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/contact") ? "page" : undefined
+                        }
+                      >
+                        Kontak
+                      </Link>
                     </li>
                   </ul>
                 </div>

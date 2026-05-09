@@ -35,7 +35,6 @@ export default function CompareBar() {
 
   const handleClearAll = () => {
     clearCompare();
-    router.push("/komparasi");
   };
 
   const emptySlots = MAX_COMPARE - compareList.length;

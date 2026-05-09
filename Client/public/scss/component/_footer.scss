@@ -55,11 +55,20 @@
                         background-color: var(--Primary);
                         @include mixin.transition3();
                     }
+                    &.is-active,
+                    &[aria-current="page"] {
+                        color: var(--Text-white);
+                        &::before {
+                            background-color: var(--Text-white);
+                            width: 100%;
+                        }
+                    }
                 }
                 &:hover {
                     a {
-                        color: var(--Primary);
+                        color: var(--Text-white);
                         &::before {
+                            background-color: var(--Text-white);
                             width: 100%;
                         }
                     }

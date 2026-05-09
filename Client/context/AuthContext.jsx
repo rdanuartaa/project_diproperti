@@ -84,15 +84,35 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    // Simpan token sementara untuk API call, lalu hapus DULUAN
+    // agar polling interval tidak race dengan logout
+    const currentToken = localStorage.getItem('auth_token');
+    
+    // 1. Bersihkan state lokal DULU (sebelum API call)
+    localStorage.removeItem('auth_token');
+    window._authTokenCache = null;
+    setUser(null);
+
+    // 2. Panggil API logout di background (untuk hapus token di server)
+    if (currentToken) {
+      try {
+        await api.post('/logout', null, {
+          headers: {
+            Authorization: `Bearer ${currentToken}`,
+          },
+        });
+      } catch (error) {
+        // Tidak masalah jika gagal (token sudah expired, dll)
+        console.warn('Logout API call failed (token mungkin sudah expired):', error?.response?.status);
+      }
+    }
+
+    // 3. Redirect ke halaman utama
     try {
-      await api.post('/logout');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      localStorage.removeItem('auth_token');
-      window._authTokenCache = null;
-      setUser(null);
       router.push('/');
+    } catch (error) {
+      // Fallback jika router.push gagal
+      window.location.href = '/';
     }
   };
 

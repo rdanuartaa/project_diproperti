@@ -66,7 +66,7 @@ export default function PropertyGridItems({ properties, showItems }) {
                     src={getImageSrc(property)}
                     alt={property.title}
                     fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     style={{ objectFit: "cover" }}
                   />
                 </div>

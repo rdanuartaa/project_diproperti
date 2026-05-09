@@ -334,10 +334,11 @@ export default function About() {
           data-wow-duration="2s"
         >
           <Image
-            alt=""
+            alt="About Home"
             width={576}
             height={766}
-            src="/images/items/section-trusted-1.png"
+            src="/images/diproperti/abouthome.webp"
+            priority
           />
         </div>
         <div
@@ -346,10 +347,11 @@ export default function About() {
           data-wow-delay="0.3s"
         >
           <Image
-            alt=""
+            alt="About Home Sub"
             width={379}
             height={687}
-            src="/images/items/section-trusted-2.png"
+            src="/images/diproperti/abouthome2.webp"
+            priority
           />
         </div>
       </div>

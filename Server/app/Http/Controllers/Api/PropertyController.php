@@ -48,6 +48,67 @@ class PropertyController extends Controller
     }
 
     /**
+     * Helper: Build full URL for R2 files
+     */
+    private function buildR2Url(?string $path): ?string
+    {
+        if (!$path) {
+            return null;
+        }
+
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+
+        $accountId = 'a0eea8f875e1416b9ea4a5c4a1cea45e';
+        return "https://pub-{$accountId}.r2.dev/{$path}";
+    }
+
+    /**
+     * Helper: Append document URLs for admin/user views
+     */
+    private function appendDocumentUrls(Property|Collection|LengthAwarePaginator $data): Property|Collection|LengthAwarePaginator
+    {
+        $apply = function (Property $property) {
+            $property->setAttribute('certificate_file_url', $this->buildR2Url($property->certificate_file));
+            $property->setAttribute('electric_bill_file_url', $this->buildR2Url($property->electric_bill_file));
+            $property->setAttribute('water_bill_file_url', $this->buildR2Url($property->water_bill_file));
+        };
+
+        if ($data instanceof LengthAwarePaginator) {
+            $data->getCollection()->each($apply);
+        } elseif ($data instanceof Collection) {
+            $data->each($apply);
+        } elseif ($data instanceof Property) {
+            $apply($data);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Helper: Remove private fields for public responses
+     */
+    private function stripPrivateFields(Property|Collection|LengthAwarePaginator $data): Property|Collection|LengthAwarePaginator
+    {
+        $hidden = ['certificate_file', 'electric_bill_file', 'water_bill_file', 'is_verified'];
+
+        $apply = function (Property $property) use ($hidden) {
+            $property->makeHidden($hidden);
+        };
+
+        if ($data instanceof LengthAwarePaginator) {
+            $data->getCollection()->each($apply);
+        } elseif ($data instanceof Collection) {
+            $data->each($apply);
+        } elseif ($data instanceof Property) {
+            $apply($data);
+        }
+
+        return $data;
+    }
+
+    /**
      * Apply sort order to query
      */
     private function applySortOrder(Builder $query, Request $request): Builder
@@ -57,6 +118,236 @@ class PropertyController extends Controller
             return $query->orderBy('created_at', 'asc');
         }
         return $query->latest();
+    }
+
+    private function normalizeRecommendationValue(float $value, float $min, float $max): float
+    {
+        if ($max <= $min) {
+            return 0.5;
+        }
+
+        return max(0, min(1, ($value - $min) / ($max - $min)));
+    }
+
+    private function getRecommendationFacilityValue(Property $property): float
+    {
+        $detail = $property->detail;
+
+        if (!$detail) {
+            return 0;
+        }
+
+        return (
+            (float) ($detail->bedrooms ?? 0) * 1.0
+            + (float) ($detail->bathrooms ?? 0) * 0.85
+            + (float) ($detail->living_rooms ?? 0) * 0.65
+            + (float) ($detail->kitchens ?? 0) * 0.8
+            + (float) ($detail->floors ?? 0) * 0.45
+            + ((bool) $detail->carport ? 1 : 0) * 0.7
+            + ((bool) $detail->garden ? 1 : 0) * 0.55
+            + ((bool) $detail->one_gate_system ? 1 : 0) * 0.75
+            + ((bool) $detail->security_24jam ? 1 : 0) * 0.8
+        );
+    }
+
+    private function getRecommendationLocationKey(Property $property): string
+    {
+        return strtolower(trim(($property->city ?? '') . '|' . ($property->kecamatan ?? '')));
+    }
+
+    private function calculateRecommendationScore(Property $property, array $stats, array $weights): array
+    {
+        $priceValue = (float) ($property->price ?? 0);
+        $areaValue = (float) ($property->detail?->luas_bangunan ?? $property->detail?->luas_tanah ?? 0);
+        $facilityValue = $this->getRecommendationFacilityValue($property);
+        $locationCount = (int) ($stats['location_counts'][$this->getRecommendationLocationKey($property)] ?? 0);
+
+        $priceScore = 1 - $this->normalizeRecommendationValue($priceValue, $stats['min_price'], $stats['max_price']);
+        $areaScore = $this->normalizeRecommendationValue($areaValue, $stats['min_area'], $stats['max_area']);
+        $facilityScore = $this->normalizeRecommendationValue($facilityValue, $stats['min_facility'], $stats['max_facility']);
+        $locationScore = $this->normalizeRecommendationValue($locationCount, $stats['min_location_count'], $stats['max_location_count']);
+
+        $score =
+            $priceScore * ($weights['price'] / 100)
+            + $locationScore * ($weights['location'] / 100)
+            + $areaScore * ($weights['area'] / 100)
+            + $facilityScore * ($weights['facilities'] / 100);
+
+        return [
+            'score' => $score,
+            'detail' => [
+                'price_score' => $priceScore,
+                'location_score' => $locationScore,
+                'area_score' => $areaScore,
+                'facility_score' => $facilityScore,
+            ],
+        ];
+    }
+
+    /**
+     * Display a recommendation listing of properties (Public)
+     */
+    public function recommendations(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $query = Property::with(['user', 'detail', 'images']);
+
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+        if ($request->filled('listing_type')) {
+            $query->where('listing_type', $request->listing_type);
+        }
+        if ($request->filled('city')) {
+            $query->where('city', $request->city);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', (int) $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', (int) $request->max_price);
+        }
+        if ($request->filled('search')) {
+            $query->where(function($q) use ($request) {
+                $q->where('title', 'like', "%{$request->search}%")
+                  ->orWhere('description', 'like', "%{$request->search}%")
+                  ->orWhere('kecamatan', 'like', "%{$request->search}%");
+            });
+        }
+        if ($request->filled('kecamatan')) {
+            $query->where('kecamatan', 'like', "%{$request->kecamatan}%");
+        }
+        if ($request->filled('bedrooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('bedrooms', '>=', (int) $request->bedrooms);
+            });
+        }
+        if ($request->filled('bathrooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('bathrooms', '>=', (int) $request->bathrooms);
+            });
+        }
+        if ($request->filled('living_rooms')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('living_rooms', '>=', (int) $request->living_rooms);
+            });
+        }
+        if ($request->filled('kitchens')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('kitchens', '>=', (int) $request->kitchens);
+            });
+        }
+        if ($request->filled('floors')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('floors', '>=', (int) $request->floors);
+            });
+        }
+        if ($request->filled('certificate_type')) {
+            $query->where('certificate_type', $request->certificate_type);
+        }
+        if ($request->filled('water')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('water', $request->water);
+            });
+        }
+        if ($request->filled('listrik_type')) {
+            $query->whereHas('detail', function($q) use ($request) {
+                $q->where('listrik_type', $request->listrik_type);
+            });
+        }
+        if ($request->filled('amenities')) {
+            $amenities = explode(',', $request->amenities);
+            foreach ($amenities as $amenity) {
+                $amenity = trim($amenity);
+                if (!empty($amenity)) {
+                    $query->whereHas('detail', function($q) use ($amenity) {
+                        $q->where($amenity, true);
+                    });
+                }
+            }
+        }
+
+        $user = $request->user();
+        if (!$user || !$user->isAdmin()) {
+            $query->where('status', 'published')->where('is_verified', true);
+        }
+
+        $properties = $query->get();
+
+        $weights = [
+            'price' => max(0, (float) $request->input('price_weight', 35)),
+            'location' => max(0, (float) $request->input('location_weight', 30)),
+            'area' => max(0, (float) $request->input('area_weight', 20)),
+            'facilities' => max(0, (float) $request->input('facilities_weight', 15)),
+        ];
+
+        $totalWeight = array_sum($weights);
+        if ($totalWeight <= 0) {
+            $weights = [
+                'price' => 25,
+                'location' => 25,
+                'area' => 25,
+                'facilities' => 25,
+            ];
+        } else {
+            foreach ($weights as $key => $value) {
+                $weights[$key] = ($value / $totalWeight) * 100;
+            }
+        }
+
+        if ($properties->isEmpty()) {
+            $perPage = (int) $request->input('per_page', 8);
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $emptyPaginator = new LengthAwarePaginator([], 0, $perPage, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]);
+
+            return response()->json($emptyPaginator);
+        }
+
+        $prices = $properties->map(fn (Property $property) => (float) ($property->price ?? 0));
+        $areas = $properties->map(fn (Property $property) => (float) ($property->detail?->luas_bangunan ?? $property->detail?->luas_tanah ?? 0));
+        $facilities = $properties->map(fn (Property $property) => $this->getRecommendationFacilityValue($property));
+        $locationCounts = $properties->groupBy(fn (Property $property) => $this->getRecommendationLocationKey($property))->map->count();
+
+        $stats = [
+            'min_price' => (float) $prices->min(),
+            'max_price' => (float) $prices->max(),
+            'min_area' => (float) $areas->min(),
+            'max_area' => (float) $areas->max(),
+            'min_facility' => (float) $facilities->min(),
+            'max_facility' => (float) $facilities->max(),
+            'min_location_count' => (float) $locationCounts->min(),
+            'max_location_count' => (float) $locationCounts->max(),
+            'location_counts' => $locationCounts->all(),
+        ];
+
+        $sorted = $properties->map(function (Property $property) use ($stats, $weights) {
+            $result = $this->calculateRecommendationScore($property, $stats, $weights);
+            $property->setAttribute('recommendation_score', round($result['score'], 6));
+            $property->setAttribute('recommendation_detail', $result['detail']);
+            return $property;
+        })->sortByDesc('recommendation_score')->values();
+
+        $perPage = (int) $request->input('per_page', 8);
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $items = $sorted->forPage($page, $perPage)->values();
+
+        $paginator = new LengthAwarePaginator($items, $sorted->count(), $perPage, $page, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
+
+        $this->appendImageUrls($paginator);
+
+        if (!$user || !$user->isAdmin()) {
+            $this->stripPrivateFields($paginator);
+        }
+
+        return response()->json($paginator);
     }
 
     /**
@@ -168,7 +459,7 @@ class PropertyController extends Controller
         // Filter status: hanya published untuk non-admin
         $user = $request->user();
         if (!$user || !$user->isAdmin()) {
-            $query->where('status', 'published');
+            $query->where('status', 'published')->where('is_verified', true);
         }
 
         $per_page = $request->input('per_page', 12);
@@ -176,6 +467,10 @@ class PropertyController extends Controller
 
         // ✅ TRIGGER ACCESSOR untuk full_url
         $this->appendImageUrls($properties);
+
+        if (!$user || !$user->isAdmin()) {
+            $this->stripPrivateFields($properties);
+        }
 
         return response()->json($properties);
     }
@@ -278,6 +573,15 @@ class PropertyController extends Controller
         $this->appendImageUrls($property);
 
         if (!request()->user()?->isAdmin()) {
+            if ($property->status !== 'published' || !$property->is_verified) {
+                return response()->json(['message' => 'Not found'], 404);
+            }
+            $this->stripPrivateFields($property);
+        } else {
+            $this->appendDocumentUrls($property);
+        }
+
+        if (!request()->user()?->isAdmin()) {
             $property->increment('views');
         }
 
@@ -309,6 +613,9 @@ class PropertyController extends Controller
                 'price' => 'required|integer|min:0',
                 'certificate_type' => 'required|in:SHM,SHGB',
                 'certificate_status' => 'nullable|in:lunas,bank',
+                'certificate_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'electric_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'water_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'status' => 'nullable|in:draft,published,sold',
                 'description' => 'nullable|string',
                 'detail' => 'required|array',
@@ -346,6 +653,7 @@ class PropertyController extends Controller
                 'certificate_type' => $validated['certificate_type'],
                 'certificate_status' => $validated['certificate_status'] ?? 'lunas',
                 'status' => $validated['status'] ?? 'draft',
+                'is_verified' => true,
                 'description' => $validated['description'] ?? null,
             ]);
 
@@ -367,6 +675,10 @@ class PropertyController extends Controller
                 $primaryNewIndex !== null
             );
 
+            $this->handleDocumentUpload($request, $property, 'certificate_file');
+            $this->handleDocumentUpload($request, $property, 'electric_bill_file');
+            $this->handleDocumentUpload($request, $property, 'water_bill_file');
+
             if ($uploadedCount === 0 && $request->hasFile('images')) {
                 Log::warning('⚠️ Images uploaded to R2 but NOT saved to database! Count: 0');
             }
@@ -376,6 +688,7 @@ class PropertyController extends Controller
 
             // ✅ TRIGGER ACCESSOR untuk full_url sebelum return
             $this->appendImageUrls($property);
+            $this->appendDocumentUrls($property);
 
             Log::info('=== CREATE PROPERTY SUCCESS ===');
 
@@ -429,7 +742,11 @@ class PropertyController extends Controller
                 'price' => 'sometimes|required|integer|min:0',
                 'certificate_type' => 'sometimes|required|in:SHM,SHGB',
                 'certificate_status' => 'nullable|in:lunas,bank',
+                'certificate_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'electric_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'water_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'status' => 'sometimes|required|in:draft,published,sold',
+                'is_verified' => 'nullable|boolean',
                 'description' => 'nullable|string',
                 'detail' => 'nullable|array',
                 'detail.luas_tanah' => 'nullable|integer|min:0',
@@ -466,6 +783,10 @@ class PropertyController extends Controller
                 if (isset($validated[$field])) {
                     $property->{$field} = $validated[$field];
                 }
+            }
+
+            if ($request->user()->isAdmin() && array_key_exists('is_verified', $validated)) {
+                $property->is_verified = (bool) $validated['is_verified'];
             }
 
             if (isset($validated['title'])) {
@@ -527,6 +848,12 @@ class PropertyController extends Controller
                 $primaryNewIndex !== null
             );
 
+            if ($request->user()->isAdmin()) {
+                $this->handleDocumentUpload($request, $property, 'certificate_file');
+                $this->handleDocumentUpload($request, $property, 'electric_bill_file');
+                $this->handleDocumentUpload($request, $property, 'water_bill_file');
+            }
+
             if ($uploadedCount === 0 && $request->hasFile('images')) {
                 Log::warning('⚠️ Update: Images uploaded to R2 but NOT saved to database!');
             }
@@ -536,6 +863,7 @@ class PropertyController extends Controller
 
             // ✅ TRIGGER ACCESSOR untuk full_url sebelum return
             $this->appendImageUrls($property);
+            $this->appendDocumentUrls($property);
 
             Log::info('=== UPDATE PROPERTY SUCCESS ===');
 
@@ -560,6 +888,152 @@ class PropertyController extends Controller
 
         Log::info($request->all());
         Log::info('FILES:', $request->allFiles());
+    }
+
+    /**
+     * Submit a property (User)
+     */
+    public function submit(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            Log::info('=== SUBMIT PROPERTY START ===');
+
+            $rawDetail = $request->input('detail', []);
+            $normalizedDetail = $this->normalizeDetailInput($rawDetail);
+            $request->merge(['detail' => $normalizedDetail]);
+
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'type' => 'required|in:rumah,perumahan,ruko,kos,tanah',
+                'building_type' => 'nullable|integer|min:0',
+                'listing_type' => 'required|in:jual,sewa',
+                'kecamatan' => 'required|string|max:100',
+                'city' => 'required|string|max:100',
+                'price' => 'required|integer|min:0',
+                'certificate_type' => 'required|in:SHM,SHGB',
+                'certificate_status' => 'nullable|in:lunas,bank',
+                'description' => 'nullable|string',
+                'detail' => 'required|array',
+                'detail.luas_tanah' => 'required|integer|min:0',
+                'detail.luas_bangunan' => 'nullable|integer|min:0',
+                'detail.bedrooms' => 'nullable|integer|min:0',
+                'detail.bathrooms' => 'nullable|integer|min:0',
+                'detail.floors' => 'nullable|integer|min:0',
+                'detail.kitchens' => 'nullable|integer|min:0',
+                'detail.living_rooms' => 'nullable|integer|min:0',
+                'detail.electricity_capacity' => 'nullable|integer|min:0',
+                'detail.carport' => 'nullable|boolean',
+                'detail.garden' => 'nullable|boolean',
+                'detail.one_gate_system' => 'nullable|boolean',
+                'detail.security_24jam' => 'nullable|boolean',
+                'detail.water' => 'nullable|in:pdam,sumur',
+                'detail.listrik_type' => 'nullable|in:overground,underground',
+                'detail.wifi_provider' => 'nullable|string|max:255',
+                'images' => 'required|array|min:1',
+                'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
+                'primary_new_index' => 'nullable|integer|min:0',
+                'certificate_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'electric_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'water_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            ]);
+
+            $property = $request->user()->properties()->create([
+                'title' => $validated['title'],
+                'slug' => Str::slug($validated['title']) . '-' . Str::random(5),
+                'type' => $validated['type'],
+                'building_type' => $validated['building_type'] ?? null,
+                'listing_type' => $validated['listing_type'],
+                'kecamatan' => $validated['kecamatan'],
+                'city' => $validated['city'],
+                'price' => $validated['price'],
+                'certificate_type' => $validated['certificate_type'],
+                'certificate_status' => $validated['certificate_status'] ?? 'lunas',
+                'status' => 'draft',
+                'is_verified' => false,
+                'description' => $validated['description'] ?? null,
+            ]);
+
+            $detailData = $this->prepareDetailData($validated['detail'], $property->id);
+            $property->detail()->create($detailData);
+
+            $primaryNewIndex = $request->input('primary_new_index');
+            $this->handleImageUpload(
+                $property,
+                $request,
+                0,
+                $primaryNewIndex,
+                $primaryNewIndex !== null
+            );
+
+            $this->handleDocumentUpload($request, $property, 'certificate_file');
+            $this->handleDocumentUpload($request, $property, 'electric_bill_file');
+            $this->handleDocumentUpload($request, $property, 'water_bill_file');
+
+            $property->load(['detail', 'images', 'user']);
+            $this->appendImageUrls($property);
+            $this->appendDocumentUrls($property);
+
+            Log::info('=== SUBMIT PROPERTY SUCCESS ===');
+
+            return response()->json([
+                'message' => 'Pengajuan properti berhasil dikirim',
+                'property' => $property,
+            ], 201);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('=== SUBMIT PROPERTY ERROR ===: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Server error: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin: list pending property submissions
+     */
+    public function submissions(Request $request): \Illuminate\Http\JsonResponse
+    {
+        if (!$request->user()?->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $query = Property::with(['user', 'detail', 'images'])
+            ->where('is_verified', false)
+            ->orderByDesc('created_at');
+
+        $submissions = $query->paginate(20);
+        $this->appendImageUrls($submissions);
+        $this->appendDocumentUrls($submissions);
+
+        return response()->json($submissions);
+    }
+
+    /**
+     * Admin: approve submission
+     */
+    public function approveSubmission(Request $request, Property $property): \Illuminate\Http\JsonResponse
+    {
+        if (!$request->user()?->isAdmin()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $property->is_verified = true;
+        $property->status = 'published';
+        $property->save();
+
+        $property->load(['detail', 'images', 'user']);
+        $this->appendImageUrls($property);
+        $this->appendDocumentUrls($property);
+
+        return response()->json([
+            'message' => 'Pengajuan properti disetujui',
+            'property' => $property,
+        ]);
     }
 
     /**
@@ -720,6 +1194,39 @@ class PropertyController extends Controller
 
         Log::info('R2 Upload completed: ' . $successCount . '/' . count($images) . ' images saved');
         return $successCount;
+    }
+
+    /**
+     * ✅ HANDLE DOCUMENT UPLOAD KE CLOUDFLARE R2
+     */
+    private function handleDocumentUpload(Request $request, Property $property, string $field): void
+    {
+        if (!$request->hasFile($field)) {
+            return;
+        }
+
+        $file = $request->file($field);
+        if (!$file || !$file->isValid()) {
+            return;
+        }
+
+        $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+        $r2Path = 'property-docs/' . $filename;
+
+        $uploaded = Storage::disk('s3')->put($r2Path, file_get_contents($file->getRealPath()), 'private');
+        if (!$uploaded) {
+            Log::error('R2 upload failed for doc: ' . $filename);
+            return;
+        }
+
+        if ($property->{$field}) {
+            if (Storage::disk('s3')->exists($property->{$field})) {
+                Storage::disk('s3')->delete($property->{$field});
+            }
+        }
+
+        $property->{$field} = $r2Path;
+        $property->save();
     }
 
     /**

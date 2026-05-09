@@ -211,6 +211,58 @@ export default function Sidebar() {
             </li>
             <li
               className={`nav-menu-item ${
+                pathname == "/admin/pengajuan-properti" ? "active" : ""
+              } `}
+            >
+              <Link className="nav-menu-link" href={`/admin/pengajuan-properti`}>
+                <svg
+                  width={20}
+                  height={20}
+                  viewBox="0 0 20 20"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M4.16667 2.5H12.5C12.9602 2.5 13.3333 2.8731 13.3333 3.33333V17.5H4.16667C3.70643 17.5 3.33333 17.1269 3.33333 16.6667V3.33333C3.33333 2.8731 3.70643 2.5 4.16667 2.5Z"
+                    stroke="#A8ABAE"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.66667 6.66667H9.16667"
+                    stroke="#A8ABAE"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.66667 10H9.16667"
+                    stroke="#A8ABAE"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.66667 13.3333H9.16667"
+                    stroke="#A8ABAE"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M16.6667 17.5V8.33333C16.6667 7.8731 16.2936 7.5 15.8333 7.5H13.3333"
+                    stroke="#A8ABAE"
+                    strokeWidth="1.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                Pengajuan Properti
+              </Link>
+            </li>
+            <li
+              className={`nav-menu-item ${
                 pathname == "/admin/add-artikel" ? "active" : ""
               } `}
             >

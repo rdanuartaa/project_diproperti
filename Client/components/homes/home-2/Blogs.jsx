@@ -136,7 +136,7 @@ export default function Blogs({ parentClass = "section-opinion tf-spacing-1" }) 
                               src={article.image_url || article.imageSrc || fallbackImage}
                               alt={article.title || "Article"}
                               fill
-                              sizes="(max-width: 768px) 100vw, 33vw"
+                              sizes="(max-width: 768px) 100vw, (max-width: 992px) 50vw, 33vw"
                               style={{ objectFit: "cover", borderRadius: "12px" }}
                             />
                           </div>

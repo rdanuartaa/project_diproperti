@@ -200,6 +200,13 @@ export default function Header1({ parentClass = "header" }) {
                       >
                         Add property
                       </Link>
+                    ) : isAuthenticated ? (
+                      <Link
+                        className="tf-btn style-border pd-23"
+                        href={`/jual-properti`}
+                      >
+                        Jual Properti
+                      </Link>
                     ) : (
                       <a
                         href={`https://wa.me/6281234776677?text=${encodeURIComponent('Halo Admin, saya ingin menambahkan properti')}`}

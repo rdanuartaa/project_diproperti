@@ -4,7 +4,7 @@ import React from "react";
 export default function PageTitle() {
   return (
     <div
-      className="page-title style-2" 
+      className="page-title style-2"
       style={{
         backgroundImage: "url('/images/diproperti/bungaflathero.jpg')",
         backgroundSize: "cover",
@@ -13,7 +13,6 @@ export default function PageTitle() {
         position: "relative",
       }}
     >
-      {/* Overlay */}
       <div
         style={{
           position: "absolute",
@@ -27,14 +26,14 @@ export default function PageTitle() {
           <div className="col-lg-8">
             <div className="content-inner">
               <div className="heading-title">
-                <h2 className="title text_white">Simulasi KPR</h2>
+                <h2 className="title text_white">Jual Properti</h2>
                 <ul className="breadcrumb justify-center">
                   <li>
                     <Link className="home fw-6 text-color-3" href={`/`}>
                       Home
                     </Link>
                   </li>
-                  <li className="text_white">Simulasi KPR</li>
+                  <li className="text_white">Jual Properti</li>
                 </ul>
               </div>
             </div>

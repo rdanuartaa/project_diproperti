@@ -25,7 +25,11 @@ class Property extends Model
         'price',
         'certificate_type',
         'certificate_status',
+        'certificate_file',
+        'electric_bill_file',
+        'water_bill_file',
         'status',
+        'is_verified',
         'views',
         'description',
         'user_id',
@@ -35,6 +39,7 @@ class Property extends Model
         'price' => 'integer',
         'views' => 'integer',
         'building_type' => 'integer',
+        'is_verified' => 'boolean',
     ];
 
     // Auto-generate slug dari title

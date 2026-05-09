@@ -7,8 +7,8 @@ import Process from "@/components/otherPages/BungaFlat/Process";
 import React from "react";
 
 export const metadata = {
-  title: "Bunga Flat || Diproperti - Real Estate",
-  description: "Bunga flat page.",
+  title: "Simulasi KPR || Diproperti - Real Estate",
+  description: "Simulasi KPR page.",
 };
 
 export default function page() {

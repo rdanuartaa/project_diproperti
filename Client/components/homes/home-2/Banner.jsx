@@ -45,7 +45,7 @@ export default function Banner() {
                     alt="agent"
                     width={346}
                     height={499}
-                    src="/images/section/person-2.png"
+                    src="/images/diproperti/bannerhome.webp"
                   />
                 </div>
               </div>

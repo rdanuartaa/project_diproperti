@@ -204,7 +204,7 @@ export default function Properties() {
                                     src={getImageSrc(property)}
                                     alt={property.title}
                                     fill
-                                    sizes="(max-width: 768px) 100vw, 33vw"
+                                    sizes="(max-width: 768px) 100vw, (max-width: 992px) 50vw, (max-width: 1200px) 33vw, 25vw"
                                     style={{ objectFit: "cover" }}
                                   />
                                 </div>

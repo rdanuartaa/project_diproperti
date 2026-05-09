@@ -78,8 +78,8 @@ export default function PropertyListItems({ properties, showItems }) {
                     src={getImageSrc(property)}
                     alt={property.title}
                     fill
-                    style={{ objectFit: "cover" }}
-                    objectPosition="center"
+                    sizes="(max-width: 768px) 100vw, 320px"
+                    style={{ objectFit: "cover", objectPosition: "center" }}
                   />
                 </div>
               </Link>

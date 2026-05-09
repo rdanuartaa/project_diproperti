@@ -14,7 +14,7 @@ export default function Process() {
                 data-wow-duration="1s"
                 data-wow-delay="0s"
               >
-                Cara Menghitung KPR Bunga Flat
+                Cara Menghitung Simulasi KPR
               </h2>
               <p
                 className="text-1 wow animate__fadeInUp animate__animated"

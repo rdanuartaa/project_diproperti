@@ -274,14 +274,14 @@ export default function Blogs1() {
                       className="blog-article-item style-row hover-img"
                     >
                       <div className="article-thumb image-wrap">
-                        <Image
-                          className="lazyload"
-                          alt={post.title || "Article image"}
-                          src={post.image_url || "/images/default.jpg"}
-                          fill
-                          style={{ objectFit: "cover" }}
-                          sizes="(max-width: 768px) 100vw, 800px"
-                        />
+                          <Image
+                            className="lazyload"
+                            alt={post.title || "Article image"}
+                            src={post.image_url || "/images/default.jpg"}
+                            fill
+                            style={{ objectFit: "cover" }}
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
+                          />
                       </div>
                       <div className="article-content">
                         <div className="time">

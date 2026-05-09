@@ -143,6 +143,7 @@ export default function Hero() {
         src="/images/diproperti/homehero.jpg"
         alt="Hero Properti"
         fill
+        sizes="100vw"
         priority
         style={{ objectFit: "cover", zIndex: 0 }}
       />

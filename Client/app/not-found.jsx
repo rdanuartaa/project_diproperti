@@ -1,5 +1,4 @@
 import Breadcumb from "@/components/common/Breadcumb";
-import Cta from "@/components/common/Cta";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import Link from "next/link";
@@ -33,7 +32,6 @@ export default function page() {
               </div>
             </div>
           </div>
-          <Cta />
         </div>
 
         <Footer1 />

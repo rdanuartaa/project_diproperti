@@ -92,7 +92,7 @@ export default function RelatedArtikel() {
                           src={article.image_url || "/images/default.jpg"}
                           fill
                           style={{ objectFit: "cover" }}
-                          sizes="(max-width: 575px) 100vw, (max-width: 991px) 50vw, 33vw"
+                          sizes="(max-width: 768px) 100vw, (max-width: 992px) 50vw, 33vw"
                         />
                       </Link>
                       <div className="box-tag">

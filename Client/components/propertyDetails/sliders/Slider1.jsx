@@ -84,6 +84,7 @@ export default function Slider1({ slug }) {
                 src={fallbackImage}
                 alt="No Image Available"
                 fill
+                sizes="100vw"
                 style={{ objectFit: "cover", borderRadius: "16px" }}
               />
             </div>
@@ -104,6 +105,7 @@ export default function Slider1({ slug }) {
                 src={property?.image_url || property?.thumbnail || fallbackImage}
                 alt={property?.title || "Property"}
                 fill
+                sizes="100vw"
                 style={{ objectFit: "cover", borderRadius: "16px" }}
               />
               <div 
@@ -186,6 +188,7 @@ export default function Slider1({ slug }) {
                           src={mainImage?.full_url || mainImage?.url || fallbackImage}
                           alt={property?.title || "Property"}
                           fill
+                          sizes="(max-width: 1200px) 100vw, 800px"
                           style={{ objectFit: "cover" }}
                           priority
                         />
@@ -266,6 +269,7 @@ export default function Slider1({ slug }) {
                               src={img?.full_url || img?.url || fallbackImage}
                               alt={`${property?.title || "Property"} - Photo ${index + 2}`}
                               fill
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 400px"
                               style={{ objectFit: "cover" }}
                             />
                           </div>

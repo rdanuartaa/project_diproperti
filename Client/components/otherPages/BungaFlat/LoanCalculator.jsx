@@ -178,6 +178,7 @@ export default function LoanCalculator() {
                   src="/images/diproperti/bungaflatbanner2.jpg"
                   alt="Kalkulator KPR"
                   fill
+                  sizes="100vw"
                   style={{ objectFit: "cover" }}
                   priority
                 />
@@ -200,7 +201,7 @@ export default function LoanCalculator() {
                     data-wow-duration="1s"
                     data-wow-delay="0s"
                   >
-                    Kalkulator KPR Bunga Flat
+                    Kalkulator Simulasi KPR
                   </h2>
                   <p
                     className="text-1 wow animate__fadeInUp animate__animated"

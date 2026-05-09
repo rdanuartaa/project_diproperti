@@ -1,0 +1,25 @@
+import Breadcumb from "@/components/common/Breadcumb";
+import Footer1 from "@/components/footers/Footer1";
+import Header1 from "@/components/headers/Header1";
+import RekomendasiProperti from "@/components/otherPages/RekomendasiProperti";
+import React from "react";
+
+export const metadata = {
+  title: "Rekomendasi Properti || Diproperti - Real Estate",
+  description: "Diproperti || Real Estate",
+};
+
+export default function Page() {
+  return (
+    <>
+      <div id="wrapper">
+        <Header1 />
+        <div className="main-content">
+          <Breadcumb pageName="Rekomendasi Properti" />
+          <RekomendasiProperti />
+        </div>
+        <Footer1 />
+      </div>
+    </>
+  );
+}

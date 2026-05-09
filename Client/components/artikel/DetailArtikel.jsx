@@ -206,7 +206,7 @@ export default function DetailArtikel({ slug }) {
                 src={article.image_url || "/images/default.jpg"}
                 fill
                 className="image-zoom"
-                sizes="100vw"
+                sizes="(max-width: 1200px) 100vw, 800px"
                 priority
                 style={{ objectFit: "cover" }}
               />

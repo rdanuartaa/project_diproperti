@@ -7,8 +7,6 @@ import "rc-slider/assets/index.css";
 import { usePathname } from "next/navigation";
 import BackToTop from "@/components/common/BackToTop";
 import MobileMenu from "@/components/headers/MobileMenu";
-import Login from "@/components/modals/Login";
-import Register from "@/components/modals/Register";
 import { AuthProvider } from "@/context/AuthContext";
 import { CompareProvider } from "@/components/compare/CompareContext";
 import CompareBar from "@/components/compare/CompareBar";
@@ -91,8 +89,6 @@ export default function RootLayout({ children }) {
         <CompareBar/>
         <BackToTop />
         <MobileMenu {...mobileMenuProps} />
-        <Login />
-        <Register />
         </CompareProvider>
         </AuthProvider>
       </body>
