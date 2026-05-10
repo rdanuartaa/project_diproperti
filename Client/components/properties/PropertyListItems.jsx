@@ -26,9 +26,11 @@ function getBathrooms(property) {
   return property?.detail?.bathrooms ?? property?.baths ?? "-";
 }
 
+// ✅ UPDATED: Gunakan building_type sebagai prioritas (format: "56/76")
 function getArea(property) {
   return (
-    property?.detail?.luas_bangunan ??
+    property?.building_type ??              // ✅ Prioritas: building_type
+    property?.detail?.luas_bangunan ??      // Fallback: luas bangunan
     property?.sqft ??
     property?.detail?.luas_tanah ??
     "-"
@@ -45,7 +47,6 @@ function formatHarga(value) {
 }
 
 export default function PropertyListItems({ properties, showItems }) {
-  // ✅ Ambil semua yang dibutuhkan dari CompareContext
   const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
 
   const items = Array.isArray(properties) ? properties : [];
@@ -100,7 +101,6 @@ export default function PropertyListItems({ properties, showItems }) {
 
               {/* BUTTON */}
               <div className="list-btn flex gap-8">
-                {/* ✅ Tombol komparasi icon — terhubung ke CompareContext */}
                 <button
                   type="button"
                   className={`btn-icon save hover-tooltip ${added ? "active" : ""}`}
@@ -149,8 +149,9 @@ export default function PropertyListItems({ properties, showItems }) {
                 <li className="text-1 flex">
                   <span>{getBathrooms(property)}</span>Baths
                 </li>
+                {/* ✅ UPDATED: Hapus suffix m2 karena building_type sudah format "56/76" */}
                 <li className="text-1 flex">
-                  <span>{getArea(property)}</span>m2
+                  <span>{getArea(property)}</span>m²
                 </li>
               </ul>
 
@@ -158,7 +159,6 @@ export default function PropertyListItems({ properties, showItems }) {
                 <h6 className="price">{formatHarga(property.price)}</h6>
 
                 <div className="wrap-btn flex">
-                  {/* ✅ Tombol Compare teks — terhubung ke CompareContext */}
                   <button
                     type="button"
                     className="compare flex gap-8 items-center text-1"

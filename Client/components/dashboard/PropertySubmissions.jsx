@@ -7,10 +7,6 @@ import AttentionModal from "@/components/common/AttentionModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import DropdownSelect from "../common/DropdownSelect";
 
-/**
- * ReadonlyDropdown — render DropdownSelect persis seperti Properti.jsx
- * tapi tidak bisa diklik (pointer-events: none pada wrapper).
- */
 function ReadonlyDropdown({ value }) {
   return (
     <div style={{ pointerEvents: "none", userSelect: "none" }}>
@@ -29,8 +25,6 @@ export default function PropertySubmissions() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [activeSubmission, setActiveSubmission] = useState(null);
   const [filters, setFilters] = useState({ search: "", sort: "Terbaru" });
-
-  // Modal States
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [attention, setAttention] = useState({ open: false, message: "" });
@@ -55,22 +49,17 @@ export default function PropertySubmissions() {
 
   const filteredSubmissions = useMemo(() => {
     let result = [...submissions];
-
-    // Search berdasarkan title
     if (filters.search) {
       const query = filters.search.toLowerCase().trim();
       result = result.filter((item) =>
-        (item.title || "").toLowerCase().includes(query)
+        (item.title || "").toLowerCase().includes(query),
       );
     }
-
-    // Sort berdasarkan updated_at atau created_at
     result.sort((a, b) => {
       const dateA = new Date(a.updated_at || a.created_at || 0);
       const dateB = new Date(b.updated_at || b.created_at || 0);
       return filters.sort === "Terbaru" ? dateB - dateA : dateA - dateB;
     });
-
     return result;
   }, [submissions, filters]);
 
@@ -78,7 +67,6 @@ export default function PropertySubmissions() {
     setActiveSubmission(submission);
     setShowDetailModal(true);
   };
-
   const closeDetail = () => {
     setActiveSubmission(null);
     setShowDetailModal(false);
@@ -88,9 +76,11 @@ export default function PropertySubmissions() {
     if (!activeSubmission) return;
     setIsActionLoading(true);
     try {
-      await api.put(`/admin/property-submissions/${activeSubmission.id}/approve`);
+      await api.put(
+        `/admin/property-submissions/${activeSubmission.id}/approve`,
+      );
       setSuccessMessage(
-        `Pengajuan "${activeSubmission.title}" berhasil disetujui & otomatis masuk ke menu Properti.`
+        `Pengajuan "${activeSubmission.title}" berhasil disetujui & otomatis masuk ke menu Properti.`,
       );
       setShowSuccess(true);
       closeDetail();
@@ -106,7 +96,8 @@ export default function PropertySubmissions() {
     if (!activeSubmission) return;
     setIsActionLoading(true);
     try {
-      await api.delete(`/admin/property-submissions/${activeSubmission.id}`);
+      // ✅ FIX: Menggunakan endpoint properties yang sesuai dengan controller destroy
+      await api.delete(`/admin/properties/${activeSubmission.id}`);
       setSuccessMessage("Pengajuan berhasil ditolak/dihapus.");
       setShowSuccess(true);
       setShowConfirm(false);
@@ -119,14 +110,11 @@ export default function PropertySubmissions() {
     }
   };
 
-  const formatPrice = (val) =>
-    `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
-
+  const formatPrice = (val) => `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
   const val = (field, fallback = "-") =>
     field !== null && field !== undefined && field !== ""
       ? String(field)
       : fallback;
-
   const formatDateTime = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -155,7 +143,6 @@ export default function PropertySubmissions() {
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
-        {/* Modals */}
         <SuccessModal
           isOpen={showSuccess}
           onClose={() => setShowSuccess(false)}
@@ -163,7 +150,7 @@ export default function PropertySubmissions() {
         />
         <AttentionModal
           isOpen={attention.open}
-          onClose={() => setAttention({ open: false, message: "" })}
+          onClose={() => setAttention({ open: false, message: " " })}
           title="Perhatian"
           message={attention.message}
         />
@@ -178,19 +165,20 @@ export default function PropertySubmissions() {
           isLoading={isActionLoading}
         />
 
-        {/* Filter & Search */}
         <div className="row mb-3">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>Urutkan:<span>*</span></label>
+                <label>
+                  Urutkan: <span>*</span>
+                </label>
                 <DropdownSelect
                   options={["Terbaru", "Terlama"]}
                   selectedValue={filters.sort}
-                  onChange={(value) => {
-                    setFilters((prev) => ({ ...prev, sort: value }));
-                  }}
-                  addtionalParentClass=""
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, sort: value }))
+                  }
+                  addtionalParentClass=" "
                 />
               </fieldset>
             </form>
@@ -198,15 +186,17 @@ export default function PropertySubmissions() {
           <div className="col-md-9">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>Cari Properti:<span>*</span></label>
+                <label>
+                  Cari Properti: <span>*</span>
+                </label>
                 <input
                   type="text"
                   className="form-control"
                   placeholder="Cari berdasarkan judul..."
                   value={filters.search}
-                  onChange={(e) => {
-                    setFilters((prev) => ({ ...prev, search: e.target.value }));
-                  }}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, search: e.target.value }))
+                  }
                 />
               </fieldset>
             </form>
@@ -223,14 +213,12 @@ export default function PropertySubmissions() {
             akan dikenakan komisi admin sebesar{" "}
             <strong>2.5% dari harga jual</strong>.
           </div>
-
-          {/* Table List */}
           <div className="wrap-table">
             <div className="table-responsive">
               {filteredSubmissions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {filters.search 
-                    ? "Pengajuan tidak ditemukan untuk pencarian tersebut." 
+                  {filters.search
+                    ? "Pengajuan tidak ditemukan untuk pencarian tersebut."
                     : "Belum ada pengajuan properti saat ini."}
                 </div>
               ) : (
@@ -330,9 +318,11 @@ export default function PropertySubmissions() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="footer-dashboard">
-          <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights
+            reserved.
+          </p>
           <ul className="list">
             <li>
               <a href="#">Privasi</a>
@@ -347,19 +337,15 @@ export default function PropertySubmissions() {
         </div>
       </div>
 
-      {/* Overlay */}
       <div
-        className={`overlay-dashboard ${showDetailModal ? "show" : ""}`}
+        className={`overlay-dashboard ${showDetailModal ? " show" : " "}`}
         onClick={closeDetail}
       />
 
-      {/* ===================== DETAIL MODAL ===================== */}
       {showDetailModal && activeSubmission && (
         <div className="modal fade show" style={{ display: "block" }}>
           <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
-
-              {/* Header */}
               <div className="modal-header modal-header-title">
                 <h5 className="modal-title">
                   Verifikasi Pengajuan: {activeSubmission.title}
@@ -371,8 +357,6 @@ export default function PropertySubmissions() {
                   aria-label="Close"
                 />
               </div>
-
-              {/* Body */}
               <div
                 className="modal-body modal-body-wide"
                 style={{ maxHeight: "70vh", overflowY: "auto" }}
@@ -381,19 +365,13 @@ export default function PropertySubmissions() {
                   Semua data wajib diisi dan tidak boleh kosong. Minimal upload
                   1 gambar.
                 </div>
-
-                {/* Wrapper pakai class yang sama dgn Properti.jsx */}
                 <div className="modal-form-spacing">
                   <div className="row g-3">
-
-                    {/* ===== SECTION 1: INFORMASI DASAR ===== */}
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         📋 Informasi Dasar
                       </h6>
                     </div>
-
-                    {/* Judul */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Judul</label>
@@ -406,8 +384,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Harga */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Harga (IDR)</label>
@@ -420,46 +396,40 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Tipe */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Tipe</label>
                         <ReadonlyDropdown value={val(activeSubmission.type)} />
                       </fieldset>
                     </div>
-
-                    {/* Tipe Bangunan */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Tipe Bangunan (angka)</label>
+                        <label>Tipe Bangunan</label>
                         <input
                           type="text"
                           className="form-control"
                           value={val(activeSubmission.building_type)}
                           readOnly
-                          placeholder="Contoh: 1"
+                          placeholder="Contoh: 90/120 m²"
                         />
                       </fieldset>
                     </div>
-
-                    {/* Status */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Status</label>
-                        <ReadonlyDropdown value={val(activeSubmission.status)} />
+                        <ReadonlyDropdown
+                          value={val(activeSubmission.status)}
+                        />
                       </fieldset>
                     </div>
-
-                    {/* Tipe Listing */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Tipe Listing</label>
-                        <ReadonlyDropdown value={val(activeSubmission.listing_type)} />
+                        <ReadonlyDropdown
+                          value={val(activeSubmission.listing_type)}
+                        />
                       </fieldset>
                     </div>
-
-                    {/* Kota */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Kota</label>
@@ -472,8 +442,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Kecamatan */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Kecamatan</label>
@@ -486,24 +454,22 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Status Sertifikat */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Status Sertifikat</label>
-                        <ReadonlyDropdown value={val(activeSubmission.certificate_status)} />
+                        <ReadonlyDropdown
+                          value={val(activeSubmission.certificate_status)}
+                        />
                       </fieldset>
                     </div>
-
-                    {/* Jenis Sertifikat */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Jenis Sertifikat</label>
-                        <ReadonlyDropdown value={val(activeSubmission.certificate_type)} />
+                        <ReadonlyDropdown
+                          value={val(activeSubmission.certificate_type)}
+                        />
                       </fieldset>
                     </div>
-
-                    {/* Deskripsi */}
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Deskripsi</label>
@@ -517,14 +483,11 @@ export default function PropertySubmissions() {
                       </fieldset>
                     </div>
 
-                    {/* ===== SECTION 2: DETAIL PROPERTI ===== */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         🏠 Detail Properti
                       </h6>
                     </div>
-
-                    {/* Checkboxes — pakai style label sama dgn Properti.jsx */}
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -533,12 +496,11 @@ export default function PropertySubmissions() {
                             checked={!!activeSubmission.detail?.carport}
                             readOnly
                             disabled
-                          />
+                          />{" "}
                           Carport
                         </label>
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -547,12 +509,11 @@ export default function PropertySubmissions() {
                             checked={!!activeSubmission.detail?.garden}
                             readOnly
                             disabled
-                          />
+                          />{" "}
                           Taman
                         </label>
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -561,12 +522,11 @@ export default function PropertySubmissions() {
                             checked={!!activeSubmission.detail?.one_gate_system}
                             readOnly
                             disabled
-                          />
+                          />{" "}
                           One Gate System
                         </label>
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -575,13 +535,11 @@ export default function PropertySubmissions() {
                             checked={!!activeSubmission.detail?.security_24jam}
                             readOnly
                             disabled
-                          />
+                          />{" "}
                           Keamanan 24 Jam
                         </label>
                       </fieldset>
                     </div>
-
-                    {/* Luas Tanah */}
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Luas Tanah (m²)</label>
@@ -594,8 +552,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Luas Bangunan */}
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Luas Bangunan (m²)</label>
@@ -608,8 +564,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Jumlah Lantai */}
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Jumlah Lantai</label>
@@ -622,8 +576,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Kamar Tidur */}
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Kamar Tidur</label>
@@ -636,8 +588,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Kamar Mandi */}
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Kamar Mandi</label>
@@ -650,8 +600,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Dapur */}
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Dapur</label>
@@ -664,8 +612,6 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Ruang Tamu */}
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Ruang Tamu</label>
@@ -678,22 +624,20 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Daya Listrik */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Daya Listrik (VA)</label>
                         <input
                           type="text"
                           className="form-control"
-                          value={val(activeSubmission.detail?.electricity_capacity)}
+                          value={val(
+                            activeSubmission.detail?.electricity_capacity,
+                          )}
                           readOnly
                           placeholder="Contoh: 2200"
                         />
                       </fieldset>
                     </div>
-
-                    {/* Penyedia WiFi */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Penyedia WiFi</label>
@@ -706,38 +650,35 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Sumber Air */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Sumber Air</label>
-                        <ReadonlyDropdown value={val(activeSubmission.detail?.water)} />
+                        <ReadonlyDropdown
+                          value={val(activeSubmission.detail?.water)}
+                        />
                       </fieldset>
                     </div>
-
-                    {/* Jenis Listrik */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Jenis Listrik</label>
-                        <ReadonlyDropdown value={val(activeSubmission.detail?.listrik_type)} />
+                        <ReadonlyDropdown
+                          value={val(activeSubmission.detail?.listrik_type)}
+                        />
                       </fieldset>
                     </div>
 
-                    {/* ===== SECTION 3: GAMBAR PROPERTI ===== */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         🖼️ Gambar Properti
                       </h6>
                     </div>
-
                     <div className="col-12">
-                      {/* Pakai class box-img-upload + item-upload persis seperti Properti.jsx */}
                       <div className="box-img-upload">
                         {activeSubmission.images?.length > 0 ? (
                           activeSubmission.images.map((img, idx) => (
                             <div
                               key={idx}
-                              className={`item-upload${img.is_primary ? " is-primary" : ""}`}
+                              className={`item-upload${img.is_primary ? " is-primary" : " "}`}
                             >
                               <Image
                                 src={img.full_url}
@@ -745,7 +686,6 @@ export default function PropertySubmissions() {
                                 width={615}
                                 height={405}
                               />
-                              {/* Tidak ada tombol hapus / star — readonly */}
                             </div>
                           ))
                         ) : (
@@ -756,14 +696,11 @@ export default function PropertySubmissions() {
                       </div>
                     </div>
 
-                    {/* ===== SECTION 4: DOKUMEN PENDUKUNG ===== */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         📂 Dokumen Pendukung
                       </h6>
                     </div>
-
-                    {/* Sertifikat */}
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Sertifikat</label>
@@ -786,8 +723,6 @@ export default function PropertySubmissions() {
                         )}
                       </fieldset>
                     </div>
-
-                    {/* Tagihan Listrik */}
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Tagihan Listrik</label>
@@ -810,8 +745,6 @@ export default function PropertySubmissions() {
                         )}
                       </fieldset>
                     </div>
-
-                    {/* Tagihan Air */}
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Tagihan Air</label>
@@ -834,12 +767,9 @@ export default function PropertySubmissions() {
                         )}
                       </fieldset>
                     </div>
-
                   </div>
                 </div>
               </div>
-
-              {/* Footer */}
               <div className="modal-footer border-top">
                 <button
                   type="button"
@@ -858,10 +788,9 @@ export default function PropertySubmissions() {
                   {isActionLoading && (
                     <span className="btn-spinner" aria-hidden="true" />
                   )}
-                  <span>Setujui &amp; Publikasikan</span>
+                  <span>Setujui & Publikasikan</span>
                 </button>
               </div>
-
             </div>
           </div>
         </div>

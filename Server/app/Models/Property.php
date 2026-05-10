@@ -38,7 +38,7 @@ class Property extends Model
     protected $casts = [
         'price' => 'integer',
         'views' => 'integer',
-        'building_type' => 'integer',
+        'building_type' => 'string',
         'is_verified' => 'boolean',
     ];
 

@@ -26,8 +26,10 @@ function getBathrooms(property) {
   return property?.detail?.bathrooms ?? property?.baths ?? "-";
 }
 
+// ✅ UPDATED: Gunakan building_type sebagai prioritas
 function getArea(property) {
   return (
+    property?.building_type ??
     property?.detail?.luas_bangunan ??
     property?.sqft ??
     property?.detail?.luas_tanah ??
@@ -45,7 +47,6 @@ function formatHarga(value) {
 }
 
 export default function PropertyGridItems({ properties, showItems }) {
-  // ✅ Ambil semua yang dibutuhkan dari CompareContext
   const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
 
   const items = Array.isArray(properties) ? properties : [];
@@ -86,7 +87,6 @@ export default function PropertyGridItems({ properties, showItems }) {
               </ul>
 
               <div className="list-btn flex gap-8">
-                {/* ✅ Tombol komparasi icon — terhubung ke CompareContext */}
                 <button
                   type="button"
                   className={`btn-icon save hover-tooltip ${added ? "active" : ""}`}
@@ -123,14 +123,14 @@ export default function PropertyGridItems({ properties, showItems }) {
                 <li className="text-1 flex">
                   <span>{getBathrooms(property)}</span>KM
                 </li>
+                {/* ✅ UPDATED: Hapus suffix m2 karena building_type sudah format "56/76" */}
                 <li className="text-1 flex">
-                  <span>{getArea(property)}</span>m2
+                  <span>{getArea(property)}</span>m²
                 </li>
               </ul>
               <div className="bot flex justify-between items-center">
                 <h6 className="price">{formatHarga(property.price)}</h6>
                 <div className="wrap-btn flex">
-                  {/* ✅ Tombol Compare teks di bawah card — terhubung ke CompareContext */}
                   <button
                     type="button"
                     className="compare flex gap-8 items-center text-1"

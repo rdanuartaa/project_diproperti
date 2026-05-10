@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { API_URL, api } from "@/lib/api";
@@ -50,12 +49,27 @@ export default function SubmitPropertyForm() {
   const [primaryNewIndex, setPrimaryNewIndex] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [attention, setAttention] = useState({ open: false, message: "" });
-  
-  // ✅ State untuk Terms & Conditions Modal (tidak otomatis muncul)
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [hasAgreedToTerms, setHasAgreedToTerms] = useState(false);
-  
+
+  // State untuk preview dokumen
+  const [certificatePreview, setCertificatePreview] = useState(null);
+  const [electricBillPreview, setElectricBillPreview] = useState(null);
+  const [waterBillPreview, setWaterBillPreview] = useState(null);
+
   const redirectOnce = useRef(false);
+
+  // ✅ AUTO-CALCULATE BUILDING TYPE (TANPA m²)
+  useEffect(() => {
+    const luasT = String(formData.detail?.luas_tanah ?? "").trim();
+    const luasB = String(formData.detail?.luas_bangunan ?? "").trim();
+    if (luasT && luasB) {
+      setFormData((prev) => ({
+        ...prev,
+        building_type: `${luasB}/${luasT}`,
+      }));
+    }
+  }, [formData.detail.luas_tanah, formData.detail.luas_bangunan]);
 
   useEffect(() => {
     if (!loading && !isAuthenticated && !redirectOnce.current) {
@@ -75,18 +89,20 @@ export default function SubmitPropertyForm() {
   }, [loading, isAuthenticated]);
 
   const totalImages = useMemo(
-    () => (formData.newImages?.length || 0),
-    [formData.newImages]
+    () => formData.newImages?.length || 0,
+    [formData.newImages],
   );
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     if (name.startsWith("detail.")) {
       const key = name.split(".")[1];
       setFormData((prev) => ({
         ...prev,
-        detail: { ...prev.detail, [key]: type === "checkbox" ? checked : value },
+        detail: {
+          ...prev.detail,
+          [key]: type === "checkbox" ? checked : value,
+        },
       }));
     } else {
       setFormData((prev) => ({
@@ -94,10 +110,7 @@ export default function SubmitPropertyForm() {
         [name]: type === "checkbox" ? checked : value,
       }));
     }
-
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const formatThousands = (rawValue) => {
@@ -108,9 +121,7 @@ export default function SubmitPropertyForm() {
 
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
 
   const updateDetail = (field, value) => {
@@ -119,28 +130,25 @@ export default function SubmitPropertyForm() {
       detail: { ...prev.detail, [field]: value },
     }));
     const key = `detail.${field}`;
-    if (errors[key]) {
-      setErrors((prev) => ({ ...prev, [key]: null }));
-    }
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: null }));
   };
 
   const handlePriceChange = (e) => {
     const digits = e.target.value.replace(/\D/g, "");
     setFormData((prev) => ({ ...prev, price: digits }));
-    if (errors.price) {
-      setErrors((prev) => ({ ...prev, price: null }));
-    }
+    if (errors.price) setErrors((prev) => ({ ...prev, price: null }));
   };
 
   const handleImagesChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-
     if (formData.newImages.length + files.length > 10) {
-      setAttention({ open: true, message: "Maksimal 10 gambar diperbolehkan." });
+      setAttention({
+        open: true,
+        message: "Maksimal 10 gambar diperbolehkan.",
+      });
       return;
     }
-
     setFormData((prev) => ({
       ...prev,
       newImages: [...prev.newImages, ...files],
@@ -152,17 +160,29 @@ export default function SubmitPropertyForm() {
       ...prev,
       newImages: prev.newImages.filter((_, i) => i !== index),
     }));
-
-    if (primaryNewIndex === index) {
-      setPrimaryNewIndex(null);
-    } else if (primaryNewIndex !== null && index < primaryNewIndex) {
+    if (primaryNewIndex === index) setPrimaryNewIndex(null);
+    else if (primaryNewIndex !== null && index < primaryNewIndex)
       setPrimaryNewIndex(primaryNewIndex - 1);
+  };
+
+  // Handle file upload dengan preview
+  const handleFileChange = (field, setPreview) => (e) => {
+    const file = e.target.files?.[0] || null;
+    setFormData((prev) => ({ ...prev, [field]: file }));
+
+    // Create preview URL
+    if (file) {
+      const previewUrl = URL.createObjectURL(file);
+      setPreview(previewUrl);
+    } else {
+      setPreview(null);
     }
   };
 
-  const handleFileChange = (field) => (e) => {
-    const file = e.target.files?.[0] || null;
-    setFormData((prev) => ({ ...prev, [field]: file }));
+  // Remove file dengan cleanup preview
+  const handleRemoveFile = (field, setPreview) => () => {
+    setFormData((prev) => ({ ...prev, [field]: null }));
+    setPreview(null);
   };
 
   const validateRequired = () => {
@@ -175,96 +195,72 @@ export default function SubmitPropertyForm() {
       "kecamatan",
       "certificate_type",
     ];
-
     for (const field of requiredMain) {
-      if (!String(formData[field] ?? "").trim()) {
+      if (!String(formData[field] ?? "").trim())
         return "Semua data wajib diisi dan tidak boleh kosong.";
-      }
     }
-
-    if (!String(formData.detail.luas_tanah ?? "").trim()) {
+    if (!String(formData.detail.luas_tanah ?? "").trim())
       return "Luas tanah wajib diisi.";
-    }
-
-    if (totalImages < 1) {
-      return "Minimal upload 1 gambar.";
-    }
-
+    if (totalImages < 1) return "Minimal upload 1 gambar.";
     return null;
   };
 
   const buildPayload = () => {
     const payload = new FormData();
-
     payload.append("title", formData.title);
     payload.append("price", Number(formData.price));
     payload.append("type", formData.type);
-    if (String(formData.building_type || "").trim()) {
+    if (String(formData.building_type || "").trim())
       payload.append("building_type", formData.building_type);
-    }
     payload.append("listing_type", formData.listing_type);
     payload.append("kecamatan", formData.kecamatan);
     payload.append("city", formData.city);
     payload.append("certificate_type", formData.certificate_type);
     payload.append("certificate_status", formData.certificate_status);
     payload.append("description", formData.description || "");
-
     Object.keys(formData.detail).forEach((key) => {
       payload.append(`detail[${key}]`, formData.detail[key]);
     });
-
-    formData.newImages.forEach((file) => {
-      payload.append("images[]", file);
-    });
-
-    if (primaryNewIndex !== null) {
+    formData.newImages.forEach((file) => payload.append("images[]", file));
+    if (primaryNewIndex !== null)
       payload.append("primary_new_index", primaryNewIndex);
-    } else if (formData.newImages.length > 0) {
+    else if (formData.newImages.length > 0)
       payload.append("primary_new_index", 0);
-    }
-
-    if (formData.certificateFile) {
+    if (formData.certificateFile)
       payload.append("certificate_file", formData.certificateFile);
-    }
-    if (formData.electricBillFile) {
+    if (formData.electricBillFile)
       payload.append("electric_bill_file", formData.electricBillFile);
-    }
-    if (formData.waterBillFile) {
+    if (formData.waterBillFile)
       payload.append("water_bill_file", formData.waterBillFile);
-    }
-
     return payload;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // ✅ Validasi: User harus setuju terms sebelum submit
     if (!hasAgreedToTerms) {
       setShowTermsModal(true);
       return;
     }
-    
     setIsSubmitting(true);
     setErrors({});
-
     const requiredError = validateRequired();
     if (requiredError) {
       setAttention({ open: true, message: requiredError });
       setIsSubmitting(false);
       return;
     }
-
     try {
       const payload = buildPayload();
       await api.post("/properties/submit", payload, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 120000,
       });
-
       setShowSuccess(true);
       setFormData(EMPTY_FORM);
       setPrimaryNewIndex(null);
+      setCertificatePreview(null);
+      setElectricBillPreview(null);
+      setWaterBillPreview(null);
     } catch (error) {
       if (error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
@@ -310,122 +306,176 @@ export default function SubmitPropertyForm() {
 
   return (
     <section className="tf-spacing-1 pt-0">
-      <div className="box">
-        <div className="tf-container tf-spacing-1">
-          <SuccessModal
-            isOpen={showSuccess}
-            onClose={() => setShowSuccess(false)}
-            message="Pengajuan properti berhasil dikirim. Admin akan meninjau sebelum ditampilkan."
-          />
-          <AttentionModal
-            isOpen={attention.open}
-            onClose={() => setAttention({ open: false, message: "" })}
-            title="Perhatian"
-            message={attention.message}
-          />
+      <div className="tf-container tf-spacing-1">
+        <SuccessModal
+          isOpen={showSuccess}
+          onClose={() => setShowSuccess(false)}
+          message="Pengajuan properti berhasil dikirim. Admin akan meninjau sebelum ditampilkan."
+        />
+        <AttentionModal
+          isOpen={attention.open}
+          onClose={() => setAttention({ open: false, message: "" })}
+          title="Perhatian"
+          message={attention.message}
+        />
 
-          {/* ✅ MODAL SYARAT & KETENTUAN (Hanya muncul saat diklik) */}
-          {showTermsModal && (
-            <div className="modal fade show" style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}>
-              <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title">📋 Syarat & Ketentuan Penjualan Properti</h5>
-                    <button 
-                      type="button" 
-                      className="btn-close" 
-                      onClick={() => setShowTermsModal(false)}
-                      aria-label="Close"
-                    />
+        {/* MODAL SYARAT & KETENTUAN */}
+        {showTermsModal && (
+          <div
+            className="modal fade show"
+            style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
+          >
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content">
+                <div className="modal-header">
+                  <h5 className="modal-title">
+                    Syarat & Ketentuan Penjualan Properti
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close"
+                    onClick={() => setShowTermsModal(false)}
+                    aria-label="Close"
+                  />
+                </div>
+                <div
+                  className="modal-body"
+                  style={{ maxHeight: "60vh", overflowY: "auto" }}
+                >
+                  <div className="alert alert-info mb-3">
+                    <strong>
+                      Harap baca dengan seksama sebelum menyetujui.
+                    </strong>
                   </div>
-                  <div className="modal-body" style={{ maxHeight: "60vh", overflowY: "auto" }}>
-                    <div className="alert alert-info mb-3">
-                      <strong>⚠️ Harap baca dengan seksama sebelum menyetujui.</strong>
-                    </div>
-                    
-                    <h6 className="fw-bold mb-2">1. Kebijakan Biaya Platform</h6>
-                    <ul className="mb-3">
-                      <li>✅ <strong>GRATIS 100%</strong> untuk mengupload/mendaftarkan properti di platform kami.</li>
-                      <li>✅ Tidak ada biaya admin, biaya listing, atau biaya tersembunyi saat pendaftaran.</li>
-                      <li>⚠️ <strong>Komisi Penjualan:</strong> Jika properti Anda berhasil <u>terjual</u> melalui platform kami, akan dikenakan komisi admin sebesar <strong>2.5% dari harga jual final</strong>.</li>
-                      <li>⚠️ Komisi hanya dibayarkan <strong>setelah transaksi berhasil</strong> dan dana telah diterima oleh penjual.</li>
-                    </ul>
-
-                    <h6 className="fw-bold mb-2">2. Verifikasi & Persetujuan Admin</h6>
-                    <ul className="mb-3">
-                      <li>Semua pengajuan properti akan diverifikasi oleh tim admin sebelum ditampilkan di listing publik.</li>
-                      <li>Admin berhak menolak pengajuan jika data tidak lengkap, tidak valid, atau melanggar kebijakan platform.</li>
-                      <li>Proses verifikasi biasanya memakan waktu 1-3 hari kerja.</li>
-                    </ul>
-
-                    <h6 className="fw-bold mb-2">3. Keabsahan Data</h6>
-                    <ul className="mb-3">
-                      <li>Penjual bertanggung jawab penuh atas keakuratan dan keabsahan semua data yang diupload (gambar, dokumen, deskripsi).</li>
-                      <li>Platform tidak bertanggung jawab atas kerugian akibat data palsu atau menyesatkan dari pihak penjual.</li>
-                      <li>Dokumen pendukung (sertifikat, tagihan) bersifat opsional namun sangat disarankan untuk mempercepat verifikasi.</li>
-                    </ul>
-
-                    <h6 className="fw-bold mb-2">4. Privasi & Keamanan</h6>
-                    <ul className="mb-3">
-                      <li>Data pribadi penjual hanya digunakan untuk keperluan verifikasi dan transaksi.</li>
-                      <li>Kami tidak akan membagikan data kontak Anda kepada pihak ketiga tanpa izin eksplisit.</li>
-                    </ul>
-
-                    <div className="alert alert-warning">
-                      <strong>Dengan mengklik "Saya Setuju", Anda menyatakan telah membaca, memahami, dan menyetujui seluruh syarat & ketentuan di atas.</strong>
-                    </div>
+                  <h6 className="fw-bold mb-2">1. Kebijakan Biaya Platform</h6>
+                  <ul className="mb-3">
+                    <li>
+                      <strong>GRATIS 100%</strong> untuk mengupload/mendaftarkan
+                      properti di platform kami.
+                    </li>
+                    <li>
+                      Tidak ada biaya admin, biaya listing, atau biaya
+                      tersembunyi saat pendaftaran.
+                    </li>
+                    <li>
+                      <strong>Komisi Penjualan:</strong> Jika properti Anda
+                      berhasil <u>terjual</u> melalui platform kami, akan
+                      dikenakan komisi admin sebesar{" "}
+                      <strong>2.5% dari harga jual final</strong>.
+                    </li>
+                    <li>
+                      Komisi hanya dibayarkan{" "}
+                      <strong>setelah transaksi berhasil</strong> dan dana telah
+                      diterima oleh penjual.
+                    </li>
+                  </ul>
+                  <h6 className="fw-bold mb-2">
+                    2. Verifikasi & Persetujuan Admin
+                  </h6>
+                  <ul className="mb-3">
+                    <li>
+                      Semua pengajuan properti akan diverifikasi oleh tim admin
+                      sebelum ditampilkan di listing publik.
+                    </li>
+                    <li>
+                      Admin berhak menolak pengajuan jika data tidak lengkap,
+                      tidak valid, atau melanggar kebijakan platform.
+                    </li>
+                    <li>
+                      Proses verifikasi biasanya memakan waktu 1-3 hari kerja.
+                    </li>
+                  </ul>
+                  <h6 className="fw-bold mb-2">3. Keabsahan Data</h6>
+                  <ul className="mb-3">
+                    <li>
+                      Penjual bertanggung jawab penuh atas keakuratan dan
+                      keabsahan semua data yang diupload.
+                    </li>
+                    <li>
+                      Platform tidak bertanggung jawab atas kerugian akibat data
+                      palsu atau menyesatkan dari pihak penjual.
+                    </li>
+                    <li>
+                      Dokumen pendukung bersifat opsional namun sangat
+                      disarankan untuk mempercepat verifikasi.
+                    </li>
+                  </ul>
+                  <h6 className="fw-bold mb-2">4. Privasi & Keamanan</h6>
+                  <ul className="mb-3">
+                    <li>
+                      Data pribadi penjual hanya digunakan untuk keperluan
+                      verifikasi dan transaksi.
+                    </li>
+                    <li>
+                      Kami tidak akan membagikan data kontak Anda kepada pihak
+                      ketiga tanpa izin eksplisit.
+                    </li>
+                  </ul>
+                  <div className="alert alert-warning">
+                    <strong>
+                      Dengan mengklik "Saya Setuju", Anda menyatakan telah
+                      membaca, memahami, dan menyetujui seluruh syarat &
+                      ketentuan di atas.
+                    </strong>
                   </div>
-                  <div className="modal-footer">
-                    <button 
-                      type="button" 
-                      className="tf-btn style-border pd-23"
-                      onClick={() => setShowTermsModal(false)}
-                    >
-                      Tutup
-                    </button>
-                    <button 
-                      type="button" 
-                      className="tf-btn bg-color-primary pd-23"
-                      onClick={() => {
-                        setHasAgreedToTerms(true);
-                        setShowTermsModal(false);
-                      }}
-                    >
-                      ✅ Saya Setuju
-                    </button>
-                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button
+                    type="button"
+                    className="tf-btn style-border pd-23"
+                    onClick={() => setShowTermsModal(false)}
+                  >
+                    Tutup
+                  </button>
+                  <button
+                    type="button"
+                    className="tf-btn bg-color-primary pd-23"
+                    onClick={() => {
+                      setHasAgreedToTerms(true);
+                      setShowTermsModal(false);
+                    }}
+                  >
+                    Saya Setuju
+                  </button>
                 </div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
+        {/* MAIN CARD */}
+        <div className="box">
           <div className="row">
             <div className="col-12">
+              {/* HEADER INSIDE CARD */}
               <div style={{ marginBottom: "24px" }}>
                 <h2 className="fw-7">Jual Properti</h2>
                 <p style={{ color: "#6b7280" }}>
-                  Lengkapi data properti, detail, dan gambar. Admin akan memverifikasi sebelum tampil di listing.
+                  Lengkapi data properti, detail, dan gambar. Admin akan
+                  memverifikasi sebelum tampil di listing.
                 </p>
               </div>
 
-              {/* ✅ Notifikasi Kebijakan Singkat */}
               <div className="alert alert-warning mb-4" role="alert">
-                <strong>📌 Info Penting:</strong> Listing properti <u>GRATIS</u>. Komisi <strong>2.5%</strong> hanya dikenakan jika properti <u>berhasil terjual</u>.
+                <strong>Info Penting:</strong> Listing properti <u>GRATIS</u>.
+                Komisi <strong>2.5%</strong> hanya dikenakan jika properti{" "}
+                <u>berhasil terjual</u>.
               </div>
 
-              <form onSubmit={handleSubmit} className="form-contact modal-form-spacing">
+              <form onSubmit={handleSubmit} className="modal-form-spacing">
                 <div className="modal-body-wide pd-0">
                   <div className="row g-3">
-                    {/* === SECTION 1: BASIC INFO === */}
+                    {/* INFORMASI DASAR */}
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        📋 Informasi Dasar
+                        Informasi Dasar
                       </h6>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Judul</label>
+                        <label>
+                          Judul <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
                           name="title"
@@ -442,12 +492,14 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Harga (Rp)</label>
+                        <label>
+                          Harga (Rp) <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
+                          inputMode="numeric"
                           name="price"
                           className={`form-control ${errors.price ? "border-red-500" : ""}`}
                           placeholder="Contoh: 500.000.000"
@@ -462,32 +514,43 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label htmlFor="type">Tipe</label>
+                        <label>
+                          Tipe <span className="text-danger">*</span>
+                        </label>
                         <DropdownSelect
-                          options={["rumah", "perumahan", "ruko", "kos", "tanah"]}
+                          options={[
+                            "rumah",
+                            "perumahan",
+                            "ruko",
+                            "kos",
+                            "tanah",
+                          ]}
                           selectedValue={formData.type}
                           onChange={(value) => updateField("type", value)}
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label htmlFor="listing_type">Tipe Listing</label>
+                        <label>
+                          Tipe Listing <span className="text-danger">*</span>
+                        </label>
                         <DropdownSelect
                           options={["jual", "sewa"]}
                           selectedValue={formData.listing_type}
-                          onChange={(value) => updateField("listing_type", value)}
+                          onChange={(value) =>
+                            updateField("listing_type", value)
+                          }
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Kecamatan</label>
+                        <label>
+                          Kecamatan <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
                           name="kecamatan"
@@ -504,10 +567,11 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Kota</label>
+                        <label>
+                          Kota <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="text"
                           name="city"
@@ -524,58 +588,63 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label htmlFor="certificate_type">Jenis Sertifikat</label>
+                        <label>
+                          Jenis Sertifikat{" "}
+                          <span className="text-danger">*</span>
+                        </label>
                         <DropdownSelect
                           options={["SHM", "SHGB"]}
                           selectedValue={formData.certificate_type}
-                          onChange={(value) => updateField("certificate_type", value)}
+                          onChange={(value) =>
+                            updateField("certificate_type", value)
+                          }
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label htmlFor="certificate_status">Status Sertifikat</label>
+                        <label>
+                          Status Sertifikat{" "}
+                          <span className="text-danger">*</span>
+                        </label>
                         <DropdownSelect
                           options={["lunas", "bank"]}
                           selectedValue={formData.certificate_status}
-                          onChange={(value) => updateField("certificate_status", value)}
+                          onChange={(value) =>
+                            updateField("certificate_status", value)
+                          }
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Deskripsi</label>
                         <textarea
                           name="description"
-                          className={`textarea ${errors.description ? "border-red-500" : ""}`}
-                          value={formData.description}
-                          onChange={handleChange}
+                          className="textarea"
                           rows={3}
                           placeholder="Ceritakan keunggulan properti"
+                          value={formData.description}
+                          onChange={handleChange}
                         />
-                        {errors.description && (
-                          <p className="text-red-500 text-xs mt-1">
-                            {errors.description[0]}
-                          </p>
-                        )}
                       </fieldset>
                     </div>
 
-                    {/* === SECTION 2: PROPERTY DETAILS === */}
+                    {/* DETAIL PROPETI - 4 COLUMNS */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🏠 Detail Properti
+                        Detail Properti
                       </h6>
                     </div>
 
-                    <div className="col-md-4">
+                    {/* Row 1 */}
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
-                        <label>Luas Tanah (m²)</label>
+                        <label>
+                          Luas Tanah (m²) <span className="text-danger">*</span>
+                        </label>
                         <input
                           type="number"
                           name="detail.luas_tanah"
@@ -592,8 +661,7 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Luas Bangunan (m²)</label>
                         <input
@@ -611,8 +679,25 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
+                      <fieldset className="box-fieldset">
+                        <label>Tipe Bangunan</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={
+                            formData.building_type ||
+                            "Otomatis: Luas Bangunan / Luas Tanah"
+                          }
+                          readOnly
+                          placeholder="Contoh: 56/76"
+                        />
+                        <small className="text-muted">
+                          Diisi otomatis dari Luas Bangunan / Luas Tanah
+                        </small>
+                      </fieldset>
+                    </div>
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Lantai</label>
                         <input
@@ -630,7 +715,8 @@ export default function SubmitPropertyForm() {
                       </fieldset>
                     </div>
 
-                    <div className="col-md-4">
+                    {/* Row 2 */}
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Kamar Tidur</label>
                         <input
@@ -647,8 +733,7 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Kamar Mandi</label>
                         <input
@@ -665,8 +750,7 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Dapur</label>
                         <input
@@ -683,8 +767,7 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Ruang Tamu</label>
                         <input
@@ -702,7 +785,8 @@ export default function SubmitPropertyForm() {
                       </fieldset>
                     </div>
 
-                    <div className="col-md-4">
+                    {/* Row 3 */}
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Daya Listrik (VA)</label>
                         <input
@@ -720,10 +804,9 @@ export default function SubmitPropertyForm() {
                         )}
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
-                        <label htmlFor="detail.water">Sumber Air</label>
+                        <label>Sumber Air</label>
                         <DropdownSelect
                           options={["pdam", "sumur"]}
                           selectedValue={formData.detail.water}
@@ -731,19 +814,19 @@ export default function SubmitPropertyForm() {
                         />
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
-                        <label htmlFor="detail.listrik_type">Tipe Listrik</label>
+                        <label>Tipe Listrik</label>
                         <DropdownSelect
                           options={["overground", "underground"]}
                           selectedValue={formData.detail.listrik_type}
-                          onChange={(value) => updateDetail("listrik_type", value)}
+                          onChange={(value) =>
+                            updateDetail("listrik_type", value)
+                          }
                         />
                       </fieldset>
                     </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Provider Wifi</label>
                         <input
@@ -762,6 +845,7 @@ export default function SubmitPropertyForm() {
                       </fieldset>
                     </div>
 
+                    {/* Checkboxes */}
                     <div className="col-12 mt-2">
                       <div className="row g-3">
                         <div className="col-md-3">
@@ -772,7 +856,7 @@ export default function SubmitPropertyForm() {
                                 name="detail.carport"
                                 checked={formData.detail.carport}
                                 onChange={handleChange}
-                              />
+                              />{" "}
                               Carport
                             </label>
                           </fieldset>
@@ -785,7 +869,7 @@ export default function SubmitPropertyForm() {
                                 name="detail.garden"
                                 checked={formData.detail.garden}
                                 onChange={handleChange}
-                              />
+                              />{" "}
                               Taman
                             </label>
                           </fieldset>
@@ -798,7 +882,7 @@ export default function SubmitPropertyForm() {
                                 name="detail.one_gate_system"
                                 checked={formData.detail.one_gate_system}
                                 onChange={handleChange}
-                              />
+                              />{" "}
                               One Gate System
                             </label>
                           </fieldset>
@@ -811,7 +895,7 @@ export default function SubmitPropertyForm() {
                                 name="detail.security_24jam"
                                 checked={formData.detail.security_24jam}
                                 onChange={handleChange}
-                              />
+                              />{" "}
                               Keamanan 24 Jam
                             </label>
                           </fieldset>
@@ -819,33 +903,17 @@ export default function SubmitPropertyForm() {
                       </div>
                     </div>
 
-                    {/* === SECTION 3: IMAGES === */}
+                    {/* GAMBAR PROPETI */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🖼️ Gambar Properti
+                        Gambar Properti
                       </h6>
                     </div>
-
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <div className="box-uploadfile text-center">
                           <div className="uploadfile">
                             <label className="tf-btn bg-color-primary pd-10 btn-upload mx-auto">
-                              <svg
-                                width={21}
-                                height={20}
-                                viewBox="0 0 21 20"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M13.625 14.375V17.1875C13.625 17.705 13.205 18.125 12.6875 18.125H4.5625C4.31386 18.125 4.0754 18.0262 3.89959 17.8504C3.72377 17.6746 3.625 17.4361 3.625 17.1875V6.5625C3.625 6.045 4.045 5.625 4.5625 5.625H6.125C6.54381 5.62472 6.96192 5.65928 7.375 5.72834M13.625 14.375H16.4375C16.955 14.375 17.375 13.955 17.375 13.4375V9.375C17.375 5.65834 14.6725 2.57417 11.125 1.97834C10.7119 1.90928 10.2938 1.87472 9.875 1.875H8.3125C7.795 1.875 7.375 2.295 7.375 2.8125V5.72834M13.625 14.375H8.3125C8.06386 14.375 7.8254 14.2762 7.64959 14.1004C7.47377 13.9246 7.375 13.6861 7.375 13.4375V5.72834M17.375 11.25V9.6875C17.375 8.94158 17.0787 8.22621 16.5512 7.69876C16.0238 7.17132 15.3084 6.875 14.5625 6.875H13.3125C13.0639 6.875 12.8254 6.77623 12.6496 6.60041C12.4738 6.4246 12.375 6.18614 12.375 5.9375V4.6875C12.375 4.31816 12.3023 3.95243 12.1609 3.6112C12.0196 3.26998 11.8124 2.95993 11.5512 2.69876C11.2901 2.4376 10.98 2.23043 10.6388 2.08909C10.2976 1.94775 9.93184 1.875 9.5625 1.875H8.625"
-                                  stroke="white"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
                               Pilih foto
                               <input
                                 type="file"
@@ -861,110 +929,278 @@ export default function SubmitPropertyForm() {
                             </p>
                           </div>
                         </div>
-                      </fieldset>
-
-                      {totalImages > 0 && (
-                        <div className="box-img-upload mt-3">
-                          {formData.newImages.map((file, index) => (
-                            <div
-                              key={`${file.name}-${index}`}
-                              className={`item-upload file-delete${
-                                primaryNewIndex === index ? " is-primary" : ""
-                              }`}
-                            >
-                              <Image
-                                src={URL.createObjectURL(file)}
-                                alt={`Preview ${index + 1}`}
-                                width={615}
-                                height={405}
-                              />
-                              <button
-                                type="button"
-                                className="icon primary-toggle"
-                                onClick={() => setPrimaryNewIndex(index)}
-                                aria-label="Jadikan utama"
+                        {totalImages > 0 && (
+                          <div className="box-img-upload mt-3">
+                            {formData.newImages.map((file, index) => (
+                              <div
+                                key={`${file.name}-${index}`}
+                                className={`item-upload file-delete${primaryNewIndex === index ? " is-primary" : ""}`}
                               >
-                                <svg
-                                  width={16}
-                                  height={16}
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
+                                <Image
+                                  src={URL.createObjectURL(file)}
+                                  alt={`Preview ${index + 1}`}
+                                  width={615}
+                                  height={405}
+                                />
+                                <button
+                                  type="button"
+                                  className="icon primary-toggle"
+                                  onClick={() => setPrimaryNewIndex(index)}
+                                  aria-label="Jadikan utama"
                                 >
-                                  <path
-                                    d="M12 3.5L14.7 8.97L20.75 9.85L16.37 14.1L17.4 20.12L12 17.28L6.6 20.12L7.63 14.1L3.25 9.85L9.3 8.97L12 3.5Z"
-                                    stroke="white"
-                                    strokeWidth="1.6"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              </button>
-                              <button
-                                type="button"
-                                className="icon icon-trashcan1 remove-file"
-                                onClick={() => handleRemoveImage(index)}
-                                aria-label="Hapus"
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                                  <svg
+                                    width={16}
+                                    height={16}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M12 3.5L14.7 8.97L20.75 9.85L16.37 14.1L17.4 20.12L12 17.28L6.6 20.12L7.63 14.1L3.25 9.85L9.3 8.97L12 3.5Z"
+                                      stroke="white"
+                                      strokeWidth="1.6"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="icon icon-trashcan1 remove-file"
+                                  onClick={() => handleRemoveImage(index)}
+                                  aria-label="Hapus"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </fieldset>
                     </div>
 
-                    {/* === SECTION 4: DOCUMENTS === */}
+                    {/* DOKUMEN PENDUKUNG DENGAN PREVIEW */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        📂 Dokumen Pendukung (Opsional)
+                        Dokumen Pendukung (Opsional)
                       </h6>
+                      <p className="text-muted mb-3">
+                        Unggah dokumen untuk mempercepat proses verifikasi
+                        admin. Format: PDF, JPG, PNG (Maks 5MB per file).
+                      </p>
+
+                      <div className="row g-3">
+                        {/* Sertifikat */}
+                        <div className="col-md-4">
+                          <fieldset className="box-fieldset">
+                            <label>Sertifikat</label>
+                            <div
+                              className="border rounded p-3 text-center"
+                              style={{
+                                minHeight: "150px",
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                border: "2px dashed #dee2e6",
+                              }}
+                            >
+                              {certificatePreview ? (
+                                <div className="w-100">
+                                  <div className="mb-2">
+                                    <span className="badge bg-success mb-2">
+                                      File Terpilih
+                                    </span>
+                                  </div>
+                                  <p
+                                    className="text-truncate mb-2"
+                                    style={{
+                                      maxWidth: "200px",
+                                      margin: "0 auto",
+                                    }}
+                                  >
+                                    {formData.certificateFile?.name}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() =>
+                                      handleRemoveFile(
+                                        "certificateFile",
+                                        setCertificatePreview,
+                                      )
+                                    }
+                                  >
+                                    Hapus File
+                                  </button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="tf-btn style-border pd-8 btn-upload w-100 mb-2">
+                                    Pilih File
+                                    <input
+                                      type="file"
+                                      className="ip-file"
+                                      accept=".pdf,image/*"
+                                      onChange={handleFileChange(
+                                        "certificateFile",
+                                        setCertificatePreview,
+                                      )}
+                                    />
+                                  </label>
+                                  <p className="text-xs text-muted mb-0">
+                                    PDF, JPG, PNG (Maks 5MB)
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </fieldset>
+                        </div>
+
+                        {/* Tagihan Listrik */}
+                        <div className="col-md-4">
+                          <fieldset className="box-fieldset">
+                            <label>Tagihan Listrik</label>
+                            <div
+                              className="border rounded p-3 text-center"
+                              style={{
+                                minHeight: "150px",
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                border: "2px dashed #dee2e6",
+                              }}
+                            >
+                              {electricBillPreview ? (
+                                <div className="w-100">
+                                  <div className="mb-2">
+                                    <span className="badge bg-success mb-2">
+                                      File Terpilih
+                                    </span>
+                                  </div>
+                                  <p
+                                    className="text-truncate mb-2"
+                                    style={{
+                                      maxWidth: "200px",
+                                      margin: "0 auto",
+                                    }}
+                                  >
+                                    {formData.electricBillFile?.name}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() =>
+                                      handleRemoveFile(
+                                        "electricBillFile",
+                                        setElectricBillPreview,
+                                      )
+                                    }
+                                  >
+                                    Hapus File
+                                  </button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="tf-btn style-border pd-8 btn-upload w-100 mb-2">
+                                    Pilih File
+                                    <input
+                                      type="file"
+                                      className="ip-file"
+                                      accept=".pdf,image/*"
+                                      onChange={handleFileChange(
+                                        "electricBillFile",
+                                        setElectricBillPreview,
+                                      )}
+                                    />
+                                  </label>
+                                  <p className="text-xs text-muted mb-0">
+                                    PDF, JPG, PNG (Maks 5MB)
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </fieldset>
+                        </div>
+
+                        {/* Tagihan Air */}
+                        <div className="col-md-4">
+                          <fieldset className="box-fieldset">
+                            <label>Tagihan Air</label>
+                            <div
+                              className="border rounded p-3 text-center"
+                              style={{
+                                minHeight: "150px",
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                border: "2px dashed #dee2e6",
+                              }}
+                            >
+                              {waterBillPreview ? (
+                                <div className="w-100">
+                                  <div className="mb-2">
+                                    <span className="badge bg-success mb-2">
+                                      File Terpilih
+                                    </span>
+                                  </div>
+                                  <p
+                                    className="text-truncate mb-2"
+                                    style={{
+                                      maxWidth: "200px",
+                                      margin: "0 auto",
+                                    }}
+                                  >
+                                    {formData.waterBillFile?.name}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() =>
+                                      handleRemoveFile(
+                                        "waterBillFile",
+                                        setWaterBillPreview,
+                                      )
+                                    }
+                                  >
+                                    Hapus File
+                                  </button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <label className="tf-btn style-border pd-8 btn-upload w-100 mb-2">
+                                    Pilih File
+                                    <input
+                                      type="file"
+                                      className="ip-file"
+                                      accept=".pdf,image/*"
+                                      onChange={handleFileChange(
+                                        "waterBillFile",
+                                        setWaterBillPreview,
+                                      )}
+                                    />
+                                  </label>
+                                  <p className="text-xs text-muted mb-0">
+                                    PDF, JPG, PNG (Maks 5MB)
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </fieldset>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="row g-3">
-                      <div className="col-md-4">
-                        <fieldset className="box-fieldset">
-                          <label>Sertifikat</label>
-                          <input
-                            type="file"
-                            className="form-control"
-                            accept=".pdf,image/*"
-                            onChange={handleFileChange("certificateFile")}
-                          />
-                        </fieldset>
-                      </div>
-                      <div className="col-md-4">
-                        <fieldset className="box-fieldset">
-                          <label>Tagihan Listrik</label>
-                          <input
-                            type="file"
-                            className="form-control"
-                            accept=".pdf,image/*"
-                            onChange={handleFileChange("electricBillFile")}
-                          />
-                        </fieldset>
-                      </div>
-                      <div className="col-md-4">
-                        <fieldset className="box-fieldset">
-                          <label>Tagihan Air</label>
-                          <input
-                            type="file"
-                            className="form-control"
-                            accept=".pdf,image/*"
-                            onChange={handleFileChange("waterBillFile")}
-                          />
-                        </fieldset>
-                      </div>
-                    </div>
-
-                    {/* ✅ LINK SYARAT & KETENTUAN (Clickable Text) */}
+                    {/* SYARAT & KETENTUAN + SUBMIT */}
                     <div className="col-12 mt-4">
-                      <div className="text-center">
+                      <div className="text-center mb-4">
                         <button
                           type="button"
                           className="btn btn-link text-decoration-none fw-6"
                           style={{ color: "#2563eb", fontSize: "0.95rem" }}
                           onClick={() => setShowTermsModal(true)}
                         >
-                          📋 Baca Syarat & Ketentuan Penjualan
+                          Baca Syarat & Ketentuan Penjualan
                         </button>
                         {hasAgreedToTerms && (
                           <span className="text-success ms-2 fw-5">
@@ -972,37 +1208,37 @@ export default function SubmitPropertyForm() {
                           </span>
                         )}
                       </div>
-                    </div>
-
-                    {/* ✅ Tombol Submit */}
-                    <div style={{ marginTop: "24px" }}>
                       <button
                         type="submit"
-                        className={`tf-btn fw-7 pd-8 w-100 ${
-                          !hasAgreedToTerms 
-                            ? "bg-secondary disabled" 
-                            : "bg-color-primary"
-                        } ${isSubmitting ? "is-loading" : ""}`}
+                        className={`tf-btn fw-7 pd-8 w-100 ${!hasAgreedToTerms ? "bg-secondary disabled" : "bg-color-primary"} ${isSubmitting ? "is-loading" : ""}`}
                         disabled={isSubmitting || !hasAgreedToTerms}
-                        onClick={!hasAgreedToTerms ? (e) => {
-                          e.preventDefault();
-                          setShowTermsModal(true);
-                        } : undefined}
+                        onClick={
+                          !hasAgreedToTerms
+                            ? (e) => {
+                                e.preventDefault();
+                                setShowTermsModal(true);
+                              }
+                            : undefined
+                        }
                       >
-                        {isSubmitting && <span className="btn-spinner" aria-hidden="true" />}
+                        {isSubmitting && (
+                          <span className="btn-spinner" aria-hidden="true" />
+                        )}
                         <span>
-                          {isSubmitting 
-                            ? "Mengirim..." 
-                            : !hasAgreedToTerms 
-                              ? "📋 Setujui Syarat & Ketentuan Terlebih Dahulu" 
-                              : "✅ Kirim Pengajuan"}
+                          {isSubmitting
+                            ? "Mengirim..."
+                            : !hasAgreedToTerms
+                              ? "Setujui Syarat & Ketentuan Terlebih Dahulu"
+                              : "Kirim Pengajuan"}
                         </span>
                       </button>
-                      
-                      {/* Helper text */}
                       {!hasAgreedToTerms && (
-                        <p className="text-muted text-center mt-2 mb-0" style={{ fontSize: "0.875rem" }}>
-                          Klik link di atas untuk membaca dan menyetujui syarat penjualan
+                        <p
+                          className="text-muted text-center mt-2 mb-0"
+                          style={{ fontSize: "0.875rem" }}
+                        >
+                          Klik link di atas untuk membaca dan menyetujui syarat
+                          penjualan
                         </p>
                       )}
                     </div>

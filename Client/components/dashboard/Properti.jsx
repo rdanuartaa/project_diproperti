@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,50 +9,38 @@ import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
 
 export default function Properti() {
-  // State untuk data & UI
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
-  // UI state for primary image selection (new uploads)
   const [primaryNewIndex, setPrimaryNewIndex] = useState(null);
-
-  // State untuk modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [activeProperty, setActiveProperty] = useState(null);
-
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAttentionModal, setShowAttentionModal] = useState(false);
   const [attentionMessage, setAttentionMessage] = useState("");
-  
-  // ✅ PERUBAHAN PENTING: Default filter status = "published"
-  // Agar properti pending/draft TIDAK muncul secara default di Kelola Properti
   const [filters, setFilters] = useState({ status: "published", search: "" });
-  
   const [primaryExistingId, setPrimaryExistingId] = useState(null);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
-
-  // State untuk form
   const [formData, setFormData] = useState({
-    title: "",
-    price: "",
-    type: "rumah",
-    building_type: "",
-    listing_type: "jual",
-    kecamatan: "",
-    city: "Jember",
-    certificate_type: "SHM",
-    certificate_status: "lunas",
-    status: "draft",
-    description: "",
+    title: " ",
+    price: " ",
+    type: "rumah ",
+    building_type: " ",
+    listing_type: "jual ",
+    kecamatan: " ",
+    city: "Jember ",
+    certificate_type: "SHM ",
+    certificate_status: "lunas ",
+    status: "draft ",
+    description: " ",
     detail: {
-      luas_tanah: "",
-      luas_bangunan: "",
+      luas_tanah: " ",
+      luas_bangunan: " ",
       floors: 1,
       bedrooms: 0,
       bathrooms: 0,
@@ -62,10 +49,10 @@ export default function Properti() {
       carport: false,
       garden: false,
       electricity_capacity: "",
-      water: "pdam",
+      water: "pdam ",
       one_gate_system: false,
       security_24jam: false,
-      listrik_type: "overground",
+      listrik_type: "overground ",
       wifi_provider: "",
     },
     newImages: [],
@@ -78,48 +65,45 @@ export default function Properti() {
     [activeProperty],
   );
 
+  // ✅ AUTO-CALCULATE BUILDING TYPE (ADMIN)
+  useEffect(() => {
+    const luasT = String(formData.detail?.luas_tanah ?? "").trim();
+    const luasB = String(formData.detail?.luas_bangunan ?? "").trim();
+    if (luasT && luasB) {
+      setFormData((prev) => ({
+        ...prev,
+        building_type: `${luasB}/${luasT}`,
+      }));
+    }
+  }, [formData.detail.luas_tanah, formData.detail.luas_bangunan]);
+
   const filteredProperties = useMemo(() => {
     const statusFilter = filters.status?.toLowerCase();
     const searchQuery = filters.search?.toLowerCase().trim();
-
     return properties.filter((property) => {
-      // Logic filter status: jika "All" tampilkan semua, jika tidak cocokkan dengan status properti
       const matchesStatus =
         !statusFilter || statusFilter === "all"
           ? true
-          : (property.status || "").toLowerCase() === statusFilter;
-
-      if (!searchQuery) {
-        return matchesStatus;
-      }
-
-      const title = (property.title || "").toLowerCase();
-      const description = (property.description || "").toLowerCase();
-      const kecamatan = (property.kecamatan || "").toLowerCase();
-
+          : (property.status || " ").toLowerCase() === statusFilter;
+      if (!searchQuery) return matchesStatus;
+      const title = (property.title || " ").toLowerCase();
+      const description = (property.description || " ").toLowerCase();
+      const kecamatan = (property.kecamatan || " ").toLowerCase();
       const matchesSearch =
         title.includes(searchQuery) ||
         description.includes(searchQuery) ||
         kecamatan.includes(searchQuery);
-
       return matchesStatus && matchesSearch;
     });
   }, [properties, filters]);
 
-  // 🔹 Fetch properties dari API
   const fetchProperties = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-
-      // ✅ Kirim parameter status ke API (default: published)
-      if (filters.status && filters.status !== "All") {
+      if (filters.status && filters.status !== "All")
         params.append("status", filters.status);
-      }
-      if (filters.search) {
-        params.append("search", filters.search);
-      }
-
+      if (filters.search) params.append("search", filters.search);
       const response = await api.get(`/admin/properties?${params}`);
       setProperties(response.data.data || response.data);
     } catch (error) {
@@ -129,15 +113,12 @@ export default function Properti() {
     }
   };
 
-  // ✅ Fetch data saat filter berubah
   useEffect(() => {
     fetchProperties();
   }, [filters]);
 
-  // 🔹 Handle input change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     if (name.includes("detail.")) {
       const detailKey = name.split(".")[1];
       setFormData((prev) => ({
@@ -153,10 +134,7 @@ export default function Properti() {
         [name]: type === "checkbox" ? checked : value,
       }));
     }
-
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
   };
 
   const formatThousands = (rawValue) => {
@@ -168,12 +146,9 @@ export default function Properti() {
   const handlePriceChange = (e) => {
     const digits = e.target.value.replace(/\D/g, "");
     setFormData((prev) => ({ ...prev, price: digits }));
-    if (errors.price) {
-      setErrors((prev) => ({ ...prev, price: null }));
-    }
+    if (errors.price) setErrors((prev) => ({ ...prev, price: null }));
   };
 
-  // 🔹 Handle image upload
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length + formData.newImages.length > 10) {
@@ -196,20 +171,16 @@ export default function Properti() {
       .map(([field, messages]) => `${field}: ${messages?.[0] || "Invalid"}`)
       .join(" | ");
 
-  // 🔹 Remove new image
   const handleRemoveNewImage = (index) => {
-    if (primaryNewIndex === index) {
-      setPrimaryNewIndex(null);
-    } else if (primaryNewIndex !== null && index < primaryNewIndex) {
+    if (primaryNewIndex === index) setPrimaryNewIndex(null);
+    else if (primaryNewIndex !== null && index < primaryNewIndex)
       setPrimaryNewIndex(primaryNewIndex - 1);
-    }
     setFormData((prev) => ({
       ...prev,
       newImages: prev.newImages.filter((_, i) => i !== index),
     }));
   };
 
-  // 🔹 Remove existing image
   const handleRemoveExistingImage = (imageId) => {
     setFormData((prev) => {
       const nextExistingImages = prev.existingImages.filter(
@@ -218,20 +189,15 @@ export default function Properti() {
       const nextImagesToDelete = prev.imagesToDelete.includes(imageId)
         ? prev.imagesToDelete
         : [...prev.imagesToDelete, imageId];
-
       return {
         ...prev,
         existingImages: nextExistingImages,
         imagesToDelete: nextImagesToDelete,
       };
     });
-
-    if (primaryExistingId === imageId) {
-      setPrimaryExistingId(null);
-    }
+    if (primaryExistingId === imageId) setPrimaryExistingId(null);
   };
 
-  // 🔹 Reset form
   const resetForm = () => {
     setPrimaryNewIndex(null);
     setPrimaryExistingId(null);
@@ -239,14 +205,14 @@ export default function Properti() {
     setFormData({
       title: "",
       price: "",
-      type: "rumah",
+      type: "rumah ",
       building_type: "",
-      listing_type: "jual",
+      listing_type: "jual ",
       kecamatan: "",
-      city: "Jember",
-      certificate_type: "SHM",
-      certificate_status: "lunas",
-      status: "draft",
+      city: "Jember ",
+      certificate_type: "SHM ",
+      certificate_status: "lunas ",
+      status: "draft ",
       description: "",
       detail: {
         luas_tanah: "",
@@ -258,11 +224,11 @@ export default function Properti() {
         living_rooms: 0,
         carport: false,
         garden: false,
-        electricity_capacity: "",
-        water: "pdam",
+        electricity_capacity: " ",
+        water: "pdam ",
         one_gate_system: false,
         security_24jam: false,
-        listrik_type: "overground",
+        listrik_type: "overground ",
         wifi_provider: "",
       },
       newImages: [],
@@ -272,30 +238,29 @@ export default function Properti() {
     setErrors({});
   };
 
-  // 🔹 Open modal
   const openCreate = () => {
     resetForm();
     setIsCreateOpen(true);
   };
 
   const mapPropertyToFormData = (property) => ({
-    title: property.title || "",
-    price: property.price || "",
-    type: property.type || "rumah",
+    title: property.title || " ",
+    price: property.price || " ",
+    type: property.type || "rumah ",
     building_type:
       property.building_type !== null && property.building_type !== undefined
         ? property.building_type
-        : "",
-    listing_type: property.listing_type || "jual",
-    kecamatan: property.kecamatan || "",
-    city: property.city || "Jember",
-    certificate_type: property.certificate_type || "SHM",
-    certificate_status: property.certificate_status || "lunas",
-    status: property.status || "draft",
-    description: property.description || "",
+        : " ",
+    listing_type: property.listing_type || "jual ",
+    kecamatan: property.kecamatan || " ",
+    city: property.city || "Jember ",
+    certificate_type: property.certificate_type || "SHM ",
+    certificate_status: property.certificate_status || "lunas ",
+    status: property.status || "draft ",
+    description: property.description || " ",
     detail: {
-      luas_tanah: property.detail?.luas_tanah || "",
-      luas_bangunan: property.detail?.luas_bangunan || "",
+      luas_tanah: property.detail?.luas_tanah || " ",
+      luas_bangunan: property.detail?.luas_bangunan || " ",
       floors: property.detail?.floors || 1,
       bedrooms: property.detail?.bedrooms || 0,
       bathrooms: property.detail?.bathrooms || 0,
@@ -303,12 +268,12 @@ export default function Properti() {
       living_rooms: property.detail?.living_rooms || 0,
       carport: property.detail?.carport || false,
       garden: property.detail?.garden || false,
-      electricity_capacity: property.detail?.electricity_capacity || "",
-      water: property.detail?.water || "pdam",
+      electricity_capacity: property.detail?.electricity_capacity || " ",
+      water: property.detail?.water || "pdam ",
       one_gate_system: property.detail?.one_gate_system || false,
       security_24jam: property.detail?.security_24jam || false,
-      listrik_type: property.detail?.listrik_type || "overground",
-      wifi_provider: property.detail?.wifi_provider || "",
+      listrik_type: property.detail?.listrik_type || "overground ",
+      wifi_provider: property.detail?.wifi_provider || " ",
     },
     newImages: [],
     existingImages: property.images || [],
@@ -319,7 +284,8 @@ export default function Properti() {
     setPrimaryNewIndex(null);
     setActiveProperty(property);
     const nextFormData = mapPropertyToFormData(property);
-    const currentPrimaryId = property.images?.find((img) => img.is_primary)?.id || null;
+    const currentPrimaryId =
+      property.images?.find((img) => img.is_primary)?.id || null;
     setPrimaryExistingId(currentPrimaryId);
     setFormData(nextFormData);
     setInitialSnapshot(buildSnapshot(nextFormData, currentPrimaryId, null));
@@ -331,7 +297,6 @@ export default function Properti() {
     setActiveProperty(property);
     setShowConfirmModal(true);
   };
-
   const closeAll = () => {
     setIsCreateOpen(false);
     setIsEditOpen(false);
@@ -339,7 +304,6 @@ export default function Properti() {
     setPrimaryNewIndex(null);
     resetForm();
   };
-
   const showSuccess = (message) => {
     setSuccessMessage(message);
     setShowSuccessModal(true);
@@ -347,20 +311,20 @@ export default function Properti() {
   };
 
   const buildSnapshot = (data, primaryId, primaryIndex) => ({
-    title: data.title?.trim() || "",
-    price: String(data.price ?? ""),
-    type: data.type || "",
-    building_type: data.building_type ?? "",
-    listing_type: data.listing_type || "",
-    kecamatan: data.kecamatan || "",
-    city: data.city || "",
-    certificate_type: data.certificate_type || "",
-    certificate_status: data.certificate_status || "",
-    status: data.status || "",
-    description: data.description || "",
+    title: data.title?.trim() || " ",
+    price: String(data.price ?? " "),
+    type: data.type || " ",
+    building_type: data.building_type ?? " ",
+    listing_type: data.listing_type || " ",
+    kecamatan: data.kecamatan || " ",
+    city: data.city || " ",
+    certificate_type: data.certificate_type || " ",
+    certificate_status: data.certificate_status || " ",
+    status: data.status || " ",
+    description: data.description || " ",
     detail: {
-      luas_tanah: data.detail?.luas_tanah ?? "",
-      luas_bangunan: data.detail?.luas_bangunan ?? "",
+      luas_tanah: data.detail?.luas_tanah ?? " ",
+      luas_bangunan: data.detail?.luas_bangunan ?? " ",
       floors: data.detail?.floors ?? 1,
       bedrooms: data.detail?.bedrooms ?? 0,
       bathrooms: data.detail?.bathrooms ?? 0,
@@ -368,12 +332,12 @@ export default function Properti() {
       living_rooms: data.detail?.living_rooms ?? 0,
       carport: !!data.detail?.carport,
       garden: !!data.detail?.garden,
-      electricity_capacity: data.detail?.electricity_capacity ?? "",
-      water: data.detail?.water ?? "",
+      electricity_capacity: data.detail?.electricity_capacity ?? " ",
+      water: data.detail?.water ?? " ",
       one_gate_system: !!data.detail?.one_gate_system,
       security_24jam: !!data.detail?.security_24jam,
-      listrik_type: data.detail?.listrik_type ?? "",
-      wifi_provider: data.detail?.wifi_provider ?? "",
+      listrik_type: data.detail?.listrik_type ?? " ",
+      wifi_provider: data.detail?.wifi_provider ?? " ",
     },
     existingImageIds: (data.existingImages || []).map((img) => img.id).sort(),
     imagesToDelete: (data.imagesToDelete || []).slice().sort(),
@@ -385,30 +349,24 @@ export default function Properti() {
   const isEditDirty =
     isEditOpen &&
     initialSnapshot &&
-    JSON.stringify(buildSnapshot(formData, primaryExistingId, primaryNewIndex)) !==
-      JSON.stringify(initialSnapshot);
-
+    JSON.stringify(
+      buildSnapshot(formData, primaryExistingId, primaryNewIndex),
+    ) !== JSON.stringify(initialSnapshot);
   const handleSetPrimaryExisting = (imageId) => {
     setPrimaryExistingId(imageId);
     setPrimaryNewIndex(null);
   };
-
   const updateField = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: null }));
-    }
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
   };
-
   const updateDetail = (field, value) => {
     const key = `detail.${field}`;
     setFormData((prev) => ({
       ...prev,
       detail: { ...prev.detail, [field]: value },
     }));
-    if (errors[key]) {
-      setErrors((prev) => ({ ...prev, [key]: null }));
-    }
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: null }));
   };
 
   const validateRequiredFields = () => {
@@ -422,35 +380,24 @@ export default function Properti() {
       "kecamatan",
       "certificate_type",
     ];
-
     for (const field of requiredMain) {
-      if (!String(formData[field] ?? "").trim()) {
+      if (!String(formData[field] ?? "").trim())
         return "Semua data wajib diisi dan tidak boleh kosong.";
-      }
     }
-
-    if (!String(formData.detail.luas_tanah ?? "").trim()) {
+    if (!String(formData.detail.luas_tanah ?? "").trim())
       return "Luas tanah wajib diisi.";
-    }
-
     const totalImages =
       (formData.existingImages?.length || 0) +
       (formData.newImages?.length || 0);
-    if (totalImages < 1) {
-      return "Minimal upload 1 gambar.";
-    }
-
+    if (totalImages < 1) return "Minimal upload 1 gambar.";
     return null;
   };
 
-  // 🔹 Prepare payload untuk JSON request
   const prepareJsonPayload = () => ({
     title: formData.title,
     price: Number(formData.price),
     type: formData.type,
-    building_type: formData.building_type
-      ? Number(formData.building_type)
-      : null,
+    building_type: formData.building_type || null, // ✅ DIBUAT STRING SESUAI FORMAT BARU
     listing_type: formData.listing_type,
     kecamatan: formData.kecamatan,
     city: formData.city,
@@ -481,11 +428,8 @@ export default function Properti() {
     },
   });
 
-  // 🔹 Prepare FormData untuk upload gambar
   const prepareFormData = (jsonPayload) => {
     const formDataToSend = new FormData();
-
-    // ✅ append semua field biasa
     Object.keys(jsonPayload).forEach((key) => {
       if (key === "detail") {
         Object.keys(jsonPayload.detail).forEach((dKey) => {
@@ -495,56 +439,49 @@ export default function Properti() {
         formDataToSend.append(key, jsonPayload[key]);
       }
     });
-
-    // ✅ IMAGE UPLOAD (INI KUNCI UTAMA)
     formData.newImages.forEach((file) => {
-      formDataToSend.append("images[]", file); // WAJIB pakai []
+      formDataToSend.append("images[]", file);
     });
-
-    // ✅ DELETE IMAGE
     formData.imagesToDelete.forEach((id) => {
       formDataToSend.append("images_to_delete[]", id);
     });
-
     return formDataToSend;
   };
 
-  // 🔹 Handle Create Property (POST)
   const handleCreate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
     setErrors({});
-
     try {
       const jsonPayload = prepareJsonPayload();
       const hasImages = formData.newImages?.length > 0;
       const primaryPayload =
         primaryNewIndex !== null ? { primary_new_index: primaryNewIndex } : {};
-
-      const payload = hasImages 
-        ? prepareFormData({ ...jsonPayload, ...primaryPayload }) 
+      const payload = hasImages
+        ? prepareFormData({ ...jsonPayload, ...primaryPayload })
         : { ...jsonPayload, ...primaryPayload };
-
-      const config = hasImages 
-        ? { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
+      const config = hasImages
+        ? {
+            headers: { "Content-Type": "multipart/form-data" },
+            timeout: 120000,
+          }
         : { timeout: 30000 };
-
-      if (hasImages && payload instanceof FormData && primaryNewIndex !== null) {
+      if (
+        hasImages &&
+        payload instanceof FormData &&
+        primaryNewIndex !== null
+      ) {
         payload.append("primary_new_index", primaryNewIndex);
       }
-
       await api.post("/admin/properties", payload, config);
-
       showSuccess("Properti berhasil ditambahkan");
       closeAll();
       await fetchProperties();
-      
     } catch (error) {
       if (error.response?.status === 422) {
-        const errors = error.response.data.errors || {};
-        setErrors(errors);
-        const errorMessage = formatFieldErrors(errors);
-        showAttention(errorMessage || "Validasi gagal.");
+        const errs = error.response.data.errors || {};
+        setErrors(errs);
+        showAttention(formatFieldErrors(errs) || "Validasi gagal.");
       } else if (error.response?.status === 500) {
         showAttention("Server error. Check logs.");
       } else {
@@ -555,78 +492,72 @@ export default function Properti() {
     }
   };
 
-  // 🔹 Handle Update Property (PUT)
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!activeProperty?.id) return;
-
     if (!isEditDirty) {
       showAttention("Tidak ada perubahan untuk disimpan.");
       return;
     }
-
     setFormLoading(true);
     setErrors({});
-
     const requiredError = validateRequiredFields();
     if (requiredError) {
       showAttention(requiredError);
       setFormLoading(false);
       return;
     }
-
     try {
       const jsonPayload = prepareJsonPayload();
-
-      if (!jsonPayload.detail || Object.keys(jsonPayload.detail).length === 0) {
+      if (!jsonPayload.detail || Object.keys(jsonPayload.detail).length === 0)
         delete jsonPayload.detail;
-      }
-
-      if (jsonPayload.detail?.luas_tanah === "") {
+      if (jsonPayload.detail?.luas_tanah === " ")
         delete jsonPayload.detail.luas_tanah;
-      }
-
       const isMultipart =
         formData.newImages.length > 0 || formData.imagesToDelete.length > 0;
-
       const primaryPayload = primaryExistingId
         ? { primary_image_id: primaryExistingId }
         : primaryNewIndex !== null
           ? { primary_new_index: primaryNewIndex }
           : {};
-
       const payload = isMultipart
         ? prepareFormData({ ...jsonPayload, ...primaryPayload })
         : { ...jsonPayload, ...primaryPayload };
-
       if (isMultipart && payload instanceof FormData) {
-        if (primaryPayload.primary_image_id) {
+        if (primaryPayload.primary_image_id)
           payload.append("primary_image_id", primaryPayload.primary_image_id);
-        }
-        if (primaryPayload.primary_new_index !== undefined) {
+        if (primaryPayload.primary_new_index !== undefined)
           payload.append("primary_new_index", primaryPayload.primary_new_index);
-        }
       }
-
       const config = isMultipart
-        ? { headers: { "Content-Type": "multipart/form-data" }, timeout: 120000 }
+        ? {
+            headers: { "Content-Type": "multipart/form-data" },
+            timeout: 120000,
+          }
         : { timeout: 30000 };
-
       if (isMultipart && payload instanceof FormData) {
         payload.append("_method", "PUT");
-        await api.post(`/admin/properties/${activeProperty.id}`, payload, config);
+        await api.post(
+          `/admin/properties/${activeProperty.id}`,
+          payload,
+          config,
+        );
       } else {
-        await api.put(`/admin/properties/${activeProperty.id}`, payload, config);
+        await api.put(
+          `/admin/properties/${activeProperty.id}`,
+          payload,
+          config,
+        );
       }
-
       showSuccess("Properti berhasil diperbarui");
       closeAll();
       fetchProperties();
     } catch (error) {
       if (error.response?.status === 422) {
         setErrors(error.response.data.errors || {});
-        const errorMessage = formatFieldErrors(error.response.data.errors);
-        showAttention(errorMessage || "Validasi gagal.");
+        showAttention(
+          formatFieldErrors(error.response.data.errors) || "Validasi gagal.",
+        );
       } else {
         showAttention("Gagal memperbarui properti.");
       }
@@ -635,10 +566,8 @@ export default function Properti() {
     }
   };
 
-  // 🔹 Handle Delete Property (DELETE)
   const handleDelete = async () => {
     if (!activeProperty?.id) return;
-
     setIsDeleting(true);
     try {
       await api.delete(`/admin/properties/${activeProperty.id}`);
@@ -656,7 +585,6 @@ export default function Properti() {
   const formatCompactId = (amount) => {
     const value = Number(amount);
     if (!value) return "0";
-
     const formatUnit = (num) => {
       const rounded = Math.round(num * 10) / 10;
       const text =
@@ -665,16 +593,10 @@ export default function Properti() {
           : String(rounded);
       return text.replace(".", ",");
     };
-
-    if (value >= 1_000_000_000) {
+    if (value >= 1_000_000_000)
       return `${formatUnit(value / 1_000_000_000)} milyar`;
-    }
-    if (value >= 1_000_000) {
-      return `${formatUnit(value / 1_000_000)} juta`;
-    }
-    if (value >= 1_000) {
-      return `${formatUnit(value / 1_000)} ribu`;
-    }
+    if (value >= 1_000_000) return `${formatUnit(value / 1_000_000)} juta`;
+    if (value >= 1_000) return `${formatUnit(value / 1_000)} ribu`;
     return String(value);
   };
 
@@ -683,7 +605,6 @@ export default function Properti() {
     if (!digits) return "Rp 0";
     return `Rp ${formatThousands(digits)}`;
   };
-
   const formatDateTime = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -704,7 +625,6 @@ export default function Properti() {
           onClose={() => setShowSuccessModal(false)}
           message={successMessage}
         />
-
         <ConfirmModal
           isOpen={showConfirmModal}
           onClose={() => setShowConfirmModal(false)}
@@ -715,7 +635,6 @@ export default function Properti() {
           cancelText="Batal"
           isLoading={isDeleting}
         />
-
         <AttentionModal
           isOpen={showAttentionModal}
           onClose={() => setShowAttentionModal(false)}
@@ -723,20 +642,20 @@ export default function Properti() {
           message={attentionMessage}
         />
 
-        {/* Filter & Search */}
         <div className="row mb-3">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>Status:<span>*</span></label>
+                <label>
+                  Status: <span>*</span>
+                </label>
                 <DropdownSelect
                   options={["All", "published", "draft", "sold", "pending"]}
                   selectedValue={filters.status}
-                  onChange={(value) => {
-                    // Jika admin ingin melihat semua (termasuk pending), bisa pilih "All"
-                    setFilters((prev) => ({ ...prev, status: value }));
-                  }}
-                  addtionalParentClass=""
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, status: value }))
+                  }
+                  addtionalParentClass=" "
                 />
               </fieldset>
             </form>
@@ -744,30 +663,29 @@ export default function Properti() {
           <div className="col-md-9">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>Search:<span>*</span></label>
+                <label>
+                  Search: <span>*</span>
+                </label>
                 <input
                   type="text"
                   className="form-control"
                   placeholder="Search by title..."
                   value={filters.search}
-                  onChange={(e) => {
-                    setFilters((prev) => ({ ...prev, search: e.target.value }));
-                  }}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, search: e.target.value }))
+                  }
                 />
               </fieldset>
             </form>
           </div>
         </div>
 
-        {/* Property List */}
         <div className="widget-box-2 wd-listing mt-20">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
             <h3 className="title">Properti Saya</h3>
             <button
               type="button"
-              className={`tf-btn style-border pd-23${
-                formLoading ? " is-loading" : ""
-              }`}
+              className={`tf-btn style-border pd-23${formLoading ? " is-loading" : " "}`}
               onClick={openCreate}
               disabled={formLoading}
             >
@@ -777,7 +695,6 @@ export default function Properti() {
               <span>Tambah Properti</span>
             </button>
           </div>
-
           <div className="wrap-table">
             <div className="table-responsive">
               {loading ? (
@@ -787,8 +704,8 @@ export default function Properti() {
                 </div>
               ) : filteredProperties.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {filters.status === "published" 
-                    ? "Belum ada properti yang disetujui. Klik 'Tambah Properti' untuk menambah, atau tunggu persetujuan admin untuk pengajuan user." 
+                  {filters.status === "published"
+                    ? "Belum ada properti yang disetujui. Klik 'Tambah Properti' untuk menambah, atau tunggu persetujuan admin untuk pengajuan user."
                     : "Tidak ada properti dengan filter ini."}
                 </div>
               ) : (
@@ -845,15 +762,7 @@ export default function Properti() {
                         </td>
                         <td>
                           <span
-                            className={`px-3 py-1 text-xs rounded-full ${
-                              property.status === "published"
-                                ? "bg-green-100 text-green-800"
-                                : property.status === "sold"
-                                  ? "bg-red-100 text-red-800"
-                                  : property.status === "pending"
-                                    ? "bg-yellow-100 text-yellow-800"
-                                    : "bg-gray-100 text-gray-800"
-                            }`}
+                            className={`px-3 py-1 text-xs rounded-full ${property.status === "published" ? "bg-green-100 text-green-800" : property.status === "sold" ? "bg-red-100 text-red-800" : property.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800"}`}
                           >
                             {property.status}
                           </span>
@@ -876,8 +785,14 @@ export default function Properti() {
                             <li>
                               <a
                                 className="item"
-                                onClick={() => !formLoading && openEdit(property)}
-                                style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
+                                onClick={() =>
+                                  !formLoading && openEdit(property)
+                                }
+                                style={{
+                                  cursor: formLoading
+                                    ? "not-allowed"
+                                    : "pointer",
+                                }}
                               >
                                 <svg
                                   width={16}
@@ -899,8 +814,14 @@ export default function Properti() {
                             <li>
                               <a
                                 className="remove-file item"
-                                onClick={() => !formLoading && openDelete(property)}
-                                style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
+                                onClick={() =>
+                                  !formLoading && openDelete(property)
+                                }
+                                style={{
+                                  cursor: formLoading
+                                    ? "not-allowed"
+                                    : "pointer",
+                                }}
                               >
                                 <svg
                                   width={16}
@@ -927,8 +848,6 @@ export default function Properti() {
                 </table>
               )}
             </div>
-
-            {/* Pagination */}
             <ul className="wg-pagination">
               <li className="arrow">
                 <a href="#">
@@ -947,9 +866,11 @@ export default function Properti() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="footer-dashboard">
-          <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
+          <p>
+            © {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights
+            reserved.
+          </p>
           <ul className="list">
             <li>
               <a href="#">Privasi</a>
@@ -964,20 +885,18 @@ export default function Properti() {
         </div>
       </div>
 
-      {/* Overlay */}
       <div
-        className={`overlay-dashboard ${isCreateOpen || isEditOpen ? "show" : ""}`}
+        className={`overlay-dashboard ${isCreateOpen || isEditOpen ? " show" : " "}`}
         onClick={closeAll}
       />
 
-      {/* MODAL: Tambah / Edit */}
       {(isCreateOpen || isEditOpen) && (
         <div className="modal fade show" style={{ display: "block" }}>
           <div className="modal-dialog modal-dialog-centered modal-xl">
             <div className="modal-content">
               <div className="modal-header modal-header-title">
                 <h5 className="modal-title">
-                  {isCreateOpen && "Tambah Properti"}
+                  {isCreateOpen && "Tambah Properti "}
                   {isEditOpen && `Ubah: ${activeTitle}`}
                 </h5>
                 <button
@@ -987,7 +906,6 @@ export default function Properti() {
                   aria-label="Close"
                 />
               </div>
-
               <div
                 className="modal-body modal-body-wide"
                 style={{ maxHeight: "70vh", overflowY: "auto" }}
@@ -1001,21 +919,19 @@ export default function Properti() {
                   onSubmit={isCreateOpen ? handleCreate : handleUpdate}
                 >
                   <div className="row g-3">
-                    {/* === SECTION 1: BASIC INFO === */}
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         📋 Informasi Dasar
                       </h6>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Judul</label>
                         <input
                           type="text"
                           name="title"
-                          className={`form-control ${errors.title ? "border-red-500" : ""}`}
-                          placeholder="Contoh: Apartemen Kota Modern"
+                          className={`form-control ${errors.title ? "border-red-500" : " "}`}
+                          placeholder="Contoh: Rumah Komersil Strategis di Jember"
                           value={formData.title}
                           onChange={handleChange}
                           required
@@ -1027,7 +943,6 @@ export default function Properti() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Harga (IDR)</label>
@@ -1035,7 +950,7 @@ export default function Properti() {
                           type="text"
                           inputMode="numeric"
                           name="price"
-                          className={`form-control ${errors.price ? "border-red-500" : ""}`}
+                          className={`form-control ${errors.price ? "border-red-500" : " "}`}
                           placeholder="Contoh: 500000000"
                           value={formatThousands(formData.price)}
                           onChange={handlePriceChange}
@@ -1048,7 +963,6 @@ export default function Properti() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Tipe</label>
@@ -1066,16 +980,17 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
+                    {/* ✅ BUILDING TYPE READONLY */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Tipe Bangunan (angka)</label>
+                        <label>Tipe Bangunan</label>
                         <input
-                          type="number"
+                          type="text"
                           name="building_type"
-                          className="form-control"
-                          placeholder="Contoh: 1"
+                          className="form-control bg-gray-100"
                           value={formData.building_type}
-                          onChange={handleChange}
+                          readOnly
+                          placeholder="Otomatis: Luas Bangunan / Luas Tanah"
                         />
                       </fieldset>
                     </div>
@@ -1090,7 +1005,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Tipe Listing</label>
@@ -1103,7 +1017,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Kota</label>
@@ -1118,14 +1031,13 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Kecamatan</label>
                         <input
                           type="text"
                           name="kecamatan"
-                          className={`form-control ${errors.kecamatan ? "border-red-500" : ""}`}
+                          className={`form-control ${errors.kecamatan ? "border-red-500" : " "}`}
                           placeholder="Contoh: Sumbersari"
                           value={formData.kecamatan}
                           onChange={handleChange}
@@ -1138,7 +1050,6 @@ export default function Properti() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Status Sertifikat</label>
@@ -1151,7 +1062,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Jenis Sertifikat</label>
@@ -1164,7 +1074,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Deskripsi</label>
@@ -1179,14 +1088,11 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
-                    {/* === SECTION 2: PROPERTY DETAILS === */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         🏠 Detail Properti
                       </h6>
                     </div>
-
-                    {/* Checkboxes */}
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -1195,12 +1101,11 @@ export default function Properti() {
                             name="detail.carport"
                             checked={formData.detail.carport}
                             onChange={handleChange}
-                          />
+                          />{" "}
                           Carport
                         </label>
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -1209,12 +1114,11 @@ export default function Properti() {
                             name="detail.garden"
                             checked={formData.detail.garden}
                             onChange={handleChange}
-                          />
+                          />{" "}
                           Taman
                         </label>
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -1223,12 +1127,11 @@ export default function Properti() {
                             name="detail.one_gate_system"
                             checked={formData.detail.one_gate_system}
                             onChange={handleChange}
-                          />
+                          />{" "}
                           One Gate System
                         </label>
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label className="d-flex align-items-center gap-2">
@@ -1237,19 +1140,18 @@ export default function Properti() {
                             name="detail.security_24jam"
                             checked={formData.detail.security_24jam}
                             onChange={handleChange}
-                          />
+                          />{" "}
                           Keamanan 24 Jam
                         </label>
                       </fieldset>
                     </div>
-
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Luas Tanah (m²)</label>
                         <input
                           type="number"
                           name="detail.luas_tanah"
-                          className={`form-control ${errors["detail.luas_tanah"] ? "border-red-500" : ""}`}
+                          className={`form-control ${errors["detail.luas_tanah"] ? "border-red-500" : " "}`}
                           placeholder="Contoh: 120"
                           value={formData.detail.luas_tanah}
                           onChange={handleChange}
@@ -1262,7 +1164,6 @@ export default function Properti() {
                         )}
                       </fieldset>
                     </div>
-
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Luas Bangunan (m²)</label>
@@ -1276,7 +1177,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-4">
                       <fieldset className="box-fieldset">
                         <label>Jumlah Lantai</label>
@@ -1290,7 +1190,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Kamar Tidur</label>
@@ -1304,7 +1203,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Kamar Mandi</label>
@@ -1318,7 +1216,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Dapur</label>
@@ -1332,7 +1229,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-3">
                       <fieldset className="box-fieldset">
                         <label>Ruang Tamu</label>
@@ -1346,8 +1242,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
-                    {/* Utilities */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Daya Listrik (VA)</label>
@@ -1361,7 +1255,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Penyedia WiFi</label>
@@ -1375,7 +1268,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Sumber Air</label>
@@ -1386,7 +1278,6 @@ export default function Properti() {
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Jenis Listrik</label>
@@ -1400,14 +1291,11 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
-                    {/* === SECTION 3: IMAGES === */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         🖼️ Gambar Properti
                       </h6>
                     </div>
-
-                    {/* Existing Images (Edit Mode) */}
                     {isEditOpen && formData.existingImages?.length > 0 && (
                       <div className="col-12 mb-3">
                         <p className="text-sm text-gray-600 mb-2">
@@ -1419,56 +1307,54 @@ export default function Properti() {
                               ? img.id === primaryExistingId
                               : img.is_primary;
                             return (
-                            <div
-                              key={img.id}
-                              className={`item-upload file-delete${
-                                isPrimary ? " is-primary" : ""
-                              }`}
-                            >
-                              <Image
-                                src={img.full_url}
-                                alt="Property"
-                                width={615}
-                                height={405}
-                              />
-                              <button
-                                type="button"
-                                className="icon primary-toggle"
-                                onClick={() => handleSetPrimaryExisting(img.id)}
-                                aria-label="Jadikan utama"
+                              <div
+                                key={img.id}
+                                className={`item-upload file-delete${isPrimary ? " is-primary" : " "}`}
                               >
-                                <svg
-                                  width={16}
-                                  height={16}
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
+                                <Image
+                                  src={img.full_url}
+                                  alt="Property"
+                                  width={615}
+                                  height={405}
+                                />
+                                <button
+                                  type="button"
+                                  className="icon primary-toggle"
+                                  onClick={() =>
+                                    handleSetPrimaryExisting(img.id)
+                                  }
+                                  aria-label="Jadikan utama"
                                 >
-                                  <path
-                                    d="M12 3.5L14.7 8.97L20.75 9.85L16.37 14.1L17.4 20.12L12 17.28L6.6 20.12L7.63 14.1L3.25 9.85L9.3 8.97L12 3.5Z"
-                                    stroke="white"
-                                    strokeWidth="1.6"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                              </button>
-                              <button
-                                type="button"
-                                className="icon icon-trashcan1 remove-file"
-                                onClick={() =>
-                                  handleRemoveExistingImage(img.id)
-                                }
-                                aria-label="Remove image"
-                              />
-                            </div>
-                          );
+                                  <svg
+                                    width={16}
+                                    height={16}
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M12 3.5L14.7 8.97L20.75 9.85L16.37 14.1L17.4 20.12L12 17.28L6.6 20.12L7.63 14.1L3.25 9.85L9.3 8.97L12 3.5Z"
+                                      stroke="white"
+                                      strokeWidth="1.6"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </button>
+                                <button
+                                  type="button"
+                                  className="icon icon-trashcan1 remove-file"
+                                  onClick={() =>
+                                    handleRemoveExistingImage(img.id)
+                                  }
+                                  aria-label="Remove image"
+                                />
+                              </div>
+                            );
                           })}
                         </div>
                       </div>
                     )}
-
-                    {/* Upload New Images */}
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Unggah Gambar Baru</label>
@@ -1483,7 +1369,7 @@ export default function Properti() {
                                 xmlns="http://www.w3.org/2000/svg"
                               >
                                 <path
-                                  d="M13.625 14.375V17.1875C13.625 17.705 13.205 18.125 12.6875 18.125H4.5625C4.31386 18.125 4.0754 18.0262 3.89959 17.8504C3.72377 17.6746 3.625 17.4361 3.625 17.1875V6.5625C3.625 6.045 4.045 5.625 4.5625 5.625H6.125C6.54381 5.62472 6.96192 5.65928 7.375 5.72834M13.625 14.375H16.4375C16.955 14.375 17.375 13.955 17.375 13.4375V9.375C17.375 5.65834 14.6725 2.57417 11.125 1.97834C10.7119 1.90928 10.2938 1.87472 9.875 1.875H8.3125C7.795 1.875 7.375 2.295 7.375 2.8125V5.72834M13.625 14.375H8.3125C8.06386 14.375 7.8254 14.2762 7.64959 14.1004C7.47377 13.9246 7.375 13.6861 7.375 13.4375V5.72834M17.375 11.25V9.6875C17.375 8.94158 17.0787 8.22621 16.5512 7.69876C16.0238 7.17132 15.3084 6.875 14.5625 6.875H13.3125C13.0639 6.875 12.8254 6.77623 12.6496 6.60041C12.4738 6.4246 12.375 6.18614 12.375 5.9375V4.6875C12.375 4.31816 12.3023 3.95243 12.1609 3.6112C12.0196 3.26998 11.8124 2.95993 11.5512 2.69876C11.2901 2.4376 10.98 2.23043 10.6388 2.08909C10.2976 1.94775 9.93184 1.875 9.5625 1.875H8.625"
+                                  d="M13.625 14.375V17.1875C13.625 17.705 13.205 18.125 12.6875 18.125H4.5625C4.31386 18.125 4.0754 18.0262 3.89959 17.8504C3.72377 17.6746 3.625 17.4361 3.625 17.1875V6.5625C3.625 6.045 4.045 5.625 4.5625 5.625H6.125C6.54381 5.62472 6.96192 5.65928 7.375 5.72834M13.625 14.375H16.4375C16.955 14.375 17.375 13.955 17.375 13.4375V9.375C17.375 5.65834 14.291 2.5741 10.4855 1.97834C10.7119 1.90928 10.2938 1.87472 9.875 1.875H8.3125C7.795 1.875 7.375 2.295 7.375 2.8125V5.72834M13.625 14.375H8.3125C8.06386 14.375 7.8254 14.2762 7.64959 14.1004C7.47377 13.9246 7.375 13.6861 7.375 13.4375V5.72834M17.375 11.25V9.6875C17.375 8.94158 17.0787 8.22621 16.5512 7.69876C16.0238 7.17132 15.3084 6.875 14.5625 6.875H13.3125C13.0639 6.875 12.8254 6.77623 12.6496 6.60041C12.4738 6.4246 12.375 6.18614 12.375 5.9375V4.6875C12.375 4.31816 12.3023 3.95243 12.1609 3.6112C12.0196 3.26998 11.8124 2.95993 11.5512 2.69876C11.2901 2.4376 10.98 2.23043 10.6388 2.08909C10.2976 1.94775 9.93184 1.875 9.5625 1.875H8.625"
                                   stroke="white"
                                   strokeWidth="1.5"
                                   strokeLinecap="round"
@@ -1506,15 +1392,12 @@ export default function Properti() {
                             </p>
                           </div>
                         </div>
-
                         {formData.newImages?.length > 0 && (
                           <div className="box-img-upload">
                             {Array.from(formData.newImages).map((file, idx) => (
                               <div
                                 key={idx}
-                                className={`item-upload file-delete${
-                                  primaryNewIndex === idx ? " is-primary" : ""
-                                }`}
+                                className={`item-upload file-delete${primaryNewIndex === idx ? " is-primary" : " "}`}
                               >
                                 <Image
                                   src={URL.createObjectURL(file)}
@@ -1557,7 +1440,6 @@ export default function Properti() {
                             ))}
                           </div>
                         )}
-
                         {errors.images && (
                           <p className="text-red-500 text-xs mt-1">
                             {errors.images[0]}
@@ -1566,7 +1448,6 @@ export default function Properti() {
                       </fieldset>
                     </div>
                   </div>
-
                   <div className="modal-footer border-top">
                     <button
                       type="button"
@@ -1578,9 +1459,7 @@ export default function Properti() {
                     </button>
                     <button
                       type="submit"
-                      className={`tf-btn style-border pd-23${
-                        formLoading ? " is-loading" : ""
-                      }`}
+                      className={`tf-btn style-border pd-23${formLoading ? " is-loading" : " "}`}
                       disabled={formLoading || (isEditOpen && !isEditDirty)}
                     >
                       {formLoading && (
