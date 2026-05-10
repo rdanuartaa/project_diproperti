@@ -30,7 +30,11 @@ export default function Properti() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAttentionModal, setShowAttentionModal] = useState(false);
   const [attentionMessage, setAttentionMessage] = useState("");
-  const [filters, setFilters] = useState({ status: "All", search: "" });
+  
+  // ✅ PERUBAHAN PENTING: Default filter status = "published"
+  // Agar properti pending/draft TIDAK muncul secara default di Kelola Properti
+  const [filters, setFilters] = useState({ status: "published", search: "" });
+  
   const [primaryExistingId, setPrimaryExistingId] = useState(null);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
 
@@ -79,6 +83,7 @@ export default function Properti() {
     const searchQuery = filters.search?.toLowerCase().trim();
 
     return properties.filter((property) => {
+      // Logic filter status: jika "All" tampilkan semua, jika tidak cocokkan dengan status properti
       const matchesStatus =
         !statusFilter || statusFilter === "all"
           ? true
@@ -107,10 +112,14 @@ export default function Properti() {
       setLoading(true);
       const params = new URLSearchParams();
 
-      if (filters.status !== "All") params.append("status", filters.status);
-      if (filters.search) params.append("search", filters.search);
+      // ✅ Kirim parameter status ke API (default: published)
+      if (filters.status && filters.status !== "All") {
+        params.append("status", filters.status);
+      }
+      if (filters.search) {
+        params.append("search", filters.search);
+      }
 
-      // ✅ Interceptor di api.js sudah auto-attach token, tidak perlu header manual
       const response = await api.get(`/admin/properties?${params}`);
       setProperties(response.data.data || response.data);
     } catch (error) {
@@ -500,21 +509,14 @@ export default function Properti() {
     return formDataToSend;
   };
 
-
-  // 🔹 Handle Create Property (POST) - FIXED
+  // 🔹 Handle Create Property (POST)
   const handleCreate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
     setErrors({});
 
     try {
-      // ✅ 1. Prepare jsonPayload DULU
       const jsonPayload = prepareJsonPayload();
-
-      console.log("📤 Payload JSON:", jsonPayload);
-      console.log("📷 Images to upload:", formData.newImages?.length || 0);
-
-      // ✅ 2. Tentukan payload & config
       const hasImages = formData.newImages?.length > 0;
       const primaryPayload =
         primaryNewIndex !== null ? { primary_new_index: primaryNewIndex } : {};
@@ -527,19 +529,15 @@ export default function Properti() {
         ? { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
         : { timeout: 30000 };
 
-      console.log("🚀 Sending request...");
-      
-      // ✅ 3. Kirim request SEKALI SAJA
       if (hasImages && payload instanceof FormData && primaryNewIndex !== null) {
         payload.append("primary_new_index", primaryNewIndex);
       }
 
-      const response = await api.post("/admin/properties", payload, config);
+      await api.post("/admin/properties", payload, config);
 
-      console.log("✅ Success:", response.data);
       showSuccess("Properti berhasil ditambahkan");
       closeAll();
-      await fetchProperties(); // Refresh list
+      await fetchProperties();
       
     } catch (error) {
       if (error.response?.status === 422) {
@@ -578,10 +576,8 @@ export default function Properti() {
     }
 
     try {
-      // ✅ HANYA SEKALI
       const jsonPayload = prepareJsonPayload();
 
-      // ✅ CLEAN DETAIL
       if (!jsonPayload.detail || Object.keys(jsonPayload.detail).length === 0) {
         delete jsonPayload.detail;
       }
@@ -590,7 +586,6 @@ export default function Properti() {
         delete jsonPayload.detail.luas_tanah;
       }
 
-      // ✅ TENTUKAN PAYLOAD
       const isMultipart =
         formData.newImages.length > 0 || formData.imagesToDelete.length > 0;
 
@@ -639,7 +634,6 @@ export default function Properti() {
       setFormLoading(false);
     }
   };
-
 
   // 🔹 Handle Delete Property (DELETE)
   const handleDelete = async () => {
@@ -690,6 +684,18 @@ export default function Properti() {
     return `Rp ${formatThousands(digits)}`;
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
@@ -724,9 +730,10 @@ export default function Properti() {
               <fieldset className="box-fieldset">
                 <label>Status:<span>*</span></label>
                 <DropdownSelect
-                  options={["All", "published", "draft", "sold"]}
+                  options={["All", "published", "draft", "sold", "pending"]}
                   selectedValue={filters.status}
                   onChange={(value) => {
+                    // Jika admin ingin melihat semua (termasuk pending), bisa pilih "All"
                     setFilters((prev) => ({ ...prev, status: value }));
                   }}
                   addtionalParentClass=""
@@ -780,7 +787,9 @@ export default function Properti() {
                 </div>
               ) : filteredProperties.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  Belum ada properti. Klik "Tambah Properti" untuk menambah.
+                  {filters.status === "published" 
+                    ? "Belum ada properti yang disetujui. Klik 'Tambah Properti' untuk menambah, atau tunggu persetujuan admin untuk pengajuan user." 
+                    : "Tidak ada properti dengan filter ini."}
                 </div>
               ) : (
                 <table>
@@ -790,6 +799,7 @@ export default function Properti() {
                       <th>Tipe</th>
                       <th>Status</th>
                       <th>Harga</th>
+                      <th>Diperbarui</th>
                       <th>Aksi</th>
                     </tr>
                   </thead>
@@ -840,7 +850,9 @@ export default function Properti() {
                                 ? "bg-green-100 text-green-800"
                                 : property.status === "sold"
                                   ? "bg-red-100 text-red-800"
-                                  : "bg-gray-100 text-gray-800"
+                                  : property.status === "pending"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-gray-100 text-gray-800"
                             }`}
                           >
                             {property.status}
@@ -852,6 +864,11 @@ export default function Properti() {
                             title={formatFullRupiah(property.price)}
                           >
                             {formatCompactId(property.price)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            {formatDateTime(property.updated_at)}
                           </span>
                         </td>
                         <td>
@@ -932,7 +949,7 @@ export default function Properti() {
 
         {/* Footer */}
         <div className="footer-dashboard">
-          <p>Copyright © {new Date().getFullYear()} Propty</p>
+          <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
           <ul className="list">
             <li>
               <a href="#">Privasi</a>

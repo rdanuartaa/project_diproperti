@@ -793,13 +793,6 @@ select.form-control-equal {
     font-weight: 600 !important;
     text-decoration: none;
     transition: all 0.3s ease;
-    
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(241, 145, 61, 0.3);
-      background-color: var(--Primary, #f1913d) !important;
-      color: #fff !important;
-    }
   }
 }
 

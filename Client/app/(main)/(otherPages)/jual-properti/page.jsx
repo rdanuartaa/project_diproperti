@@ -1,6 +1,6 @@
+import About from "@/components/otherPages/JualProperti/About";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
-import Breadcumb from "@/components/common/Breadcumb";
 import SubmitPropertyForm from "@/components/otherPages/JualProperti/SubmitPropertyForm";
 import PageTitle from "@/components/otherPages/JualProperti/PageTitle";
 import React from "react";
@@ -15,8 +15,8 @@ export default function page() {
     <div id="wrapper" className="counter-scroll">
       <Header1 />
       <PageTitle />
-      <Breadcumb pageName="Jual Properti" />
       <div className="main-content">
+        <About />
         <SubmitPropertyForm />
       </div>
       <Footer1 />

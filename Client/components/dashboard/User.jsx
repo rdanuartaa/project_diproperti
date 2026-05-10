@@ -160,6 +160,18 @@ export default function User() {
     setFilters((prev) => ({ ...prev, search: e.target.value }));
   };
 
+  const formatDateTime = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   // ⚠️ HTML/JSX DI BAWAH INI TIDAK DIUBAH SAMA SEKALI ⚠️
   return (
     <div className="main-content w-100">
@@ -220,7 +232,7 @@ export default function User() {
                   type="text"
                   name="search"
                   className="form-control"
-                  placeholder="Search by name or email..."
+                  placeholder="Cari berdasarkan nama atau email..."
                   value={filters.search}
                   onChange={handleSearchChange}
                 />
@@ -232,7 +244,7 @@ export default function User() {
         {/* Table */}
         {/* Table Section - Updated Style */}
         <div className="widget-box-2 wd-listing mt-20">
-          <h3 className="title">Users</h3>
+          <h3 className="title">User</h3>
 
           <div className="tf-new-listing w-100">
             <div className="new-listing wrap-table">
@@ -249,10 +261,11 @@ export default function User() {
                       <thead>
                         <tr>
                           <th className="fw-6">Avatar</th>
-                          <th className="fw-6">Name</th>
+                          <th className="fw-6">Nama</th>
                           <th className="fw-6">Email</th>
                           <th className="fw-6">Role</th>
-                          <th className="fw-6">Action</th>
+                          <th className="fw-6">Diperbarui</th>
+                          <th className="fw-6">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -297,6 +310,11 @@ export default function User() {
                                 }`}
                               >
                                 {user.role}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="text-xs text-gray-500 whitespace-nowrap">
+                                {formatDateTime(user.updated_at)}
                               </span>
                             </td>
 
@@ -364,16 +382,16 @@ export default function User() {
 
         {/* Footer */}
         <div className="footer-dashboard">
-          <p>Copyright (c) {new Date().getFullYear()} Propty</p>
+          <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
           <ul className="list">
             <li>
-              <a href="#">Privacy</a>
+              <a href="#">Privasi</a>
             </li>
             <li>
-              <a href="#">Terms</a>
+              <a href="#">Syarat</a>
             </li>
             <li>
-              <a href="#">Support</a>
+              <a href="#">Bantuan</a>
             </li>
           </ul>
         </div>
@@ -407,7 +425,7 @@ export default function User() {
                   <div className="row g-3">
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        Role Settings
+                        Pengaturan Role
                       </h6>
                     </div>
                     <div className="col-md-12">

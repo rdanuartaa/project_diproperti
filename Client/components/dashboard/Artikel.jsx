@@ -342,13 +342,15 @@ export default function Artikel() {
   };
 
   // Format tanggal Indonesia
-  const formatDate = (dateString) => {
+  const formatDateTime = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
-    return date.toLocaleDateString("id-ID", {
-      year: "numeric",
+    return date.toLocaleString("id-ID", {
+      day: "2-digit",
       month: "short",
-      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -434,7 +436,7 @@ export default function Artikel() {
                   type="text"
                   name="search"
                   className="form-control"
-                  placeholder="Search by title..."
+                  placeholder="Cari berdasarkan judul..."
                   value={filters.search}
                   onChange={(e) => {
                     setFilters((prev) => ({ ...prev, search: e.target.value }));
@@ -447,7 +449,7 @@ export default function Artikel() {
         {/* Article List */}
         <div className="widget-box-2 wd-listing mt-20">
           <div className="d-flex align-items-center justify-content-between flex-wrap gap-12">
-            <h3 className="title">My Articles</h3>
+            <h3 className="title">Artikel Saya</h3>
             <button
               type="button"
               className={`tf-btn style-border pd-23${
@@ -472,17 +474,17 @@ export default function Artikel() {
                 </div>
               ) : filteredArticles.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  No articles found. Click "Create Article" to add one.
+                  Artikel tidak ditemukan. Klik "Tambah Artikel" untuk menambah.
                 </div>
               ) : (
                 <table>
                   <thead>
                     <tr>
-                      <th>Article</th>
-                      <th>Tags</th>
+                      <th>Artikel</th>
+                      <th>Tag</th>
                       <th>Status</th>
-                      <th>Updated</th>
-                      <th>Action</th>
+                      <th>Diperbarui</th>
+                      <th>Aksi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -551,7 +553,7 @@ export default function Artikel() {
                         </td>
                         <td>
                           <span className="text-sm text-gray-500">
-                            {formatDate(article.updated_at)}
+                            {formatDateTime(article.updated_at)}
                           </span>
                         </td>
                         <td>
@@ -575,33 +577,33 @@ export default function Artikel() {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                   />
-                                </svg>
-                                Edit
-                              </a>
-                            </li>
-                            <li>
-                              <a
-                                className="remove-file item"
-                                onClick={() => !formLoading && openDelete(article)}
-                                style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
-                              >
-                                <svg
-                                  width={16}
-                                  height={16}
-                                  viewBox="0 0 16 16"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
+                                  </svg>
+                                  Ubah
+                                </a>
+                              </li>
+                              <li>
+                                <a
+                                  className="remove-file item"
+                                  onClick={() => !formLoading && openDelete(article)}
+                                  style={{ cursor: formLoading ? "not-allowed" : "pointer" }}
                                 >
-                                  <path
-                                    d="M9.82667 6.00035L9.596 12.0003M6.404 12.0003L6.17333 6.00035M12.8187 3.86035C13.0467 3.89501 13.2733 3.93168 13.5 3.97101M12.8187 3.86035L12.1067 13.1157C12.0776 13.4925 11.9074 13.8445 11.63 14.1012C11.3527 14.3579 10.9886 14.5005 10.6107 14.5003H5.38933C5.0114 14.5005 4.64735 14.3579 4.36999 14.1012C4.09262 13.8445 3.92239 13.4925 3.89333 13.1157L3.18133 3.86035M12.8187 3.86035C12.0492 3.74403 11.2758 3.65574 10.5 3.59568M3.18133 3.86035C2.95333 3.89435 2.72667 3.93101 2.5 3.97035M3.18133 3.86035C3.95076 3.74403 4.72416 3.65575 5.5 3.59568M10.5 3.59568V2.98501C10.5 2.19835 9.89333 1.54235 9.10667 1.51768C8.36908 1.49411 7.63092 1.49411 6.89333 1.51768C6.10667 1.54235 5.5 2.19901 5.5 2.98501V3.59568M10.5 3.59568C8.83581 3.46707 7.16419 3.46707 5.5 3.59568"
-                                    stroke="#A3ABB0"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
-                                Delete
-                              </a>
-                            </li>
+                                  <svg
+                                    width={16}
+                                    height={16}
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M9.82667 6.00035L9.596 12.0003M6.404 12.0003L6.17333 6.00035M12.8187 3.86035C13.0467 3.93168 13.2733 3.93168 13.5 3.97101M12.8187 3.86035L12.1067 13.1157C12.0776 13.4925 11.9074 13.8445 11.63 14.1012C11.3527 14.3579 10.9886 14.5005 10.6107 14.5003H5.38933C5.0114 14.5005 4.64735 14.3579 4.36999 14.1012C4.09262 13.8445 3.92239 13.4925 3.89333 13.1157L3.18133 3.86035M12.8187 3.86035C12.0492 3.74403 11.2758 3.65574 10.5 3.59568M3.18133 3.86035C2.95333 3.89435 2.72667 3.93101 2.5 3.97035M3.18133 3.86035C3.95076 3.74403 4.72416 3.65575 5.5 3.59568M10.5 3.59568V2.98501C10.5 2.19835 9.89333 1.54235 9.10667 1.51768C8.36908 1.49411 7.63092 1.49411 6.89333 1.51768C6.10667 1.54235 5.5 2.19901 5.5 2.98501V3.59568M10.5 3.59568C8.83581 3.46707 7.16419 3.46707 5.5 3.59568"
+                                      stroke="#A3ABB0"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                  Hapus
+                                </a>
+                              </li>
                           </ul>
                         </td>
                       </tr>
@@ -632,16 +634,16 @@ export default function Artikel() {
 
         {/* Footer */}
         <div className="footer-dashboard">
-          <p>Copyright (c) {new Date().getFullYear()} Propty</p>
+          <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
           <ul className="list">
             <li>
-              <a href="#">Privacy</a>
+              <a href="#">Privasi</a>
             </li>
             <li>
-              <a href="#">Terms</a>
+              <a href="#">Syarat</a>
             </li>
             <li>
-              <a href="#">Support</a>
+              <a href="#">Bantuan</a>
             </li>
           </ul>
         </div>
@@ -684,14 +686,14 @@ export default function Artikel() {
                   <div className="row g-3">
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        Article Information
+                        Informasi Artikel
                       </h6>
                     </div>
 
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>
-                          Title <span className="text-red-500">*</span>
+                          Judul <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -729,7 +731,7 @@ export default function Artikel() {
 
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Description</label>
+                        <label>Deskripsi</label>
                         <textarea
                           name="description"
                           className="textarea"
@@ -744,7 +746,7 @@ export default function Artikel() {
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>
-                          Content <span className="text-red-500">*</span>
+                          Konten <span className="text-red-500">*</span>
                         </label>
                         <textarea
                           name="content"
@@ -793,7 +795,7 @@ export default function Artikel() {
 
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        Article Image
+                        Gambar Artikel
                       </h6>
                     </div>
 
@@ -801,7 +803,7 @@ export default function Artikel() {
                     {isEditOpen && formData.image && !formData.newImage && (
                       <div className="col-12 mb-3">
                         <p className="text-sm text-gray-600 mb-2">
-                          Existing image:
+                          Gambar yang ada:
                         </p>
                         <div className="box-img-upload">
                           <div className="item-upload file-delete relative">
@@ -832,7 +834,7 @@ export default function Artikel() {
                     {/* Upload New Image */}
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Upload Image</label>
+                        <label>Unggah Gambar</label>
                         <div className="box-uploadfile text-center">
                           <div className="uploadfile">
                             <label className="tf-btn bg-color-primary pd-10 btn-upload mx-auto cursor-pointer">
@@ -851,7 +853,7 @@ export default function Artikel() {
                                   strokeLinejoin="round"
                                 />
                               </svg>
-                              Select image
+                              Pilih gambar
                               <input
                                 type="file"
                                 name="image"
@@ -861,8 +863,8 @@ export default function Artikel() {
                               />
                             </label>
                             <p className="file-name fw-5">
-                              or drag image here <br />
-                              <span>(Max 5MB)</span>
+                              atau seret gambar ke sini <br />
+                              <span>(Maks 5MB)</span>
                             </p>
                           </div>
                         </div>

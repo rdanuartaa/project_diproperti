@@ -50,8 +50,8 @@ export default function RelatedArtikel() {
         <div className="tf-container">
           <div className="row">
             <div className="col-12">
-              <h4 className="heading">Related posts</h4>
-              <div className="text-center py-5">Loading articles...</div>
+              <h4 className="heading">Artikel Serupa</h4>
+              <div className="text-center py-5">Memuat Artikel...</div>
             </div>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function RelatedArtikel() {
       <div className="tf-container">
         <div className="row">
           <div className="col-12">
-            <h4 className="heading">Related posts</h4>
+            <h4 className="heading">Artikel Serupa</h4>
             <Swiper
               dir="ltr"
               className="swiper style-pagination sw-layout"

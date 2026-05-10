@@ -223,35 +223,14 @@ export default function Sidebar() {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M4.16667 2.5H12.5C12.9602 2.5 13.3333 2.8731 13.3333 3.33333V17.5H4.16667C3.70643 17.5 3.33333 17.1269 3.33333 16.6667V3.33333C3.33333 2.8731 3.70643 2.5 4.16667 2.5Z"
+                    d="M16.6667 10H13.3333C12.8731 10 12.5 10.3731 12.5 10.8333V11.6667C12.5 12.5861 11.7528 13.3333 10.8333 13.3333H9.16667C8.24721 13.3333 7.5 12.5861 7.5 11.6667V10.8333C7.5 10.3731 7.1269 10 6.66667 10H3.33333"
                     stroke="#A8ABAE"
                     strokeWidth="1.4"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                   <path
-                    d="M6.66667 6.66667H9.16667"
-                    stroke="#A8ABAE"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M6.66667 10H9.16667"
-                    stroke="#A8ABAE"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M6.66667 13.3333H9.16667"
-                    stroke="#A8ABAE"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M16.6667 17.5V8.33333C16.6667 7.8731 16.2936 7.5 15.8333 7.5H13.3333"
+                    d="M15 4.16667L17.5 10V15C17.5 15.4602 17.1269 15.8333 16.6667 15.8333H3.33333C2.8731 15.8333 2.5 15.4602 2.5 15V10L5 4.16667C5.14925 3.81842 5.48911 3.58333 5.86667 3.58333H14.1333C14.5109 3.58333 14.8507 3.81842 15 4.16667Z"
                     stroke="#A8ABAE"
                     strokeWidth="1.4"
                     strokeLinecap="round"

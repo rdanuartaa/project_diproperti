@@ -183,12 +183,14 @@ export default function Faq() {
   };
 
   // Format date helper
-  const formatDate = (dateString) => {
+  const formatDateTime = (dateString) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'short',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -247,7 +249,7 @@ export default function Faq() {
                   type="text"
                   name="search"
                   className="form-control"
-                  placeholder="Search by question..."
+                  placeholder="Cari berdasarkan pertanyaan..."
                   value={filters.search}
                   onChange={(e) => {
                     setFilters((prev) => ({ ...prev, search: e.target.value }));
@@ -282,20 +284,20 @@ export default function Faq() {
               <div className="table-content">
                 <div className="wrap-listing table-responsive">
                   {loading ? (
-                    <div className="text-center py-8">Loading...</div>
+                    <div className="text-center py-8">Memuat...</div>
                   ) : faqs.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                      No FAQ found. Click "Create FAQ" to add one.
+                      FAQ tidak ditemukan. Klik "Tambah FAQ" untuk menambah.
                     </div>
                   ) : (
                     <table className="table-save-search">
                       <thead>
                         <tr>
-                          <th className="fw-6">Question</th>
-                          <th className="fw-6">Topic</th>
+                          <th className="fw-6">Pertanyaan</th>
+                          <th className="fw-6">Topik</th>
                           <th className="fw-6">Status</th>
-                          <th className="fw-6">Updated</th>
-                          <th className="fw-6">Action</th>
+                          <th className="fw-6">Diperbarui</th>
+                          <th className="fw-6">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -325,7 +327,9 @@ export default function Faq() {
                               </span>
                             </td>
                             <td>
-                              <span>{formatDate(faq.updated_at)}</span>
+                              <span className="text-xs text-gray-500 whitespace-nowrap">
+                                {formatDateTime(faq.updated_at)}
+                              </span>
                             </td>
                             <td>
                               <ul className="list-action">
@@ -338,7 +342,7 @@ export default function Faq() {
                                     <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                       <path d="M11.2413 2.9915L12.366 1.86616C12.6005 1.63171 12.9184 1.5 13.25 1.5C13.5816 1.5 13.8995 1.63171 14.134 1.86616C14.3685 2.10062 14.5002 2.4186 14.5002 2.75016C14.5002 3.08173 14.3685 3.39971 14.134 3.63416L4.55467 13.2135C4.20222 13.5657 3.76758 13.8246 3.29 13.9668L1.5 14.5002L2.03333 12.7102C2.17552 12.2326 2.43442 11.7979 2.78667 11.4455L11.242 2.9915H11.2413ZM11.2413 2.9915L13 4.75016" stroke="#A3ABB0" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
-                                    Edit
+                                    Ubah
                                   </a>
                                 </li>
                                 <li>
@@ -350,7 +354,7 @@ export default function Faq() {
                                     <svg width={16} height={16} viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                       <path d="M9.82667 6.00035L9.596 12.0003M6.404 12.0003L6.17333 6.00035M12.8187 3.86035C13.0467 3.89501 13.2733 3.93168 13.5 3.97101M12.8187 3.86035L12.1067 13.1157C12.0776 13.4925 11.9074 13.8445 11.63 14.1012C11.3527 14.3579 10.9886 14.5005 10.6107 14.5003H5.38933C5.0114 14.5005 4.64735 14.3579 4.36999 14.1012C4.09262 13.8445 3.92239 13.4925 3.89333 13.1157L3.18133 3.86035M12.8187 3.86035C12.0492 3.74403 11.2758 3.65574 10.5 3.59568M3.18133 3.86035C2.95333 3.89435 2.72667 3.93101 2.5 3.97035M3.18133 3.86035C3.95076 3.74403 4.72416 3.65575 5.5 3.59568M10.5 3.59568V2.98501C10.5 2.19835 9.89333 1.54235 9.10667 1.51768C8.36908 1.49411 7.63092 1.49411 6.89333 1.51768C6.10667 1.54235 5.5 2.19901 5.5 2.98501V3.59568M10.5 3.59568C8.83581 3.46707 7.16419 3.46707 5.5 3.59568" stroke="#A3ABB0" strokeLinecap="round" strokeLinejoin="round"/>
                                     </svg>
-                                    Delete
+                                    Hapus
                                   </a>
                                 </li>
                               </ul>
@@ -368,11 +372,11 @@ export default function Faq() {
 
         {/* Footer */}
         <div className="footer-dashboard">
-          <p>Copyright (c) {new Date().getFullYear()} Propty</p>
+          <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
           <ul className="list">
-            <li><a href="#">Privacy</a></li>
-            <li><a href="#">Terms</a></li>
-            <li><a href="#">Support</a></li>
+            <li><a href="#">Privasi</a></li>
+            <li><a href="#">Syarat</a></li>
+            <li><a href="#">Bantuan</a></li>
           </ul>
         </div>
       </div>
@@ -397,12 +401,12 @@ export default function Faq() {
                 <form className="modal-form-spacing" onSubmit={isCreateOpen ? handleCreate : handleUpdate}>
                   <div className="row g-3">
                     <div className="col-12">
-                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">FAQ Information</h6>
+                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">Informasi FAQ</h6>
                     </div>
 
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Question<span>*</span></label>
+                        <label>Pertanyaan<span>*</span></label>
                         <input
                           type="text"
                           name="question"
@@ -417,7 +421,7 @@ export default function Faq() {
 
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Answer<span>*</span></label>
+                        <label>Jawaban<span>*</span></label>
                         <textarea
                           name="answer"
                           className="textarea"
@@ -432,7 +436,7 @@ export default function Faq() {
 
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Topic<span>*</span></label>
+                        <label>Topik<span>*</span></label>
                         <DropdownSelect
                           options={["properti", "kpr", "platform", "umum"]}
                           selectedValue={formData.topic}

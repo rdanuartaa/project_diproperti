@@ -362,16 +362,16 @@ export default function Dashboard() {
         <div className="row">
           <div className="col-xl-9">
             <div className="footer-dashboard">
-              <p>Copyright © {new Date().getFullYear()} Propty</p>
+              <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
               <ul className="list">
                 <li>
-                  <a href="#">Privacy</a>
+                  <a href="#">Privasi</a>
                 </li>
                 <li>
-                  <a href="#">Terms</a>
+                  <a href="#">Syarat</a>
                 </li>
                 <li>
-                  <a href="#">Support</a>
+                  <a href="#">Bantuan</a>
                 </li>
               </ul>
             </div>
