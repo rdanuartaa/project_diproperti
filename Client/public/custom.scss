@@ -300,6 +300,8 @@
 }
 .modal-section-title {
   padding: 0.5rem 0 0.75rem;
+  font-size: 1.45rem;
+  line-height: 1.3;
 }
 
 /* Custom Modal Animations */
@@ -385,6 +387,27 @@
 }
 select.form-control-equal {
   height: 38px;
+}
+
+.detail-fieldset label {
+  min-height: 45px;
+}
+
+.detail-checkbox {
+  min-height: 54px;
+  padding: 0 15px;
+  border: 1px solid var(--Line);
+  border-radius: 16px;
+  background-color: var(--White);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail-checkbox-check {
+  color: var(--Primary);
+  display: inline-flex;
+  align-items: center;
 }
 
 .tf-btn.style-border.btn-cancel-danger {
@@ -889,4 +912,3 @@ select.form-control-equal {
   color: var(--Primary) !important;
   border-color: var(--Primary) !important;
 }
-

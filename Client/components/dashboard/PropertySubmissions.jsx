@@ -1,23 +1,11 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { api } from "@/lib/api";
+import { api, downloadFile } from "@/lib/api";
 import SuccessModal from "@/components/common/SuccesModal";
 import AttentionModal from "@/components/common/AttentionModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import DropdownSelect from "../common/DropdownSelect";
-
-function ReadonlyDropdown({ value }) {
-  return (
-    <div style={{ pointerEvents: "none", userSelect: "none" }}>
-      <DropdownSelect
-        options={[value || "-"]}
-        selectedValue={value || "-"}
-        onChange={() => {}}
-      />
-    </div>
-  );
-}
 
 export default function PropertySubmissions() {
   const [submissions, setSubmissions] = useState([]);
@@ -49,6 +37,11 @@ export default function PropertySubmissions() {
 
   const filteredSubmissions = useMemo(() => {
     let result = [...submissions];
+    result = result.filter(item => {
+    const role = String(item.user?.role || "").toLowerCase();
+    const isAdm = item.user?.is_admin === true || role === "admin";
+    return !isAdm; // Jika true (admin), data akan dibuang dari array
+  }); 
     if (filters.search) {
       const query = filters.search.toLowerCase().trim();
       result = result.filter((item) =>
@@ -67,13 +60,14 @@ export default function PropertySubmissions() {
     setActiveSubmission(submission);
     setShowDetailModal(true);
   };
+
   const closeDetail = () => {
     setActiveSubmission(null);
     setShowDetailModal(false);
   };
 
   const handleApprove = async () => {
-    if (!activeSubmission) return;
+    if (!activeSubmission || !canActOnSubmission(activeSubmission)) return;
     setIsActionLoading(true);
     try {
       await api.put(
@@ -93,10 +87,9 @@ export default function PropertySubmissions() {
   };
 
   const handleDelete = async () => {
-    if (!activeSubmission) return;
+    if (!activeSubmission || !canActOnSubmission(activeSubmission)) return;
     setIsActionLoading(true);
     try {
-      // ✅ FIX: Menggunakan endpoint properties yang sesuai dengan controller destroy
       await api.delete(`/admin/properties/${activeSubmission.id}`);
       setSuccessMessage("Pengajuan berhasil ditolak/dihapus.");
       setShowSuccess(true);
@@ -111,10 +104,205 @@ export default function PropertySubmissions() {
   };
 
   const formatPrice = (val) => `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
+  const getRentPeriodLabel = (item) => {
+    const period = String(item?.price_period || "bulan");
+    if (period === "3bulan") return "3 bulan";
+    if (period === "6bulan") return "6 bulan";
+    if (period === "tahun") return "tahun";
+    return "bulan";
+  };
+
+  const formatPriceDisplay = (item) => {
+    const base = formatPrice(item?.price);
+    if (item?.listing_type !== "sewa") return base;
+    if (!item?.price) return base;
+    return `${base}/${getRentPeriodLabel(item)}`;
+  };
+
+  const getSubmissionStatus = (item) => {
+    if (!item) return "-";
+    if (item.status === "sold") return "sold";
+    return item.is_verified ? "published" : "pending";
+  };
+
+  const canActOnSubmission = (item) => {
+    if (!item) return false;
+    return !item.is_verified && item.status !== "published" && item.status !== "sold";
+  };
+
+  const getStatusBadge = (item) => {
+    if (!item) return "-";
+    if (item.status === "sold") {
+      return (
+        <span
+          className="badge bg-danger"
+          style={{ padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+        >
+          🔴 Laku
+        </span>
+      );
+    }
+    if (item.is_verified && item.status === "published") {
+      return (
+        <span
+          className="badge bg-success"
+          style={{ padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+        >
+          ✅ Disetujui
+        </span>
+      );
+    }
+    return (
+      <span
+        className="badge bg-warning"
+        style={{ padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+      >
+        ⏳ Ditinjau
+      </span>
+    );
+  };
+
   const val = (field, fallback = "-") =>
-    field !== null && field !== undefined && field !== ""
+    field !== null && field !== undefined && field !== " "
       ? String(field)
       : fallback;
+
+  const getLocationInfo = (submission) => {
+    if (!submission) {
+      return {
+        hasCoordinates: false,
+        coordinatesLabel: "-",
+        mapsUrl: null,
+        directionsUrl: null,
+        embedUrl: null,
+      };
+    }
+
+    const latitude = Number(submission.latitude);
+    const longitude = Number(submission.longitude);
+    const hasCoordinates = Number.isFinite(latitude) && Number.isFinite(longitude);
+    const addressParts = [
+      submission.address,
+      submission.kecamatan,
+      submission.city,
+    ].filter(Boolean);
+    const addressQuery = addressParts.join(", ");
+    const mapQuery = hasCoordinates
+      ? `${latitude},${longitude}`
+      : addressQuery;
+    const encodedQuery = encodeURIComponent(mapQuery);
+
+    return {
+      hasCoordinates,
+      coordinatesLabel: hasCoordinates
+        ? `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+        : "-",
+      mapsUrl: mapQuery
+        ? `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`
+        : null,
+      directionsUrl: mapQuery
+        ? `https://www.google.com/maps/dir/?api=1&destination=${encodedQuery}`
+        : null,
+      embedUrl: mapQuery
+        ? `https://maps.google.com/maps?q=${encodedQuery}&z=16&output=embed`
+        : null,
+    };
+  };
+
+  const isImageDocument = (url) => {
+    if (!url) return false;
+    const cleanUrl = String(url).split("?")[0].toLowerCase();
+    return /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(cleanUrl);
+  };
+
+  const documentItems = (submission) => [
+    {
+      label: "Sertifikat",
+      url: submission?.certificate_file_url,
+      downloadUrl: `/admin/property-submissions/${submission?.id}/documents/certificate/download`,
+    },
+    {
+      label: "Tagihan Listrik",
+      url: submission?.electric_bill_file_url,
+      downloadUrl: `/admin/property-submissions/${submission?.id}/documents/electric-bill/download`,
+    },
+    {
+      label: "Tagihan Air",
+      url: submission?.water_bill_file_url,
+      downloadUrl: `/admin/property-submissions/${submission?.id}/documents/water-bill/download`,
+    },
+  ];
+
+  const getDocumentFilename = (label, url) => {
+    const extension = String(url || "")
+      .split("?")[0]
+      .split(".")
+      .pop();
+    const safeLabel = label.toLowerCase().replace(/\s+/g, "-");
+    return extension && extension.length <= 5
+      ? `${safeLabel}.${extension}`
+      : safeLabel;
+  };
+
+  const handleDownload = async (downloadUrl, filename) => {
+    try {
+      await downloadFile(downloadUrl, filename);
+    } catch (error) {
+      setAttention({
+        open: true,
+        message: "Gagal mengunduh file. Pastikan file masih tersedia.",
+      });
+    }
+  };
+
+  const getBuildingTypeDisplay = (submission) => {
+    if (!submission) return "";
+    if (submission.type === "tanah") {
+      return submission.detail?.luas_tanah ?? submission.building_type ?? "";
+    }
+    if (submission.type === "kos") {
+      const panjang = Number(submission.detail?.panjang_ruangan ?? 0);
+      const lebar = Number(submission.detail?.lebar_ruangan ?? 0);
+      const total = panjang + lebar;
+      return total > 0 ? String(total) : (submission.building_type ?? "");
+    }
+    return submission.building_type ?? "";
+  };
+
+  const ReadOnlyDetailCheckbox = ({ checked }) => (
+    <div
+      className="detail-checkbox"
+      style={{ pointerEvents: "none", userSelect: "none" }}
+    >
+      <input
+        type="checkbox"
+        className="form-check-input m-0"
+        checked={!!checked}
+        readOnly
+      />
+      {!!checked && (
+        <span className="detail-checkbox-check" aria-hidden="true">
+          <svg
+            width={14}
+            height={14}
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3.5 8.5L6.5 11.5L12.5 5.5"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      )}
+      <span>Ya</span>
+    </div>
+  );
+
   const formatDateTime = (dateString) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
@@ -150,7 +338,7 @@ export default function PropertySubmissions() {
         />
         <AttentionModal
           isOpen={attention.open}
-          onClose={() => setAttention({ open: false, message: " " })}
+          onClose={() => setAttention({ open: false, message: "" })}
           title="Perhatian"
           message={attention.message}
         />
@@ -208,7 +396,7 @@ export default function PropertySubmissions() {
             <h3 className="title">Pengajuan Properti</h3>
           </div>
           <div className="alert alert-warning mb-4" role="alert">
-            <strong>📌 Kebijakan Platform:</strong> Upload listing properti{" "}
+            <strong>📌 Kebijakan Platform: </strong> Upload listing properti{" "}
             <u>GRATIS 100%</u>. Namun, jika properti berhasil <u>terjual</u>,
             akan dikenakan komisi admin sebesar{" "}
             <strong>2.5% dari harga jual</strong>.
@@ -229,6 +417,7 @@ export default function PropertySubmissions() {
                       <th>Pengaju</th>
                       <th>Tipe</th>
                       <th>Harga</th>
+                      <th>Status</th>
                       <th>Diperbarui</th>
                       <th>Aksi</th>
                     </tr>
@@ -275,9 +464,10 @@ export default function PropertySubmissions() {
                         </td>
                         <td>
                           <span className="font-semibold text-blue-600">
-                            {formatPrice(item.price)}
+                            {formatPriceDisplay(item)}
                           </span>
                         </td>
+                        <td>{getStatusBadge(item)}</td>
                         <td>
                           <span className="text-xs text-gray-500 whitespace-nowrap">
                             {formatDateTime(item.updated_at)}
@@ -338,7 +528,7 @@ export default function PropertySubmissions() {
       </div>
 
       <div
-        className={`overlay-dashboard ${showDetailModal ? " show" : " "}`}
+        className={`overlay-dashboard ${showDetailModal ? " show" : ""}`}
         onClick={closeDetail}
       />
 
@@ -362,14 +552,18 @@ export default function PropertySubmissions() {
                 style={{ maxHeight: "70vh", overflowY: "auto" }}
               >
                 <div className="alert alert-warning" role="alert">
-                  Semua data wajib diisi dan tidak boleh kosong. Minimal upload
-                  1 gambar.
+                  Detail pengajuan berikut bersifat read-only. Pastikan data
+                  sudah benar sebelum menyetujui.
                 </div>
-                <div className="modal-form-spacing">
+                <form
+                  className="modal-form-spacing"
+                  onSubmit={(e) => e.preventDefault()}
+                >
                   <div className="row g-3">
+                    {/* INFORMASI DASAR */}
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        📋 Informasi Dasar
+                        Informasi Dasar
                       </h6>
                     </div>
                     <div className="col-md-6">
@@ -377,10 +571,9 @@ export default function PropertySubmissions() {
                         <label>Judul</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.title)}
                           readOnly
-                          placeholder="Contoh: Apartemen Kota Modern"
                         />
                       </fieldset>
                     </div>
@@ -389,17 +582,24 @@ export default function PropertySubmissions() {
                         <label>Harga (IDR)</label>
                         <input
                           type="text"
-                          className="form-control"
-                          value={formatPrice(activeSubmission.price)}
+                          className="form-control bg-gray-100"
+                          value={formatPriceDisplay(activeSubmission)}
                           readOnly
-                          placeholder="Contoh: 500.000.000"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Tipe</label>
-                        <ReadonlyDropdown value={val(activeSubmission.type)} />
+                        <div
+                          style={{ pointerEvents: "none", userSelect: "none" }}
+                        >
+                          <DropdownSelect
+                            options={[val(activeSubmission.type)]}
+                            selectedValue={val(activeSubmission.type)}
+                            onChange={() => {}}
+                          />
+                        </div>
                       </fieldset>
                     </div>
                     <div className="col-md-6">
@@ -407,27 +607,48 @@ export default function PropertySubmissions() {
                         <label>Tipe Bangunan</label>
                         <input
                           type="text"
-                          className="form-control"
-                          value={val(activeSubmission.building_type)}
+                          name="building_type"
+                          className="form-control bg-gray-100"
+                          value={getBuildingTypeDisplay(activeSubmission)}
                           readOnly
-                          placeholder="Contoh: 90/120 m²"
+                          placeholder={
+                            activeSubmission.type === "tanah"
+                              ? "Otomatis: Luas Tanah"
+                              : "Otomatis: Luas Bangunan / Luas Tanah"
+                          }
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Status</label>
-                        <ReadonlyDropdown
-                          value={val(activeSubmission.status)}
-                        />
+                        <div
+                          style={{ pointerEvents: "none", userSelect: "none" }}
+                        >
+                          <DropdownSelect
+                            options={[
+                              val(getSubmissionStatus(activeSubmission)),
+                            ]}
+                            selectedValue={val(
+                              getSubmissionStatus(activeSubmission),
+                            )}
+                            onChange={() => {}}
+                          />
+                        </div>
                       </fieldset>
                     </div>
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Tipe Listing</label>
-                        <ReadonlyDropdown
-                          value={val(activeSubmission.listing_type)}
-                        />
+                        <div
+                          style={{ pointerEvents: "none", userSelect: "none" }}
+                        >
+                          <DropdownSelect
+                            options={[val(activeSubmission.listing_type)]}
+                            selectedValue={val(activeSubmission.listing_type)}
+                            onChange={() => {}}
+                          />
+                        </div>
                       </fieldset>
                     </div>
                     <div className="col-md-6">
@@ -435,10 +656,9 @@ export default function PropertySubmissions() {
                         <label>Kota</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.city)}
                           readOnly
-                          placeholder="Contoh: Jember"
                         />
                       </fieldset>
                     </div>
@@ -447,245 +667,420 @@ export default function PropertySubmissions() {
                         <label>Kecamatan</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.kecamatan)}
                           readOnly
-                          placeholder="Contoh: Sumbersari"
                         />
                       </fieldset>
                     </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Status Sertifikat</label>
-                        <ReadonlyDropdown
-                          value={val(activeSubmission.certificate_status)}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Jenis Sertifikat</label>
-                        <ReadonlyDropdown
-                          value={val(activeSubmission.certificate_type)}
-                        />
-                      </fieldset>
-                    </div>
+
+                    {activeSubmission.certificate_status && (
+                      <>
+                        <div className="col-md-6">
+                          <fieldset className="box-fieldset">
+                            <label>Status Sertifikat</label>
+                            <div
+                              style={{
+                                pointerEvents: "none",
+                                userSelect: "none",
+                              }}
+                            >
+                              <DropdownSelect
+                                options={[
+                                  val(activeSubmission.certificate_status),
+                                ]}
+                                selectedValue={val(
+                                  activeSubmission.certificate_status,
+                                )}
+                                onChange={() => {}}
+                              />
+                            </div>
+                          </fieldset>
+                        </div>
+                        <div className="col-md-6">
+                          <fieldset className="box-fieldset">
+                            <label>Jenis Sertifikat</label>
+                            <div
+                              style={{
+                                pointerEvents: "none",
+                                userSelect: "none",
+                              }}
+                            >
+                              <DropdownSelect
+                                options={[
+                                  val(activeSubmission.certificate_type),
+                                ]}
+                                selectedValue={val(
+                                  activeSubmission.certificate_type,
+                                )}
+                                onChange={() => {}}
+                              />
+                            </div>
+                          </fieldset>
+                        </div>
+                      </>
+                    )}
+
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Deskripsi</label>
                         <textarea
-                          className="textarea"
+                          className="textarea bg-gray-100"
                           rows={3}
                           value={val(activeSubmission.description)}
                           readOnly
-                          placeholder="Tuliskan deskripsi singkat properti..."
                         />
                       </fieldset>
                     </div>
 
+                    {/* LOKASI & TRACKING MAPS */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🏠 Detail Properti
+                        Lokasi & Tracking Maps
+                      </h6>
+                    </div>
+                    <div className="col-md-8">
+                      <fieldset className="box-fieldset">
+                        <label>Alamat Lengkap</label>
+                        <textarea
+                          className="textarea bg-gray-100"
+                          rows={3}
+                          value={val(activeSubmission.address)}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-4">
+                      <fieldset className="box-fieldset">
+                        <label>Koordinat</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={getLocationInfo(activeSubmission).coordinatesLabel}
+                          readOnly
+                        />
+                      </fieldset>
+                      <div className="d-flex flex-wrap gap-2 mt-2">
+                        {getLocationInfo(activeSubmission).mapsUrl ? (
+                          <>
+                            <a
+                              href={getLocationInfo(activeSubmission).mapsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="tf-btn bg-color-primary pd-23"
+                            >
+                              Buka Maps
+                            </a>
+                            <a
+                              href={getLocationInfo(activeSubmission).directionsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="tf-btn style-border pd-23"
+                            >
+                              Rute ke Lokasi
+                            </a>
+                          </>
+                        ) : (
+                          <span className="text-muted">
+                            Lokasi maps belum dikirim oleh pengaju.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {getLocationInfo(activeSubmission).embedUrl && (
+                      <div className="col-12">
+                        <div
+                          style={{
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            height: "320px",
+                          }}
+                        >
+                          <iframe
+                            title={`Peta lokasi ${activeSubmission.title}`}
+                            src={getLocationInfo(activeSubmission).embedUrl}
+                            width="100%"
+                            height="100%"
+                            style={{ border: 0 }}
+                            loading="lazy"
+                            referrerPolicy="no-referrer-when-downgrade"
+                          />
+                        </div>
+                        {!getLocationInfo(activeSubmission).hasCoordinates && (
+                          <p className="text-muted mt-2 mb-0">
+                            Preview maps memakai alamat karena koordinat belum tersedia.
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* DETAIL PROPERTI */}
+                    <div className="col-12 mt-4">
+                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
+                        Detail Properti
                       </h6>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!activeSubmission.detail?.carport}
-                            readOnly
-                            disabled
-                          />{" "}
-                          Carport
-                        </label>
+                      <fieldset className="box-fieldset detail-fieldset">
+                        <label>Carport</label>
+                        <ReadOnlyDetailCheckbox
+                          checked={activeSubmission.detail?.carport}
+                        />
                       </fieldset>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!activeSubmission.detail?.garden}
-                            readOnly
-                            disabled
-                          />{" "}
-                          Taman
-                        </label>
+                      <fieldset className="box-fieldset detail-fieldset">
+                        <label>Taman</label>
+                        <ReadOnlyDetailCheckbox
+                          checked={activeSubmission.detail?.garden}
+                        />
                       </fieldset>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!activeSubmission.detail?.one_gate_system}
-                            readOnly
-                            disabled
-                          />{" "}
-                          One Gate System
-                        </label>
+                      <fieldset className="box-fieldset detail-fieldset">
+                        <label>One Gate System</label>
+                        <ReadOnlyDetailCheckbox
+                          checked={activeSubmission.detail?.one_gate_system}
+                        />
                       </fieldset>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!activeSubmission.detail?.security_24jam}
-                            readOnly
-                            disabled
-                          />{" "}
-                          Keamanan 24 Jam
-                        </label>
+                      <fieldset className="box-fieldset detail-fieldset">
+                        <label>Keamanan 24 Jam</label>
+                        <ReadOnlyDetailCheckbox
+                          checked={activeSubmission.detail?.security_24jam}
+                        />
                       </fieldset>
                     </div>
+
                     <div className="col-md-4">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Luas Tanah (m²)</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.luas_tanah)}
                           readOnly
-                          placeholder="Contoh: 120"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-4">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Luas Bangunan (m²)</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.luas_bangunan)}
                           readOnly
-                          placeholder="Contoh: 90"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-4">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Jumlah Lantai</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.floors, 0)}
                           readOnly
-                          placeholder="Contoh: 2"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Kamar Tidur</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.bedrooms, 0)}
                           readOnly
-                          placeholder="Contoh: 3"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Kamar Mandi</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.bathrooms, 0)}
                           readOnly
-                          placeholder="Contoh: 2"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Dapur</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.kitchens, 0)}
                           readOnly
-                          placeholder="Contoh: 1"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-3">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Ruang Tamu</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.living_rooms, 0)}
                           readOnly
-                          placeholder="Contoh: 1"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-6">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Daya Listrik (VA)</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(
                             activeSubmission.detail?.electricity_capacity,
                           )}
                           readOnly
-                          placeholder="Contoh: 2200"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-6">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Penyedia WiFi</label>
                         <input
                           type="text"
-                          className="form-control"
+                          className="form-control bg-gray-100"
                           value={val(activeSubmission.detail?.wifi_provider)}
                           readOnly
-                          placeholder="Contoh: IndiHome, Biznet"
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-6">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Sumber Air</label>
-                        <ReadonlyDropdown
-                          value={val(activeSubmission.detail?.water)}
-                        />
+                        <div
+                          style={{ pointerEvents: "none", userSelect: "none" }}
+                        >
+                          <DropdownSelect
+                            options={[val(activeSubmission.detail?.water)]}
+                            selectedValue={val(activeSubmission.detail?.water)}
+                            onChange={() => {}}
+                          />
+                        </div>
                       </fieldset>
                     </div>
                     <div className="col-md-6">
-                      <fieldset className="box-fieldset">
+                      <fieldset className="box-fieldset detail-fieldset">
                         <label>Jenis Listrik</label>
-                        <ReadonlyDropdown
-                          value={val(activeSubmission.detail?.listrik_type)}
-                        />
+                        <div
+                          style={{ pointerEvents: "none", userSelect: "none" }}
+                        >
+                          <DropdownSelect
+                            options={[
+                              val(activeSubmission.detail?.listrik_type),
+                            ]}
+                            selectedValue={val(
+                              activeSubmission.detail?.listrik_type,
+                            )}
+                            onChange={() => {}}
+                          />
+                        </div>
                       </fieldset>
                     </div>
 
+                    {/* GAMBAR PROPERTI */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🖼️ Gambar Properti
+                        Gambar Properti
                       </h6>
                     </div>
                     <div className="col-12">
-                      <div className="box-img-upload">
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                          gap: "18px",
+                          width: "100%",
+                        }}
+                      >
                         {activeSubmission.images?.length > 0 ? (
                           activeSubmission.images.map((img, idx) => (
                             <div
                               key={idx}
-                              className={`item-upload${img.is_primary ? " is-primary" : " "}`}
+                              style={{
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "8px",
+                                overflow: "hidden",
+                                background: "#fff",
+                              }}
                             >
-                              <Image
-                                src={img.full_url}
-                                alt={`Preview ${idx + 1}`}
-                                width={615}
-                                height={405}
-                              />
+                              <div
+                                style={{
+                                  width: "100%",
+                                  aspectRatio: "1 / 1",
+                                  position: "relative",
+                                  overflow: "hidden",
+                                  background: "#f8fafc",
+                                }}
+                              >
+                                <Image
+                                  src={img.full_url}
+                                  alt={`Preview ${idx + 1}`}
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, 33vw"
+                                  style={{ objectFit: "cover" }}
+                                />
+                                <span
+                                  style={{
+                                    position: "absolute",
+                                    left: "8px",
+                                    bottom: "8px",
+                                    background: "rgba(17, 24, 39, 0.78)",
+                                    color: "#fff",
+                                    borderRadius: "6px",
+                                    padding: "4px 8px",
+                                    fontSize: "12px",
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  {img.is_primary ? "Primary" : `Gambar ${idx + 1}`}
+                                </span>
+                              </div>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "8px",
+                                  padding: "12px",
+                                }}
+                              >
+                                <a
+                                  href={img.full_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="tf-btn style-border pd-23"
+                                  style={{ flex: 1, justifyContent: "center" }}
+                                >
+                                  Lihat
+                                </a>
+                                {img.id && (
+                                  <button
+                                    type="button"
+                                    className="tf-btn bg-color-primary pd-23"
+                                    onClick={() =>
+                                      handleDownload(
+                                        `/admin/property-images/${img.id}/download`,
+                                        getDocumentFilename(
+                                          `${activeSubmission.title}-gambar-${idx + 1}`,
+                                          img.full_url,
+                                        ),
+                                      )
+                                    }
+                                    style={{ flex: 1, justifyContent: "center" }}
+                                  >
+                                    Download
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           ))
                         ) : (
@@ -696,105 +1091,185 @@ export default function PropertySubmissions() {
                       </div>
                     </div>
 
+                    {/* DOKUMEN PENDUKUNG */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        📂 Dokumen Pendukung
+                        Dokumen Pendukung
                       </h6>
                     </div>
-                    <div className="col-md-4">
-                      <fieldset className="box-fieldset">
-                        <label>Sertifikat</label>
-                        {activeSubmission.certificate_file_url ? (
-                          <a
-                            href={activeSubmission.certificate_file_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-blue-600 underline"
-                          >
-                            📄 Lihat File
-                          </a>
+                    <div className="col-12">
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                          gap: "18px",
+                          width: "100%",
+                        }}
+                      >
+                        {documentItems(activeSubmission).some((doc) => doc.url) ? (
+                          documentItems(activeSubmission).map((doc) => (
+                            <div
+                              key={doc.label}
+                              style={{
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "8px",
+                                overflow: "hidden",
+                                background: "#fff",
+                              }}
+                            >
+                              {doc.url ? (
+                                <>
+                                <div
+                                  style={{
+                                    width: "100%",
+                                    aspectRatio: "1 / 1",
+                                    position: "relative",
+                                    overflow: "hidden",
+                                    background: "#f8fafc",
+                                  }}
+                                >
+                                  {isImageDocument(doc.url) ? (
+                                    <Image
+                                      src={doc.url}
+                                      alt={doc.label}
+                                      fill
+                                      sizes="(max-width: 768px) 100vw, 33vw"
+                                      style={{ objectFit: "cover" }}
+                                    />
+                                  ) : (
+                                    <div
+                                      className="listing-image-placeholder"
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        gap: "8px",
+                                        padding: "16px",
+                                      }}
+                                    >
+                                      <span style={{ fontSize: "28px" }}>PDF</span>
+                                      <span>Lihat File</span>
+                                    </div>
+                                  )}
+                                  <span
+                                    style={{
+                                      position: "absolute",
+                                      left: "8px",
+                                      bottom: "8px",
+                                      background: "rgba(17, 24, 39, 0.78)",
+                                      color: "#fff",
+                                      borderRadius: "6px",
+                                      padding: "4px 8px",
+                                      fontSize: "12px",
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    {doc.label}
+                                  </span>
+                                </div>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: "8px",
+                                    padding: "12px",
+                                  }}
+                                >
+                                  <a
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="tf-btn style-border pd-23"
+                                    style={{ flex: 1, justifyContent: "center" }}
+                                  >
+                                    Lihat
+                                  </a>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      handleDownload(
+                                        doc.downloadUrl,
+                                        getDocumentFilename(doc.label, doc.url),
+                                      )
+                                    }
+                                    className="tf-btn bg-color-primary pd-23"
+                                    style={{ flex: 1, justifyContent: "center" }}
+                                  >
+                                    Download
+                                  </button>
+                                </div>
+                                </>
+                              ) : (
+                                <div
+                                  className="listing-image-placeholder"
+                                  style={{
+                                    width: "100%",
+                                    aspectRatio: "1 / 1",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    padding: "16px",
+                                  }}
+                                >
+                                  {doc.label} belum diunggah
+                                </div>
+                              )}
+                            </div>
+                          ))
                         ) : (
-                          <input
-                            type="text"
-                            className="form-control"
-                            value="-"
-                            readOnly
-                          />
+                          <p className="text-gray-500 py-4 text-center">
+                            Tidak ada dokumen pendukung diunggah.
+                          </p>
                         )}
-                      </fieldset>
-                    </div>
-                    <div className="col-md-4">
-                      <fieldset className="box-fieldset">
-                        <label>Tagihan Listrik</label>
-                        {activeSubmission.electric_bill_file_url ? (
-                          <a
-                            href={activeSubmission.electric_bill_file_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-blue-600 underline"
-                          >
-                            📄 Lihat File
-                          </a>
-                        ) : (
-                          <input
-                            type="text"
-                            className="form-control"
-                            value="-"
-                            readOnly
-                          />
-                        )}
-                      </fieldset>
-                    </div>
-                    <div className="col-md-4">
-                      <fieldset className="box-fieldset">
-                        <label>Tagihan Air</label>
-                        {activeSubmission.water_bill_file_url ? (
-                          <a
-                            href={activeSubmission.water_bill_file_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-blue-600 underline"
-                          >
-                            📄 Lihat File
-                          </a>
-                        ) : (
-                          <input
-                            type="text"
-                            className="form-control"
-                            value="-"
-                            readOnly
-                          />
-                        )}
-                      </fieldset>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </form>
               </div>
               <div className="modal-footer border-top">
-                <button
-                  type="button"
-                  className="tf-btn style-border pd-23 btn-cancel-danger"
-                  onClick={() => setShowConfirm(true)}
-                  disabled={isActionLoading}
-                >
-                  Tolak / Hapus
-                </button>
-                <button
-                  type="button"
-                  className="tf-btn bg-color-primary pd-23"
-                  onClick={handleApprove}
-                  disabled={isActionLoading}
-                >
-                  {isActionLoading && (
-                    <span className="btn-spinner" aria-hidden="true" />
+                {canActOnSubmission(activeSubmission) ? (
+                  <>
+                    <button
+                      type="button"
+                      className="tf-btn style-border pd-23 btn-cancel-danger"
+                      onClick={() => setShowConfirm(true)}
+                      disabled={isActionLoading}
+                    >
+                      Tolak / Hapus
+                    </button>
+                    <button
+                      type="button"
+                      className="tf-btn bg-color-primary pd-23"
+                      onClick={handleApprove}
+                      disabled={isActionLoading}
+                    >
+                      {isActionLoading && (
+                        <span className="btn-spinner" aria-hidden="true" />
+                      )}
+                      <span>Setujui & Publikasikan</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-muted me-auto">
+                      Pengajuan ini sudah final dan hanya dapat dilihat. Kelola perubahan atau penghapusan melalui menu Kelola Properti.
+                    </span>
+                    <button
+                      type="button"
+                      className="tf-btn style-border pd-23"
+                      onClick={closeDetail}
+                    >
+                      Tutup
+                    </button>
+                  </>
                   )}
-                  <span>Setujui & Publikasikan</span>
-                </button>
               </div>
             </div>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }

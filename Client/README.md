@@ -20,6 +20,15 @@ You can start editing the page by modifying `app/page.js`. The page auto-updates
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Periode Harga Sewa
+
+Saat `listing_type=sewa`, frontend dapat meminta dan menampilkan periode sewa:
+
+- Query param: `rent_period` (`bulan`, `3bulan`, `6bulan`, `tahun`)
+- Field response: `price_period` dan `price_display` (contoh: `Rp 2.500.000/bulan`)
+
+UI menampilkan selector "Periode Sewa" di filter lanjutan dan default ke per bulan ketika periode tidak dikirim.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

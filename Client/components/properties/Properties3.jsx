@@ -15,8 +15,43 @@ const EMPTY_FILTERS = {
   min_price: "", max_price: "", kecamatan: "",
   bedrooms: "", bathrooms: "", living_rooms: "",
   kitchens: "", floors: "", certificate_type: "",
-  water: "", listrik_type: "", amenities: {},
+  water: "", listrik_type: "", rent_period: "",
+  total_rooms: "", bathroom_position: "", gender_type: "",
+  parking_capacity: "", warehouse_area: "", shop_front_width: "",
+  road_access: "", land_type: "", luas_tanah: "", luas_bangunan: "",
+  amenities: {},
 };
+
+const PROPERTY_TYPE_OPTIONS = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"];
+const LISTING_TYPE_OPTIONS = ["Jual/Sewa", "Dijual", "Disewa"];
+const TYPE_FILTER_KEYS = {
+  rumah: ["bedrooms", "bathrooms", "living_rooms", "kitchens", "floors", "certificate_type", "water", "listrik_type", "luas_tanah", "luas_bangunan"],
+  villa: ["bedrooms", "bathrooms", "living_rooms", "kitchens", "floors", "certificate_type", "water", "listrik_type", "luas_tanah", "luas_bangunan"],
+  kos: ["total_rooms", "bathrooms", "bathroom_position", "gender_type", "water", "listrik_type"],
+  ruko: ["parking_capacity", "warehouse_area", "shop_front_width", "certificate_type", "water", "listrik_type", "road_access", "luas_tanah", "luas_bangunan"],
+  tanah: ["certificate_type", "road_access", "land_type", "water", "listrik_type", "luas_tanah"],
+};
+const TYPE_AMENITIES = {
+  rumah: ["carport", "garden", "one_gate_system", "security_24jam"],
+  villa: ["swimming_pool", "private_pool", "furnished", "near_tourism"],
+  kos: ["wifi_included", "electricity_included", "water_included", "shared_kitchen", "parking_area", "cctv"],
+  ruko: [],
+  tanah: [],
+};
+const SHARED_FILTER_KEYS = ["search", "city", "type", "listing_type", "min_price", "max_price", "kecamatan", "rent_period"];
+
+function normalizeFiltersForType(filters, type) {
+  const allowedKeys = new Set([...SHARED_FILTER_KEYS, ...(TYPE_FILTER_KEYS[type] || [])]);
+  const nextFilters = { ...filters };
+  Object.keys(EMPTY_FILTERS).forEach((key) => {
+    if (key !== "amenities" && !allowedKeys.has(key)) nextFilters[key] = "";
+  });
+  const allowedAmenities = new Set(TYPE_AMENITIES[type] || []);
+  nextFilters.amenities = Object.fromEntries(
+    Object.entries(nextFilters.amenities || {}).filter(([key, value]) => allowedAmenities.has(key) && value),
+  );
+  return nextFilters;
+}
 
 const formatPrice = (value) => {
   const num = Number(value);
@@ -180,6 +215,32 @@ export default function Properties3({ defaultGrid = false }) {
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
+  const handleTopFilterChange = (name, value) => {
+    const normalizedValue =
+      value === "Semua Tipe" || value === "Jual/Sewa"
+        ? ""
+        : name === "listing_type"
+          ? value === "Dijual" ? "jual" : "sewa"
+          : value;
+
+    const nextFilters = normalizeFiltersForType(
+      { ...appliedFilters, [name]: normalizedValue },
+      name === "type" ? normalizedValue : appliedFilters.type,
+    );
+    setFilters(nextFilters);
+    setAppliedFilters(nextFilters);
+    setPage(1);
+
+    const params = new URLSearchParams(window.location.search);
+    if (normalizedValue) {
+      params.set(name, normalizedValue);
+    } else {
+      params.delete(name);
+    }
+    params.set("page", "1");
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const handleResetFilters = () => {
     setFilters(EMPTY_FILTERS);
     setAppliedFilters(EMPTY_FILTERS);
@@ -213,15 +274,33 @@ export default function Properties3({ defaultGrid = false }) {
             <div className="box-title">
               <div><h2>List Daftar Properti</h2></div>
               <div className="right wrap-sort">
-                <ul className="nav-tab-filter group-layout" role="tablist">
-                  <LayoutHandler defaultGrid={defaultGrid} />
-                </ul>
+                <DropdownSelect
+                  addtionalParentClass="select-filter list-sort"
+                  options={PROPERTY_TYPE_OPTIONS}
+                  selectedValue={appliedFilters.type || "Semua Tipe"}
+                  onChange={(value) => handleTopFilterChange("type", value)}
+                />
+                <DropdownSelect
+                  addtionalParentClass="select-filter list-sort"
+                  options={LISTING_TYPE_OPTIONS}
+                  selectedValue={
+                    appliedFilters.listing_type === "jual"
+                      ? "Dijual"
+                      : appliedFilters.listing_type === "sewa"
+                        ? "Disewa"
+                        : "Jual/Sewa"
+                  }
+                  onChange={(value) => handleTopFilterChange("listing_type", value)}
+                />
                 <DropdownSelect
                   addtionalParentClass="select-filter list-sort"
                   options={["Terbaru", "Terlama"]}
                   selectedValue={sortOrder === "asc" ? "Terlama" : "Terbaru"}
                   onChange={handleSortChange}
                 />
+                <ul className="nav-tab-filter group-layout" role="tablist">
+                  <LayoutHandler defaultGrid={defaultGrid} />
+                </ul>
               </div>
             </div>
           </div>

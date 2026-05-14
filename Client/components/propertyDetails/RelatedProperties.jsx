@@ -56,6 +56,21 @@ function formatHarga(value) {
   return `Rp ${num}`;
 }
 
+function getRentPeriodLabel(property) {
+  const period = String(property?.price_period || "bulan");
+  if (period === "3bulan") return "3 bulan";
+  if (period === "6bulan") return "6 bulan";
+  if (period === "tahun") return "tahun";
+  return "bulan";
+}
+
+function formatPriceDisplay(property) {
+  const base = formatHarga(property?.price);
+  if (property?.listing_type !== "sewa") return base;
+  if (!property?.price) return base;
+  return `${base}/${getRentPeriodLabel(property)}`;
+}
+
 export default function RelatedProperties({ slug }) {
   const [relatedProperties, setRelatedProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -215,7 +230,7 @@ export default function RelatedProperties({ slug }) {
                           </li>
                         </ul>
                         <div className="bot flex justify-between items-center">
-                          <h6 className="price">{formatHarga(property.price)}</h6>
+                          <h6 className="price">{formatPriceDisplay(property)}</h6>
                           <div className="wrap-btn flex">
                             <a href="#" className="compare flex gap-8 items-center text-1">
                               <i className="icon-compare" />
@@ -309,7 +324,7 @@ export default function RelatedProperties({ slug }) {
                           </li>
                         </ul>
                         <div className="bot flex justify-between items-center">
-                          <h6 className="price">{formatHarga(property.price)}</h6>
+                          <h6 className="price">{formatPriceDisplay(property)}</h6>
                           <div className="wrap-btn flex">
                             <a href="#" className="compare flex gap-8 items-center text-1">
                               <i className="icon-compare" />

@@ -13,6 +13,8 @@ return new class extends Migration
             $table->string('name', 100);
             $table->string('email', 100)->unique();
             $table->string('password', 255);
+            $table->string('phone', 20)->nullable();
+            $table->string('full_name', 150)->nullable();
             $table->string('google_id', 255)->nullable()->unique();
             $table->string('avatar', 255)->nullable();
             $table->enum('role', ['admin', 'user'])->default('user');

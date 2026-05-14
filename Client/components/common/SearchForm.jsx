@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import DropdownSelect from "./DropdownSelect";
 import Slider from "rc-slider";
-import "rc-slider/assets/index.css";
 
 export default function SearchForm({ 
   parentClass = "wd-search-form",
   onFilterChange,
-  initialFilters = {}
+  initialFilters = {},
+  listingType = ""
 }) {
   const searchFormRef = useRef(null);
   
@@ -36,6 +36,14 @@ export default function SearchForm({
   const [certificateType, setCertificateType] = useState(initialFilters.certificateType || "Jenis Sertifikat");
   const [waterSource, setWaterSource] = useState(initialFilters.waterSource || "Sumber Air");
   const [electricityType, setElectricityType] = useState(initialFilters.electricityType || "Jenis Listrik");
+  const [rentPeriod, setRentPeriod] = useState(() => {
+    const value = String(initialFilters.rent_period || "");
+    if (value === "3bulan") return "3 Bulan";
+    if (value === "6bulan") return "6 Bulan";
+    if (value === "tahun" || value === "12bulan") return "Tahun";
+    if (value === "bulan") return "Bulan";
+    return "Periode Sewa";
+  });
   
   // ✅ Checkbox states
   const [amenities, setAmenities] = useState({
@@ -93,6 +101,20 @@ export default function SearchForm({
     const elecValue = value === "Jenis Listrik" ? "" : value.toLowerCase();
     setElectricityType(value);
     if (onFilterChange) onFilterChange("listrik_type", elecValue);
+  }, [onFilterChange]);
+
+  const handleRentPeriodChange = useCallback((value) => {
+    const periodValue = value === "Periode Sewa"
+      ? ""
+      : value === "3 Bulan"
+      ? "3bulan"
+      : value === "6 Bulan"
+      ? "6bulan"
+      : value === "Tahun"
+      ? "tahun"
+      : "bulan";
+    setRentPeriod(value);
+    if (onFilterChange) onFilterChange("rent_period", periodValue);
   }, [onFilterChange]);
 
   // ✅ FIX: Handler untuk price slider - kirim min_price dan max_price terpisah
@@ -292,6 +314,17 @@ export default function SearchForm({
             addtionalParentClass=""
           />
         </div>
+
+        {listingType === "sewa" && (
+          <div className="box-select">
+            <DropdownSelect
+              options={["Periode Sewa", "Bulan", "3 Bulan", "6 Bulan", "Tahun"]}
+              selectedValue={rentPeriod}
+              onChange={handleRentPeriodChange}
+              addtionalParentClass=""
+            />
+          </div>
+        )}
       </div>
 
       {/* ====== CHECKBOX AMENITIES ====== */}

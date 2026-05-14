@@ -14,7 +14,7 @@ export default function SuccessModal({ isOpen, onClose, title = "Berhasil!", mes
         width: "100%", 
         height: "100%",
         minHeight: "100dvh",
-        backgroundColor: "rgba(0, 0, 0, 0.3)", 
+        backgroundColor: "rgba(0, 0, 0, 0.65)", 
         backdropFilter: "blur(12px)", 
         WebkitBackdropFilter: "blur(12px)", 
         zIndex: 9999, 

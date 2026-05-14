@@ -13,6 +13,34 @@ import "swiper/css/pagination";
 
 const fallbackImage = "/images/section/location-23.jpg";
 
+const META_CONFIG_BY_TYPE = {
+  rumah: [
+    { key: "bedrooms", label: "KT" },
+    { key: "bathrooms", label: "KM" },
+    { key: "building_type", label: "m²" },
+  ],
+  villa: [
+    { key: "bedrooms", label: "KT" },
+    { key: "bathrooms", label: "KM" },
+    { key: "building_type", label: "m²" },
+  ],
+  kos: [
+    { key: "room_size", label: "Luas", suffix: "m²" },
+    { key: "bathroom_position", label: "KM" },
+    { key: "gender_type", label: "Gender" },
+  ],
+  ruko: [
+    { key: "parking_area", label: "PA" },
+    { key: "warehouse_area", label: "WA", suffix: "m²" },
+    { key: "building_type", label: "m²" },
+  ],
+  tanah: [
+    { key: "zoning", label: "Fungsi" },
+    { key: "road_access", label: "Akses" },
+    { key: "luas_tanah", label: "LT", suffix: "m²" },
+  ],
+};
+
 // ✅ Helper functions (sama persis seperti RelatedProperties & PropertyGridItems)
 function getImageSrc(property) {
   return property?.images?.[0]?.full_url || property?.imageSrc || fallbackImage;
@@ -23,23 +51,6 @@ function getLocation(property) {
     [property?.kecamatan, property?.city].filter(Boolean).join(", ") ||
     property?.location ||
     "Lokasi belum tersedia"
-  );
-}
-
-function getBedrooms(property) {
-  return property?.detail?.bedrooms ?? property?.beds ?? "-";
-}
-
-function getBathrooms(property) {
-  return property?.detail?.bathrooms ?? property?.baths ?? "-";
-}
-
-function getArea(property) {
-  return (
-    property?.detail?.luas_bangunan ??
-    property?.sqft ??
-    property?.detail?.luas_tanah ??
-    "-"
   );
 }
 
@@ -58,20 +69,130 @@ function formatHarga(value) {
   return `Rp ${num}`;
 }
 
+function getRentPeriodLabel(property) {
+  const period = String(property?.price_period || "bulan");
+  if (period === "3bulan") return "3 bulan";
+  if (period === "6bulan") return "6 bulan";
+  if (period === "tahun") return "tahun";
+  return "bulan";
+}
+
+function formatPriceDisplay(property) {
+  const base = formatHarga(property?.price);
+  if (property?.listing_type !== "sewa") return base;
+  if (!property?.price) return base;
+  return `${base}/${getRentPeriodLabel(property)}`;
+}
+
 // ✅ Daftar tipe properti untuk filter tabs (sesuai enum di backend)
+function getRoomSize(property) {
+  const panjang = Number(property?.detail?.panjang_ruangan ?? 0);
+  const lebar = Number(property?.detail?.lebar_ruangan ?? 0);
+  if (panjang > 0 && lebar > 0) {
+    const area = panjang * lebar;
+    return Number.isInteger(area)
+      ? String(area)
+      : String(Number(area.toFixed(2)));
+  }
+  return property?.building_type;
+}
+
+function getMetaValue(property, key) {
+  if (key === "bedrooms") return property?.detail?.bedrooms ?? property?.beds;
+  if (key === "bathrooms") return property?.detail?.bathrooms ?? property?.baths;
+  if (key === "bathroom_position") {
+    const position = property?.detail?.bathroom_position;
+    if (position === "dalam") return "Dalam";
+    if (position === "luar") return "Luar";
+    return position;
+  }
+  if (key === "building_type") {
+    return (
+      property?.building_type ??
+      property?.detail?.luas_bangunan ??
+      property?.sqft ??
+      property?.detail?.luas_tanah
+    );
+  }
+  if (key === "room_size") return getRoomSize(property);
+  if (key === "luas_tanah") return property?.detail?.luas_tanah;
+  return property?.detail?.[key];
+}
+
+function formatMetaValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "Ya" : "Tidak";
+  return String(value);
+}
+
+function getPropertyMetaItems(property) {
+  const type = property?.type || "rumah";
+  const config = META_CONFIG_BY_TYPE[type] || META_CONFIG_BY_TYPE.rumah;
+
+  return config.map((item) => ({
+    ...item,
+    value: formatMetaValue(getMetaValue(property, item.key)),
+  }));
+}
+
 const PROPERTY_TYPES = [
-  { value: "rumah", label: "Rumah", listings: "10 Listing" },
-  { value: "perumahan", label: "Perumahan", listings: "9 Listing" },
-  { value: "ruko", label: "Ruko", listings: "10 Listing" },
-  { value: "kos", label: "Kos", listings: "20 Listing" },
-  { value: "tanah", label: "Tanah", listings: "9 Listing" },
+  { value: "rumah", label: "Rumah" },
+  { value: "villa", label: "Villa" },
+  { value: "ruko", label: "Ruko" },
+  { value: "kos", label: "Kos" },
+  { value: "tanah", label: "Tanah" },
 ];
 
 export default function Properties() {
   const [activeType, setActiveType] = useState("rumah");
   const [properties, setProperties] = useState([]);
+  const [listingCounts, setListingCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchListingCounts = async () => {
+      try {
+        const responses = await Promise.all(
+          PROPERTY_TYPES.map((type) =>
+            api.get("/properties", {
+              params: {
+                type: type.value,
+                status: "published",
+                per_page: 1,
+              },
+            })
+          )
+        );
+
+        if (!isMounted) return;
+
+        const counts = PROPERTY_TYPES.reduce((acc, type, index) => {
+          const response = responses[index]?.data;
+          const data = response?.data || response || [];
+          acc[type.value] = Number(
+            response?.total ?? (Array.isArray(data) ? data.length : 0)
+          );
+          return acc;
+        }, {});
+
+        setListingCounts(counts);
+      } catch (err) {
+        if (isMounted) {
+          console.error("Failed to fetch property counts:", err);
+          setListingCounts({});
+        }
+      }
+    };
+
+    fetchListingCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // ✅ Fetch properties dari API berdasarkan type filter
   useEffect(() => {
@@ -85,7 +206,7 @@ export default function Properties() {
         
         const response = await api.get("/properties", {
           params: {
-            type: activeType,      // ✅ Filter by type: rumah/perumahan/ruko/kos/tanah
+            type: activeType,
             status: "published",
             per_page: 10,
           },
@@ -117,6 +238,11 @@ export default function Properties() {
     setActiveType(typeValue);
   };
 
+  const getListingCountLabel = (typeValue) => {
+    const count = listingCounts[typeValue] ?? 0;
+    return `${count} Listing`;
+  };
+
   return (
     <section className="section-popular-searches tf-spacing-1">
       <div className="tf-container md">
@@ -144,7 +270,7 @@ export default function Properties() {
                   >
                     {item.label}
                     <span className="tooltip">
-                      {item.listings}
+                      {getListingCountLabel(item.value)}
                     </span>
                   </li>
                 ))}
@@ -191,6 +317,7 @@ export default function Properties() {
                       {properties.map((property) => {
                         const added = isInCompare(property.id);
                         const disabled = !added && isFull;
+                        const metaItems = getPropertyMetaItems(property);
 
                         return (
                         <SwiperSlide className="swiper-slide" key={property.id}>
@@ -220,7 +347,7 @@ export default function Properties() {
                                 {property.type && (
                                   <li className="flat-tag text-4 bg-3 fw-6 text_white">
                                     {property.type === "rumah" ? "Rumah" :
-                                     property.type === "perumahan" ? "Perumahan" :
+                                     property.type === "villa" ? "Villa" :
                                      property.type === "ruko" ? "Ruko" :
                                      property.type === "kos" ? "Kos" :
                                      property.type === "tanah" ? "Tanah" :
@@ -268,18 +395,18 @@ export default function Properties() {
                                 <i className="icon-location" /> {getLocation(property)}
                               </p>
                               <ul className="meta-list flex">
-                                <li className="text-1 flex">
-                                  <span>{getBedrooms(property)}</span>Beds
-                                </li>
-                                <li className="text-1 flex">
-                                  <span>{getBathrooms(property)}</span>Baths
-                                </li>
-                                <li className="text-1 flex">
-                                  <span>{getArea(property)}</span>m2
-                                </li>
+                                {metaItems.map((item) => (
+                                  <li className="text-1 flex" key={item.key}>
+                                    <span>
+                                      {item.value}
+                                      {item.suffix || ""}
+                                    </span>
+                                    {item.label}
+                                  </li>
+                                ))}
                               </ul>
                               <div className="bot flex justify-between items-center">
-                                <h6 className="price">{formatHarga(property.price)}</h6>
+                                <h6 className="price">{formatPriceDisplay(property)}</h6>
                                 <div className="wrap-btn flex">
                                   <button
                                     type="button"

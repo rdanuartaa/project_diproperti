@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Footer1 from "@/components/footers/Footer1";
 import Header2 from "@/components/headers/Header2";
@@ -12,7 +12,7 @@ import Facts from "@/components/homes/home-2/Facts";
 import Hero from "@/components/homes/home-2/Hero";
 import Properties from "@/components/homes/home-2/Properties";
 
-export default function Home02Page() {
+function HomeContent() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -41,5 +41,13 @@ export default function Home02Page() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function Home02Page() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }

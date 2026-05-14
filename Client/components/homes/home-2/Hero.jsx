@@ -17,6 +17,7 @@ export default function Hero() {
   const [searchQuery, setSearchQuery] = useState("");
   const [kecamatan, setKecamatan] = useState("");
   const [priceRange, setPriceRange] = useState([10000000, 3000000000]);
+  const [rentPeriod, setRentPeriod] = useState("");
 
   const [propertyTypes, setPropertyTypes] = useState(["Tipe Properti"]);
   const [cities, setCities] = useState(["Kota"]);
@@ -61,12 +62,14 @@ export default function Hero() {
     const search = searchParams?.get("search");
     const minPrice = searchParams?.get("min_price");
     const maxPrice = searchParams?.get("max_price");
+    const rentPeriodParam = searchParams?.get("rent_period");
 
     if (type && type !== "Tipe Properti") setPropertyType(type);
     if (city && city !== "Kota") setLocation(city);
     if (listingType)
       setActiveItem(listingType === "jual" ? "Dijual" : "Disewa");
     if (search) setSearchQuery(search);
+    if (rentPeriodParam) setRentPeriod(rentPeriodParam);
 
     // ✅ Update priceRange dari URL
     if (minPrice || maxPrice) {
@@ -115,6 +118,11 @@ export default function Hero() {
     // 7. Status
     params.set("status", "published");
 
+    // 8. Rent period (hanya untuk sewa)
+    if (activeItem === "Disewa" && rentPeriod) {
+      params.set("rent_period", rentPeriod);
+    }
+
     // ✅ Redirect dengan semua filter
     router.push(`/list-properti?${params.toString()}`);
   };
@@ -131,6 +139,9 @@ export default function Hero() {
     }
     if (key === "bedrooms") {
       // Optional: handle other filters if needed
+    }
+    if (key === "rent_period") {
+      setRentPeriod(value);
     }
   };
 
@@ -293,10 +304,12 @@ export default function Hero() {
                   <SearchForm
                     ref={searchFormRef}
                     onFilterChange={handleSearchFormChange}
+                    listingType={activeItem === "Dijual" ? "jual" : "sewa"}
                     initialFilters={{
                       search: searchQuery,
                       kecamatan,
                       priceRange,
+                      rent_period: rentPeriod,
                     }}
                   />
                 </div>

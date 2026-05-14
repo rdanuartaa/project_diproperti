@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
-use App\Models\PropertyImage;
 
 class Property extends Model
 {
     use HasFactory;
+
+    protected $table = 'properties';
 
     protected $fillable = [
         'title',
@@ -22,6 +24,9 @@ class Property extends Model
         'listing_type',
         'kecamatan',
         'city',
+        'address',
+        'latitude',
+        'longitude',
         'price',
         'certificate_type',
         'certificate_status',
@@ -36,45 +41,46 @@ class Property extends Model
     ];
 
     protected $casts = [
-        'price' => 'integer',
-        'views' => 'integer',
-        'building_type' => 'string',
-        'is_verified' => 'boolean',
+        'price'             => 'integer',
+        'views'             => 'integer',
+        'building_type'     => 'string',
+        'is_verified'       => 'boolean',
+        'latitude'          => 'float',
+        'longitude'         => 'float',
+        'type'              => 'string', // ✅ Enum: rumah, villa, ruko, kos, tanah
+        'listing_type'      => 'string',
     ];
 
-    // Auto-generate slug dari title
-    public function setTitleAttribute($value)
+    // ✅ Mutator dengan type hints yang benar
+    public function setTitleAttribute(string $value): void
     {
         $this->attributes['title'] = $value;
         $this->attributes['slug'] = Str::slug($value) . '-' . Str::random(5);
     }
 
-    // Relasi: Milik User (Agen/Admin)
+    // Relasi
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relasi: Punya 1 Detail
     public function detail(): HasOne
     {
         return $this->hasOne(PropertyDetail::class);
     }
 
-    // Relasi: Punya Banyak Gambar
     public function images(): HasMany
     {
         return $this->hasMany(PropertyImage::class)->orderBy('is_primary', 'desc');
     }
 
-    // Scope: Hanya properti yang published
-    public function scopePublished($query)
+    // ✅ Scopes dengan type hints
+    public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', 'published');
+        return $query->where('status', 'published')->where('is_verified', true);
     }
 
-    // Scope: Filter berdasarkan tipe & listing
-    public function scopeFilter($query, array $filters)
+    public function scopeFilter(Builder $query, array $filters): Builder
     {
         if ($filters['type'] ?? false) {
             $query->where('type', $filters['type']);
@@ -83,10 +89,10 @@ class Property extends Model
             $query->where('listing_type', $filters['listing_type']);
         }
         if ($filters['min_price'] ?? false) {
-            $query->where('price', '>=', $filters['min_price']);
+            $query->where('price', '>=', (int) $filters['min_price']);
         }
         if ($filters['max_price'] ?? false) {
-            $query->where('price', '<=', $filters['max_price']);
+            $query->where('price', '<=', (int) $filters['max_price']);
         }
         if ($filters['city'] ?? false) {
             $query->where('city', $filters['city']);
@@ -94,8 +100,8 @@ class Property extends Model
         return $query;
     }
 
-    // Accessor: Format harga ke Rupiah
-    public function getFormattedPriceAttribute()
+    // Accessor
+    public function getFormattedPriceAttribute(): string
     {
         return 'Rp ' . number_format($this->price, 0, ',', '.');
     }

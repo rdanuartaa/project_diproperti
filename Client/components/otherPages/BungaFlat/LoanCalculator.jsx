@@ -335,7 +335,9 @@ export default function LoanCalculator() {
                       options={TENOR_OPTIONS.map((opt) => opt.label)}
                       selectedValue={form.tenorLabel}
                       onChange={handleTenorChange}
-                      addtionalParentClass=""
+                      addtionalParentClass={
+                        form.tenor ? "" : "is-placeholder"
+                      }
                     />
                     {submitted && errors.tenor && (
                       <span

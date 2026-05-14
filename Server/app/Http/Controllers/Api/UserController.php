@@ -19,14 +19,28 @@ class UserController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->search;
+
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('full_name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
             });
         }
 
-        $users = $query->select('id', 'name', 'email', 'role', 'avatar', 'email_verified_at')
-            ->orderBy('created_at', 'desc')
+        $users = $query
+            ->select([
+                'id',
+                'name',
+                'full_name',
+                'email',
+                'phone',
+                'role',
+                'avatar',
+                'email_verified_at',
+                'created_at',
+            ])
+            ->latest()
             ->paginate($request->input('per_page', 10));
 
         return response()->json([
@@ -35,6 +49,7 @@ class UserController extends Controller
             'meta' => [
                 'current_page' => $users->currentPage(),
                 'last_page' => $users->lastPage(),
+                'per_page' => $users->perPage(),
                 'total' => $users->total(),
             ]
         ]);
@@ -42,26 +57,38 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
-        if ($request->user()->role !== 'admin') {
-        return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        if (!$request->user()->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
         }
-        
+
         $validated = $request->validate([
             'role' => ['required', Rule::in(['admin', 'user'])],
         ]);
 
-        $user->update(['role' => $validated['role']]);
+        $user->update($validated);
 
         return response()->json([
             'success' => true,
-            'message' => 'User role updated successfully',
-            'data' => $user->only('id', 'name', 'email', 'role', 'avatar', 'email_verified_at')
+            'message' => 'User updated successfully',
+            'data' => $user->only([
+                'id',
+                'name',
+                'full_name',
+                'email',
+                'phone',
+                'role',
+                'avatar',
+                'email_verified_at',
+            ])
         ]);
     }
 
-        public function destroy(Request $request, User $user)
+    public function destroy(Request $request, User $user)
     {
-        if ($request->user()->role !== 'admin') {
+        if (!$request->user()->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized'
@@ -75,26 +102,18 @@ class UserController extends Controller
             ], 403);
         }
 
-        if ($user->role === 'admin') {
+        if ($user->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot delete another admin'
             ], 403);
         }
 
-        try {
-            $user->delete();
+        $user->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'User deleted successfully'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete user'
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'User deleted successfully'
+        ]);
     }
-
 }

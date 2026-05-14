@@ -101,7 +101,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                         className={isActiveLink("/") ? "is-active" : undefined}
                         aria-current={isActiveLink("/") ? "page" : undefined}
                       >
-                        Beranda
+                        Home
                       </Link>
                     </li>
                     <li>
@@ -119,28 +119,15 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                     </li>
                     <li>
                       <Link
-                        href="/komparasi"
+                        href="/#fitur"
                         className={
-                          isActiveLink("/komparasi") ? "is-active" : undefined
+                          isActiveLink("/#fitur") ? "is-active" : undefined
                         }
                         aria-current={
-                          isActiveLink("/komparasi") ? "page" : undefined
+                          isActiveLink("/#fitur") ? "page" : undefined
                         }
                       >
-                        Komparasi
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
-                        href="/simulasi-kpr"
-                        className={
-                          isActiveLink("/simulasi-kpr") ? "is-active" : undefined
-                        }
-                        aria-current={
-                          isActiveLink("/simulasi-kpr") ? "page" : undefined
-                        }
-                      >
-                        Simulasi KPR
+                        Fitur
                       </Link>
                     </li>
                     <li>
@@ -156,6 +143,19 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                         Artikel
                       </Link>
                     </li>
+                    <li>
+                      <Link
+                        href="/jual-properti"
+                        className={
+                          isActiveLink("/jual-properti") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/jual-properti") ? "page" : undefined
+                        }
+                      >
+                        Jual Properti
+                      </Link>
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -168,19 +168,6 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                   <ul className="tf-collapse-content">
                     <li>
                       <Link
-                        href="/list-properti?sort=terbaru"
-                        className={
-                          isActiveLink("/list-properti") ? "is-active" : undefined
-                        }
-                        aria-current={
-                          isActiveLink("/list-properti") ? "page" : undefined
-                        }
-                      >
-                        Properti Terbaru
-                      </Link>
-                    </li>
-                    <li>
-                      <Link
                         href="/list-properti?sort=populer"
                         className={
                           isActiveLink("/list-properti") ? "is-active" : undefined
@@ -189,7 +176,20 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                           isActiveLink("/list-properti") ? "page" : undefined
                         }
                       >
-                        Properti Populer
+                        Properti Terpopuler
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/rekomendasi-properti"
+                        className={
+                          isActiveLink("/rekomendasi-properti") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/rekomendasi-properti") ? "page" : undefined
+                        }
+                      >
+                        Rekomendasi Properti
                       </Link>
                     </li>
                     <li>
@@ -220,15 +220,15 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                     </li>
                     <li>
                       <Link
-                        href="/list-artikel"
+                        href="/jual-properti"
                         className={
-                          isActiveLink("/list-artikel") ? "is-active" : undefined
+                          isActiveLink("/jual-properti") ? "is-active" : undefined
                         }
                         aria-current={
-                          isActiveLink("/list-artikel") ? "page" : undefined
+                          isActiveLink("/jual-properti") ? "page" : undefined
                         }
                       >
-                        Informasi Terbaru
+                        Jual Properti
                       </Link>
                     </li>
                   </ul>
@@ -261,6 +261,19 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                         }
                       >
                         Kontak
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/list-artikel"
+                        className={
+                          isActiveLink("/list-artikel") ? "is-active" : undefined
+                        }
+                        aria-current={
+                          isActiveLink("/list-artikel") ? "page" : undefined
+                        }
+                      >
+                        Informasi Terbaru
                       </Link>
                     </li>
                   </ul>

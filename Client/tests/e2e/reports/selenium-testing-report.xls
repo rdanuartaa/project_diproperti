@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <Styles>
+    <Style ss:ID="Title">
+      <Font ss:Bold="1" ss:Size="14"/>
+    </Style>
+    <Style ss:ID="Header">
+      <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#1F4E79" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="Cell">
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="Pass">
+      <Interior ss:Color="#D9EAD3" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="Skip">
+      <Interior ss:Color="#FFF2CC" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+      </Borders>
+    </Style>
+  </Styles>
+
+  <Worksheet ss:Name="Ringkasan">
+    <Table>
+      <Column ss:Width="220"/>
+      <Column ss:Width="280"/>
+      <Column ss:Width="520"/>
+      <Row>
+        <Cell ss:StyleID="Title"><Data ss:Type="String">Laporan Testing Selenium WebDriver</Data></Cell>
+      </Row>
+      <Row><Cell ss:StyleID="Header"><Data ss:Type="String">Item</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Value</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Catatan</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Project</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Diproperti Client</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Tanggal Testing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">13 Mei 2026</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Command</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">E2E_START_SERVER=false npm run test:e2e</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Menggunakan dev server lokal yang sudah berjalan</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Browser</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Chrome/Chromium via selenium-webdriver</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Headless default</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Total Test Case</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="Number">20</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Berhasil</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="Number">19</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Skip</Data></Cell><Cell ss:StyleID="Skip"><Data ss:Type="Number">1</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Detail properti diskip karena belum ada properti tampil di list saat test dijalankan</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Gagal</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="Number">0</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Status Akhir</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASSED</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Semua Selenium smoke test berhasil</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Build Verification</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASSED</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">npm run build berhasil setelah testing</Data></Cell></Row>
+    </Table>
+  </Worksheet>
+
+  <Worksheet ss:Name="Test Cases">
+    <Table>
+      <Column ss:Width="70"/>
+      <Column ss:Width="130"/>
+      <Column ss:Width="280"/>
+      <Column ss:Width="280"/>
+      <Column ss:Width="300"/>
+      <Column ss:Width="90"/>
+      <Column ss:Width="340"/>
+      <Row>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">ID</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Fitur</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Skenario</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Expected Result</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Actual Result</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Status</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Catatan</Data></Cell>
+      </Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-001</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman home tampil dan tidak 404</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Assertion memakai teks stabil Rumah</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-002</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /list-properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman list properti tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /list-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-003</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /jual-properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman jual properti tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /jual-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Valid untuk state login/form</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-004</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /komparasi</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman komparasi tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /komparasi</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-005</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /simulasi-kpr</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman simulasi KPR tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /simulasi-kpr</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-006</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /rekomendasi-properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman rekomendasi tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /rekomendasi-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-007</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /faq</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman FAQ tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /faq</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-008</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /contact</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman contact tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /contact</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-009</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Routing</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /list-artikel</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Halaman artikel tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /list-artikel</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-010</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Admin Route</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /admin/add-properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Route admin add properti tidak 404</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /admin/add-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-011</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Admin Route</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka /admin/pengajuan-properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Route pengajuan properti tidak 404</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK route /admin/pengajuan-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-012</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Home Tabs</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Klik tab Rumah</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Tab Rumah aktif</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK tab home Rumah</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-013</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Home Tabs</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Klik tab Villa</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Tab Villa aktif</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK tab home Villa</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Mengganti Perumahan menjadi Villa</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-014</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Home Tabs</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Klik tab Ruko</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Tab Ruko aktif</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK tab home Ruko</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-015</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Home Tabs</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Klik tab Kos</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Tab Kos aktif</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK tab home Kos</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-016</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Home Tabs</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Klik tab Tanah</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Tab Tanah aktif</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK tab home Tanah</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-017</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Listing Filter</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Klik Reset Filter di list properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Filter reset tanpa crash</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK reset filter list properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-018</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Detail Properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Klik detail properti dari list jika ada data</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Detail properti tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">SKIP detail properti: belum ada properti tampil di list</Data></Cell><Cell ss:StyleID="Skip"><Data ss:Type="String">SKIP</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Butuh data properti published dan verified</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-019</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Komparasi</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka halaman komparasi</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Komparasi berhasil dirender</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK halaman komparasi</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">TC-020</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Jual Properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Buka halaman jual properti</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">State login/form valid tampil</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">OK akses jual properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">PASS</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String"></Data></Cell></Row>
+    </Table>
+  </Worksheet>
+
+  <Worksheet ss:Name="Environment">
+    <Table>
+      <Column ss:Width="180"/>
+      <Column ss:Width="360"/>
+      <Column ss:Width="420"/>
+      <Row><Cell ss:StyleID="Header"><Data ss:Type="String">Item</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Value</Data></Cell><Cell ss:StyleID="Header"><Data ss:Type="String">Catatan</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Framework Test</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">selenium-webdriver</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Dependency dev di Client/package.json</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Test File</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Client/tests/e2e/smoke.test.mjs</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Smoke/regression test utama</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Base URL</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">http://127.0.0.1:3000</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Menggunakan Next dev server lokal</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Server Mode</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">E2E_START_SERVER=false</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Test memakai dev server yang sudah berjalan</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Headless</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Default true</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Bisa dinonaktifkan dengan HEADLESS=false</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Remote Selenium</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Opsional</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">SELENIUM_REMOTE_URL=http://localhost:4444/wd/hub</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Chrome Binary</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Opsional</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">CHROME_BINARY=/path/ke/google-chrome</Data></Cell></Row>
+      <Row><Cell ss:StyleID="Cell"><Data ss:Type="String">Build Check</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">npm run build</Data></Cell><Cell ss:StyleID="Cell"><Data ss:Type="String">Berhasil setelah Selenium test</Data></Cell></Row>
+    </Table>
+  </Worksheet>
+</Workbook>

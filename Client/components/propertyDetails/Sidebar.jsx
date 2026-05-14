@@ -29,12 +29,27 @@ export default function Sidebar({ property }) {
     return `Rp ${num}`;
   };
 
+  const getRentPeriodLabel = (item) => {
+    const period = String(item?.price_period || "bulan");
+    if (period === "3bulan") return "3 bulan";
+    if (period === "6bulan") return "6 bulan";
+    if (period === "tahun") return "tahun";
+    return "bulan";
+  };
+
+  const formatPriceDisplay = (item) => {
+    const base = formatPrice(item?.price);
+    if (item?.listing_type !== "sewa") return base;
+    if (base === "Hubungi Agen") return base;
+    return `${base}/${getRentPeriodLabel(item)}`;
+  };
+
   // Generate pesan WhatsApp dengan detail properti + input user
   const generateWhatsAppMessage = () => {
     if (!property) return "Halo, saya tertarik dengan properti ini.";
 
     const title = property.title || "Properti";
-    const price = formatPrice(property.price);
+    const price = formatPriceDisplay(property);
     const location =
       [property.kecamatan, property.city].filter(Boolean).join(", ") || "-";
     const type =
@@ -106,6 +121,7 @@ export default function Sidebar({ property }) {
   return (
     <div className="tf-sidebar sticky-sidebar">
       <form
+        id="contact-admin"
         className="form-contact-seller mb-30"
         onSubmit={(e) => e.preventDefault()}
       >

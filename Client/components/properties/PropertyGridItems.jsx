@@ -6,6 +6,34 @@ import { useCompare } from "@/components/compare/CompareContext";
 
 const fallbackImage = "/images/section/location-23.jpg";
 
+const META_CONFIG_BY_TYPE = {
+  rumah: [
+    { key: "bedrooms", label: "KT" },
+    { key: "bathrooms", label: "KM" },
+    { key: "building_type", label: "m²" },
+  ],
+  villa: [
+    { key: "bedrooms", label: "KT" },
+    { key: "bathrooms", label: "KM" },
+    { key: "building_type", label: "m²" },
+  ],
+  kos: [
+    { key: "room_size", label: "m²" },
+    { key: "bathroom_position", label: "KM" },
+    { key: "gender_type", label: "Gender" },
+  ],
+  ruko: [
+    { key: "parking_area", label: "PA" },
+    { key: "warehouse_area", label: "WA", suffix: "m²" },
+    { key: "building_type", label: "m²" },
+  ],
+  tanah: [
+    { key: "zoning", label: "Fungsi" },
+    { key: "road_access", label: "Akses" },
+    { key: "luas_tanah", label: "LT", suffix: "m²" },
+  ],
+};
+
 function getImageSrc(property) {
   return property?.images?.[0]?.full_url || property?.imageSrc || fallbackImage;
 }
@@ -18,51 +46,108 @@ function getLocation(property) {
   );
 }
 
-function getBedrooms(property) {
-  return property?.detail?.bedrooms ?? property?.beds ?? "-";
-}
-
-function getBathrooms(property) {
-  return property?.detail?.bathrooms ?? property?.baths ?? "-";
-}
-
-// ✅ UPDATED: Gunakan building_type sebagai prioritas
-function getArea(property) {
-  return (
-    property?.building_type ??
-    property?.detail?.luas_bangunan ??
-    property?.sqft ??
-    property?.detail?.luas_tanah ??
-    "-"
-  );
-}
-
 function formatHarga(value) {
   const num = Number(String(value).replace(/\./g, ""));
   if (!num) return "Rp 0";
-  if (num >= 1000000000) return `Rp ${(num / 1000000000).toFixed(1).replace(".0", "")}Miliar`;
-  if (num >= 1000000) return `Rp ${(num / 1000000).toFixed(1).replace(".0", "")}Juta`;
+  if (num >= 1000000000)
+    return `Rp ${(num / 1000000000).toFixed(1).replace(".0", "")}Miliar`;
+  if (num >= 1000000)
+    return `Rp ${(num / 1000000).toFixed(1).replace(".0", "")}Juta`;
   if (num >= 1000) return `Rp ${(num / 1000).toFixed(0)}Ribu`;
   return `Rp ${num}`;
+}
+
+function getListingTypeLabel(type) {
+  if (type === "jual") return "Dijual";
+  if (type === "sewa") return "Disewa";
+  return type || "-";
+}
+
+function getRentPeriodLabel(property) {
+  const period = String(property?.price_period || "bulan");
+  if (period === "3bulan") return "3 bulan";
+  if (period === "6bulan") return "6 bulan";
+  if (period === "tahun") return "tahun";
+  return "bulan";
+}
+
+function formatPriceDisplay(property) {
+  const base = formatHarga(property?.price);
+  if (property?.listing_type !== "sewa") return base;
+  if (!property?.price) return base;
+  return `${base}/${getRentPeriodLabel(property)}`;
+}
+
+function getRoomSize(property) {
+  const panjang = Number(property?.detail?.panjang_ruangan ?? 0);
+  const lebar = Number(property?.detail?.lebar_ruangan ?? 0);
+  if (panjang > 0 && lebar > 0) {
+    const area = panjang * lebar;
+    return Number.isInteger(area) ? String(area) : String(Number(area.toFixed(2)));
+  }
+  return property?.building_type;
+}
+
+function getMetaValue(property, key) {
+  if (key === "bedrooms") return property?.detail?.bedrooms ?? property?.beds;
+  if (key === "bathrooms") return property?.detail?.bathrooms ?? property?.baths;
+  if (key === "bathroom_position") {
+    const position = property?.detail?.bathroom_position;
+    if (position === "dalam") return "Dalam";
+    if (position === "luar") return "Luar";
+    return position;
+  }
+  if (key === "building_type") {
+    return (
+      property?.building_type ??
+      property?.detail?.luas_bangunan ??
+      property?.sqft ??
+      property?.detail?.luas_tanah
+    );
+  }
+  if (key === "room_size") return getRoomSize(property);
+  if (key === "luas_tanah") return property?.detail?.luas_tanah;
+  return property?.detail?.[key];
+}
+
+function formatMetaValue(value) {
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "boolean") return value ? "Ya" : "Tidak";
+  return String(value);
+}
+
+function getPropertyMetaItems(property) {
+  const type = property?.type || "rumah";
+  const config = META_CONFIG_BY_TYPE[type] || META_CONFIG_BY_TYPE.rumah;
+
+  return config.map((item) => ({
+    ...item,
+    value: formatMetaValue(getMetaValue(property, item.key)),
+  }));
 }
 
 export default function PropertyGridItems({ properties, showItems }) {
   const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
 
   const items = Array.isArray(properties) ? properties : [];
-  const visibleItems = typeof showItems === "number" ? items.slice(0, showItems) : items;
+  const visibleItems =
+    typeof showItems === "number" ? items.slice(0, showItems) : items;
 
   return (
     <>
       {visibleItems.map((property) => {
         const added = isInCompare(property.id);
         const disabled = !added && isFull;
+        const metaItems = getPropertyMetaItems(property);
 
         return (
           <div className="box-house hover-img" key={property.id}>
             <div className="image-wrap property-card-image-wrap">
               <Link href={`/properti/${property.slug}`}>
-                <div className="image" style={{ position: "relative", height: "250px" }}>
+                <div
+                  className="image"
+                  style={{ position: "relative", height: "250px" }}
+                >
                   <Image
                     src={getImageSrc(property)}
                     alt={property.title}
@@ -76,7 +161,7 @@ export default function PropertyGridItems({ properties, showItems }) {
               <ul className="box-tag flex gap-8">
                 {property.listing_type && (
                   <li className="flat-tag text-4 bg-main fw-6 text_white">
-                    {property.listing_type}
+                    {getListingTypeLabel(property.listing_type)}
                   </li>
                 )}
                 {property.type && (
@@ -90,13 +175,21 @@ export default function PropertyGridItems({ properties, showItems }) {
                 <button
                   type="button"
                   className={`btn-icon save hover-tooltip ${added ? "active" : ""}`}
-                  onClick={() => added ? removeFromCompare(property.id) : addToCompare(property)}
+                  onClick={() =>
+                    added
+                      ? removeFromCompare(property.id)
+                      : addToCompare(property)
+                  }
                   disabled={disabled}
                   aria-pressed={added}
                 >
                   <i className="icon-compare" />
                   <span className="tooltip">
-                    {added ? "Hapus Komparasi" : disabled ? "Maks 3 properti" : "Komparasi"}
+                    {added
+                      ? "Hapus Komparasi"
+                      : disabled
+                        ? "Maks 3 properti"
+                        : "Komparasi"}
                   </span>
                 </button>
 
@@ -117,24 +210,27 @@ export default function PropertyGridItems({ properties, showItems }) {
                 <i className="icon-location" /> {getLocation(property)}
               </p>
               <ul className="meta-list flex">
-                <li className="text-1 flex">
-                  <span>{getBedrooms(property)}</span>KT
-                </li>
-                <li className="text-1 flex">
-                  <span>{getBathrooms(property)}</span>KM
-                </li>
-                {/* ✅ UPDATED: Hapus suffix m2 karena building_type sudah format "56/76" */}
-                <li className="text-1 flex">
-                  <span>{getArea(property)}</span>m²
-                </li>
+                {metaItems.map((item) => (
+                  <li className="text-1 flex" key={item.key}>
+                    <span>
+                      {item.value}
+                      {item.suffix || ""}
+                    </span>
+                    {item.label}
+                  </li>
+                ))}
               </ul>
               <div className="bot flex justify-between items-center">
-                <h6 className="price">{formatHarga(property.price)}</h6>
+                <h6 className="price">{formatPriceDisplay(property)}</h6>
                 <div className="wrap-btn flex">
                   <button
                     type="button"
                     className="compare flex gap-8 items-center text-1"
-                    onClick={() => added ? removeFromCompare(property.id) : addToCompare(property)}
+                    onClick={() =>
+                      added
+                        ? removeFromCompare(property.id)
+                        : addToCompare(property)
+                    }
                     disabled={disabled}
                     aria-pressed={added}
                   >

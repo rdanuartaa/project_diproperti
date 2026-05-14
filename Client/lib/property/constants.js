@@ -1,0 +1,20 @@
+export const OPTIONS = {
+  water: ["pdam", "sumur"],
+  listrik: ["overground", "underground"],
+  jalan: ["aspal", "cor", "batu", "belum"],
+  tanah: ["datar", "miring", "bukit"],
+  gender: ["laki-laki", "perempuan", "campuran"],
+  sertifikat: ["SHM", "SHGB"],
+  sertifikatStatus: ["lunas", "bank"],
+  listingType: ["jual", "sewa"],
+  propertyStatus: ["draft", "published", "sold"],
+  propertyType: ["rumah", "villa", "ruko", "kos", "tanah"],
+  rentPeriod: [
+    { label: "Hari", value: "hari" },
+    { label: "Minggu", value: "minggu" },
+    { label: "Bulan", value: "bulan" },
+    { label: "3 Bulan", value: "3bulan" },
+    { label: "6 Bulan", value: "6bulan" },
+    { label: "Tahun", value: "tahun" },
+  ],
+};

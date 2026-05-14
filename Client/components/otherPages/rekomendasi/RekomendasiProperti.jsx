@@ -140,7 +140,22 @@ export default function RekomendasiProperti() {
       style: "currency",
       currency: "IDR",
       maximumFractionDigits: 0,
-    }).format(Number(value) || 0);
+    }).format(value ?? 0);
+
+  const getRentPeriodLabel = (item) => {
+    const period = String(item?.price_period || "bulan");
+    if (period === "3bulan") return "3 bulan";
+    if (period === "6bulan") return "6 bulan";
+    if (period === "tahun") return "tahun";
+    return "bulan";
+  };
+
+  const formatPriceDisplay = (item) => {
+    const base = formatPrice(item?.price);
+    if (item?.listing_type !== "sewa") return base;
+    if (!item?.price) return base;
+    return `${base}/${getRentPeriodLabel(item)}`;
+  };
 
   const formatArea = (property) => {
     const detailArea = property?.detail?.luas_bangunan ?? property?.detail?.luas_tanah ?? null;
@@ -365,7 +380,7 @@ export default function RekomendasiProperti() {
                             </div>
                           </div>
                           <div style={{ textAlign: "right" }}>
-                            <div style={{ fontWeight: 700, fontSize: 18 }}>{formatPrice(property.price)}</div>
+                            <div style={{ fontWeight: 700, fontSize: 18 }}>{formatPriceDisplay(property)}</div>
                             <div style={{ fontSize: 12, color: "#64748b" }}>Harga properti</div>
                           </div>
                         </div>

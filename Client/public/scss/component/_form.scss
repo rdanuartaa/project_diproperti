@@ -205,6 +205,9 @@ form {
   }
   .nice-select {
     color: var(--Heading);
+    &.is-placeholder {
+      color: var(--Text);
+    }
     &::after {
       width: 20px;
       height: 20px;
@@ -214,7 +217,7 @@ form {
   }
   fieldset input {
     &::placeholder {
-      color: var(--Heading);
+      color: var(--Text);
     }
   }
 }

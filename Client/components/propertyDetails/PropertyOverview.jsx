@@ -38,6 +38,27 @@ export default function PropertyOverview({ property }) {
     return `Rp ${num}`;
   };
 
+  const getRentPeriodLabel = (item) => {
+    const period = String(item?.price_period || "bulan");
+    if (period === "3bulan") return "3 bulan";
+    if (period === "6bulan") return "6 bulan";
+    if (period === "tahun") return "tahun";
+    return "bulan";
+  };
+
+  const formatPriceDisplay = (item) => {
+    const base = formatPrice(item?.price);
+    if (item?.listing_type !== "sewa") return base;
+    if (base === "Hubungi Agen") return base;
+    return `${base}/${getRentPeriodLabel(item)}`;
+  };
+
+  const getListingTypeLabel = (type) => {
+    if (type === "jual") return "Dijual";
+    if (type === "sewa") return "Disewakan";
+    return type || "-";
+  };
+
   return (
     <>
       <div className="heading flex justify-between">
@@ -45,7 +66,7 @@ export default function PropertyOverview({ property }) {
           {property.title || "Properti Tidak Diketahui"}
         </div>
         <div className="price text-5 fw-5 text-color-heading">
-          {formatPrice(property.price || 0)}
+          {formatPriceDisplay(property)}
           
         </div>
       </div>
@@ -54,7 +75,8 @@ export default function PropertyOverview({ property }) {
           <p className="location text-1 flex items-center gap-10">
             <i className="icon-location" />
             <span className="fw-5">
-              {[property.kecamatan, property.city].filter(Boolean).join(", ") ||
+              {property.address ||
+                [property.kecamatan, property.city].filter(Boolean).join(", ") ||
                 "Alamat tidak tersedia"}
             </span>
           </p>
@@ -140,7 +162,7 @@ export default function PropertyOverview({ property }) {
             <div className="content">
               <div className="text-4 text-color-default">Penawaran</div>
               <div className="text-1 text-color-heading">
-                Di{property.listing_type || 1}
+                {getListingTypeLabel(property.listing_type)}
               </div>
             </div>
           </div>

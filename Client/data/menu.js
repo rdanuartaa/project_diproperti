@@ -63,29 +63,9 @@ export const propertyLinks = [
 ];
 
 export const otherPages = [
-  {
-    title: "Agents",
-    className: "has-child",
-    submenu: [
-      { href: "/agents", label: "Agents" },
-      { href: "/agents-details/1", label: "Agents Details" },
-    ],
-  },
-  {
-    title: "Agencies",
-    className: "has-child",
-    submenu: [
-      { href: "/agency-grid", label: "Agencies Grid" },
-      { href: "/agency-list", label: "Agencies List" },
-      { href: "/agency-details/1", label: "Agencies Detail" },
-    ],
-  },
   { href: "/home-loan-process", label: "Home Loan Process" },
-  { href: "/career", label: "Career" },
   { href: "/faq", label: "Faq's" },
   { href: "/compare", label: "Compare" },
-  { href: "/project-list", label: "Project List" },
-  { href: "/project-details/1", label: "Project Details" },
   { href: "/404", label: "Page 404" },
   { href: "/dashboard", label: "Dashboard" },
 ];

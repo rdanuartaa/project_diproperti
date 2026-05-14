@@ -16,6 +16,21 @@ const formatRupiah = (value) => {
   }).format(value);
 };
 
+const getRentPeriodLabel = (property) => {
+  const period = String(property?.price_period || "bulan");
+  if (period === "3bulan") return "3 bulan";
+  if (period === "6bulan") return "6 bulan";
+  if (period === "tahun") return "tahun";
+  return "bulan";
+};
+
+const formatPriceDisplay = (property) => {
+  const base = formatRupiah(property?.price);
+  if (property?.listing_type !== "sewa") return base;
+  if (!property?.price) return base;
+  return `${base}/${getRentPeriodLabel(property)}`;
+};
+
 const COMPARE_ROWS = [
   { key: "type", label: "Tipe Properti", source: "root" },
   { key: "building_type", label: "Tipe Bangunan", source: "root", unit: "m²" },
@@ -66,7 +81,12 @@ const getFieldValue = (property, row) => {
     row.source === "detail" ? property.detail?.[row.key] : property[row.key];
   if (val === null || val === undefined || val === "") return "-";
   if (row.boolean) return val ? "✓ Ada" : "✗ Tidak";
-  if (row.format === "rupiah") return formatRupiah(val);
+  if (row.format === "rupiah") {
+    const base = formatRupiah(val);
+    if (row.key !== "price" || property.listing_type !== "sewa") return base;
+    if (!property.price) return base;
+    return `${base}/${getRentPeriodLabel(property)}`;
+  }
   if (row.unit) return `${Number(val).toLocaleString("id-ID")} ${row.unit}`;
   if (row.key === "listing_type") return val === "jual" ? "Dijual" : "Disewa";
   return String(val);
@@ -487,7 +507,7 @@ export default function Compare() {
                         </Link>
                         <div className="property-info">
                           <div className="price text-1 fw-5 text-color-heading">
-                            {formatRupiah(prop.price)}
+                            {formatPriceDisplay(prop)}
                           </div>
                           <p className="d-flex align-items-center gap-8">
                             <i className="icon-location text-color-default" />

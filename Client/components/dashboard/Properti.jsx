@@ -7,6 +7,20 @@ import { api } from "@/lib/api";
 import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
+import LocationPicker from "../common/LocationPicker";
+
+// ✅ IMPORT LIBRARY PROPERTY YANG SUDAH DIPECAH
+import {
+  PROPERTY_TYPE_CONFIG,
+  CERTIFICATE_REQUIRED_TYPES,
+  formatThousands,
+  formatCompact,
+  formatFullRupiah,
+  formatDateTime,
+  validatePropertyForm,
+  buildJsonPayload,
+  buildFormDataPayload,
+} from "@/lib/property";
 
 export default function Properti() {
   const [properties, setProperties] = useState([]);
@@ -23,37 +37,65 @@ export default function Properti() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAttentionModal, setShowAttentionModal] = useState(false);
   const [attentionMessage, setAttentionMessage] = useState("");
-  const [filters, setFilters] = useState({ status: "published", search: "" });
+  const [filters, setFilters] = useState({ status: "All", search: "" });
   const [primaryExistingId, setPrimaryExistingId] = useState(null);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
+
   const [formData, setFormData] = useState({
-    title: " ",
-    price: " ",
-    type: "rumah ",
-    building_type: " ",
-    listing_type: "jual ",
-    kecamatan: " ",
-    city: "Jember ",
-    certificate_type: "SHM ",
-    certificate_status: "lunas ",
-    status: "draft ",
-    description: " ",
+    title: "",
+    price: "",
+    type: "rumah",
+    building_type: "",
+    listing_type: "jual",
+    rent_period: "",
+    kecamatan: "",
+    city: "Jember",
+    address: "",
+    latitude: "",
+    longitude: "",
+    certificate_type: "SHM",
+    certificate_status: "lunas",
+    status: "draft",
+    description: "",
     detail: {
-      luas_tanah: " ",
-      luas_bangunan: " ",
+      luas_tanah: "",
+      water: "pdam",
+      electricity_capacity: "",
+      listrik_type: "overground",
+      road_access: "aspal",
+      wifi_provider: "",
+      luas_bangunan: "",
       floors: 1,
       bedrooms: 0,
       bathrooms: 0,
+      bathroom_position: "dalam",
       kitchens: 0,
       living_rooms: 0,
       carport: false,
       garden: false,
-      electricity_capacity: "",
-      water: "pdam ",
       one_gate_system: false,
       security_24jam: false,
-      listrik_type: "overground ",
-      wifi_provider: "",
+      swimming_pool: false,
+      private_pool: false,
+      view_type: "",
+      furnished: false,
+      near_tourism: false,
+      total_rooms: 0,
+      panjang_ruangan: "",
+      lebar_ruangan: "",
+      gender_type: "laki-laki",
+      wifi_included: false,
+      electricity_included: false,
+      water_included: false,
+      shared_kitchen: false,
+      parking_area: false,
+      cctv: false,
+      parking_capacity: 0,
+      warehouse_area: 0,
+      shop_front_width: "",
+      land_type: "datar",
+      land_contour: "",
+      zoning: "",
     },
     newImages: [],
     existingImages: [],
@@ -65,30 +107,71 @@ export default function Properti() {
     [activeProperty],
   );
 
-  // ✅ AUTO-CALCULATE BUILDING TYPE (ADMIN)
+  const buildingTypeDisplay = useMemo(() => {
+    if (formData.type === "tanah") {
+      return formData.detail?.luas_tanah ?? "";
+    }
+    if (formData.type === "kos") {
+      const panjang = Number(formData.detail?.panjang_ruangan ?? 0);
+      const lebar = Number(formData.detail?.lebar_ruangan ?? 0);
+      const total = panjang + lebar;
+      return total > 0 ? String(total) : "";
+    }
+    return formData.building_type;
+  }, [
+    formData.type,
+    formData.detail?.luas_tanah,
+    formData.detail?.panjang_ruangan,
+    formData.detail?.lebar_ruangan,
+    formData.building_type,
+  ]);
+
+  // ✅ AUTO-CALCULATE BUILDING TYPE
   useEffect(() => {
+    const applicableTypes = ["rumah", "villa", "ruko", "tanah", "kos"];
+    if (!applicableTypes.includes(formData.type)) return;
     const luasT = String(formData.detail?.luas_tanah ?? "").trim();
     const luasB = String(formData.detail?.luas_bangunan ?? "").trim();
-    if (luasT && luasB) {
-      setFormData((prev) => ({
-        ...prev,
-        building_type: `${luasB}/${luasT}`,
-      }));
+    if (formData.type === "tanah") {
+      if (luasT) setFormData((prev) => ({ ...prev, building_type: luasT }));
+      return;
     }
-  }, [formData.detail.luas_tanah, formData.detail.luas_bangunan]);
+    if (formData.type === "kos") {
+      const panjang = String(formData.detail?.panjang_ruangan ?? "").trim();
+      const lebar = String(formData.detail?.lebar_ruangan ?? "").trim();
+      if (panjang || lebar) {
+        const total = Number(panjang || 0) + Number(lebar || 0);
+        setFormData((prev) => ({
+          ...prev,
+          building_type: total > 0 ? String(total) : "",
+        }));
+      }
+      return;
+    }
+    if (luasT && luasB) {
+      setFormData((prev) => ({ ...prev, building_type: `${luasB}/${luasT}` }));
+    }
+  }, [
+    formData.type,
+    formData.detail.luas_tanah,
+    formData.detail.luas_bangunan,
+    formData.detail.panjang_ruangan,
+    formData.detail.lebar_ruangan,
+  ]);
 
   const filteredProperties = useMemo(() => {
     const statusFilter = filters.status?.toLowerCase();
     const searchQuery = filters.search?.toLowerCase().trim();
     return properties.filter((property) => {
+      if (property.is_verified === false) return false;
       const matchesStatus =
         !statusFilter || statusFilter === "all"
           ? true
-          : (property.status || " ").toLowerCase() === statusFilter;
+          : (property.status || "").toLowerCase() === statusFilter;
       if (!searchQuery) return matchesStatus;
-      const title = (property.title || " ").toLowerCase();
-      const description = (property.description || " ").toLowerCase();
-      const kecamatan = (property.kecamatan || " ").toLowerCase();
+      const title = (property.title || "").toLowerCase();
+      const description = (property.description || "").toLowerCase();
+      const kecamatan = (property.kecamatan || "").toLowerCase();
       const matchesSearch =
         title.includes(searchQuery) ||
         description.includes(searchQuery) ||
@@ -105,7 +188,8 @@ export default function Properti() {
         params.append("status", filters.status);
       if (filters.search) params.append("search", filters.search);
       const response = await api.get(`/admin/properties?${params}`);
-      setProperties(response.data.data || response.data);
+      const data = response.data.data || response.data || [];
+      setProperties(data.filter((property) => property.is_verified !== false));
     } catch (error) {
       console.error("Failed to fetch properties:", error);
     } finally {
@@ -119,7 +203,15 @@ export default function Properti() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name.includes("detail.")) {
+    if (name === "type" && value === "kos") {
+      setFormData((prev) => ({
+        ...prev,
+        type: value,
+        listing_type: "sewa",
+      }));
+      return;
+    }
+    if (name.startsWith("detail.")) {
       const detailKey = name.split(".")[1];
       setFormData((prev) => ({
         ...prev,
@@ -135,12 +227,6 @@ export default function Properti() {
       }));
     }
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
-  };
-
-  const formatThousands = (rawValue) => {
-    const digits = String(rawValue ?? "").replace(/\D/g, "");
-    if (!digits) return "";
-    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   };
 
   const handlePriceChange = (e) => {
@@ -205,31 +291,58 @@ export default function Properti() {
     setFormData({
       title: "",
       price: "",
-      type: "rumah ",
+      type: "rumah",
       building_type: "",
-      listing_type: "jual ",
+      listing_type: "jual",
+      rent_period: "",
       kecamatan: "",
-      city: "Jember ",
-      certificate_type: "SHM ",
-      certificate_status: "lunas ",
-      status: "draft ",
+      city: "Jember",
+      address: "",
+      latitude: "",
+      longitude: "",
+      certificate_type: "SHM",
+      certificate_status: "lunas",
+      status: "draft",
       description: "",
       detail: {
         luas_tanah: "",
+        water: "pdam",
+        electricity_capacity: "",
+        listrik_type: "overground",
+        road_access: "aspal",
+        wifi_provider: "",
         luas_bangunan: "",
         floors: 1,
         bedrooms: 0,
         bathrooms: 0,
+        bathroom_position: "dalam",
         kitchens: 0,
         living_rooms: 0,
         carport: false,
         garden: false,
-        electricity_capacity: " ",
-        water: "pdam ",
         one_gate_system: false,
         security_24jam: false,
-        listrik_type: "overground ",
-        wifi_provider: "",
+        swimming_pool: false,
+        private_pool: false,
+        view_type: "",
+        furnished: false,
+        near_tourism: false,
+        total_rooms: 0,
+        panjang_ruangan: "",
+        lebar_ruangan: "",
+        gender_type: "laki-laki",
+        wifi_included: false,
+        electricity_included: false,
+        water_included: false,
+        shared_kitchen: false,
+        parking_area: false,
+        cctv: false,
+        parking_capacity: 0,
+        warehouse_area: 0,
+        shop_front_width: "",
+        land_type: "datar",
+        land_contour: "",
+        zoning: "",
       },
       newImages: [],
       existingImages: [],
@@ -244,36 +357,60 @@ export default function Properti() {
   };
 
   const mapPropertyToFormData = (property) => ({
-    title: property.title || " ",
-    price: property.price || " ",
-    type: property.type || "rumah ",
-    building_type:
-      property.building_type !== null && property.building_type !== undefined
-        ? property.building_type
-        : " ",
-    listing_type: property.listing_type || "jual ",
-    kecamatan: property.kecamatan || " ",
-    city: property.city || "Jember ",
-    certificate_type: property.certificate_type || "SHM ",
-    certificate_status: property.certificate_status || "lunas ",
-    status: property.status || "draft ",
-    description: property.description || " ",
+    title: property.title || "",
+    price: property.price || "",
+    type: property.type || "rumah",
+    building_type: property.building_type ?? "",
+    listing_type: property.listing_type || "jual",
+    rent_period: property.price_period || "",
+    kecamatan: property.kecamatan || "",
+    city: property.city || "Jember",
+    address: "",
+    latitude: property.latitude ?? "",
+    longitude: property.longitude ?? "",
+    certificate_type: property.certificate_type || "SHM",
+    certificate_status: property.certificate_status || "lunas",
+    status: property.status || "draft",
+    description: property.description || "",
     detail: {
-      luas_tanah: property.detail?.luas_tanah || " ",
-      luas_bangunan: property.detail?.luas_bangunan || " ",
-      floors: property.detail?.floors || 1,
-      bedrooms: property.detail?.bedrooms || 0,
-      bathrooms: property.detail?.bathrooms || 0,
-      kitchens: property.detail?.kitchens || 0,
-      living_rooms: property.detail?.living_rooms || 0,
-      carport: property.detail?.carport || false,
-      garden: property.detail?.garden || false,
-      electricity_capacity: property.detail?.electricity_capacity || " ",
-      water: property.detail?.water || "pdam ",
-      one_gate_system: property.detail?.one_gate_system || false,
-      security_24jam: property.detail?.security_24jam || false,
-      listrik_type: property.detail?.listrik_type || "overground ",
-      wifi_provider: property.detail?.wifi_provider || " ",
+      luas_tanah: property.detail?.luas_tanah ?? "",
+      luas_bangunan: property.detail?.luas_bangunan ?? "",
+      floors: property.detail?.floors ?? 1,
+      bedrooms: property.detail?.bedrooms ?? 0,
+      bathrooms: property.detail?.bathrooms ?? 0,
+      bathroom_position: property.detail?.bathroom_position ?? "dalam",
+      kitchens: property.detail?.kitchens ?? 0,
+      living_rooms: property.detail?.living_rooms ?? 0,
+      carport: property.detail?.carport ?? false,
+      garden: property.detail?.garden ?? false,
+      one_gate_system: property.detail?.one_gate_system ?? false,
+      security_24jam: property.detail?.security_24jam ?? false,
+      water: property.detail?.water ?? "pdam",
+      electricity_capacity: property.detail?.electricity_capacity ?? "",
+      listrik_type: property.detail?.listrik_type ?? "overground",
+      wifi_provider: property.detail?.wifi_provider ?? "",
+      road_access: property.detail?.road_access ?? "aspal",
+      swimming_pool: property.detail?.swimming_pool ?? false,
+      private_pool: property.detail?.private_pool ?? false,
+      view_type: property.detail?.view_type ?? "",
+      furnished: property.detail?.furnished ?? false,
+      near_tourism: property.detail?.near_tourism ?? false,
+      total_rooms: property.detail?.total_rooms ?? 0,
+      panjang_ruangan: property.detail?.panjang_ruangan ?? "",
+      lebar_ruangan: property.detail?.lebar_ruangan ?? "",
+      gender_type: property.detail?.gender_type ?? "laki-laki",
+      wifi_included: property.detail?.wifi_included ?? false,
+      electricity_included: property.detail?.electricity_included ?? false,
+      water_included: property.detail?.water_included ?? false,
+      shared_kitchen: property.detail?.shared_kitchen ?? false,
+      parking_area: property.detail?.parking_area ?? false,
+      cctv: property.detail?.cctv ?? false,
+      parking_capacity: property.detail?.parking_capacity ?? 0,
+      warehouse_area: property.detail?.warehouse_area ?? 0,
+      shop_front_width: property.detail?.shop_front_width ?? "",
+      land_type: property.detail?.land_type ?? "datar",
+      land_contour: property.detail?.land_contour ?? "",
+      zoning: property.detail?.zoning ?? "",
     },
     newImages: [],
     existingImages: property.images || [],
@@ -311,33 +448,59 @@ export default function Properti() {
   };
 
   const buildSnapshot = (data, primaryId, primaryIndex) => ({
-    title: data.title?.trim() || " ",
-    price: String(data.price ?? " "),
-    type: data.type || " ",
-    building_type: data.building_type ?? " ",
-    listing_type: data.listing_type || " ",
-    kecamatan: data.kecamatan || " ",
-    city: data.city || " ",
-    certificate_type: data.certificate_type || " ",
-    certificate_status: data.certificate_status || " ",
-    status: data.status || " ",
-    description: data.description || " ",
+    title: data.title?.trim() || "",
+    price: String(data.price ?? ""),
+    type: data.type || "",
+    building_type: data.building_type ?? "",
+    listing_type: data.listing_type || "",
+    rent_period: data.rent_period || "",
+    kecamatan: data.kecamatan || "",
+    city: data.city || "",
+    latitude: data.latitude ?? "",
+    longitude: data.longitude ?? "",
+    certificate_type: data.certificate_type || "",
+    certificate_status: data.certificate_status || "",
+    status: data.status || "",
+    description: data.description || "",
     detail: {
-      luas_tanah: data.detail?.luas_tanah ?? " ",
-      luas_bangunan: data.detail?.luas_bangunan ?? " ",
+      luas_tanah: data.detail?.luas_tanah ?? "",
+      luas_bangunan: data.detail?.luas_bangunan ?? "",
       floors: data.detail?.floors ?? 1,
       bedrooms: data.detail?.bedrooms ?? 0,
       bathrooms: data.detail?.bathrooms ?? 0,
+      bathroom_position: data.detail?.bathroom_position ?? "dalam",
       kitchens: data.detail?.kitchens ?? 0,
       living_rooms: data.detail?.living_rooms ?? 0,
       carport: !!data.detail?.carport,
       garden: !!data.detail?.garden,
-      electricity_capacity: data.detail?.electricity_capacity ?? " ",
-      water: data.detail?.water ?? " ",
       one_gate_system: !!data.detail?.one_gate_system,
       security_24jam: !!data.detail?.security_24jam,
-      listrik_type: data.detail?.listrik_type ?? " ",
-      wifi_provider: data.detail?.wifi_provider ?? " ",
+      water: data.detail?.water ?? "",
+      electricity_capacity: data.detail?.electricity_capacity ?? "",
+      listrik_type: data.detail?.listrik_type ?? "",
+      wifi_provider: data.detail?.wifi_provider ?? "",
+      road_access: data.detail?.road_access ?? "aspal",
+      swimming_pool: !!data.detail?.swimming_pool,
+      private_pool: !!data.detail?.private_pool,
+      view_type: data.detail?.view_type ?? "",
+      furnished: !!data.detail?.furnished,
+      near_tourism: !!data.detail?.near_tourism,
+      total_rooms: data.detail?.total_rooms ?? 0,
+      panjang_ruangan: data.detail?.panjang_ruangan ?? "",
+      lebar_ruangan: data.detail?.lebar_ruangan ?? "",
+      gender_type: data.detail?.gender_type ?? "laki-laki",
+      wifi_included: !!data.detail?.wifi_included,
+      electricity_included: !!data.detail?.electricity_included,
+      water_included: !!data.detail?.water_included,
+      shared_kitchen: !!data.detail?.shared_kitchen,
+      parking_area: !!data.detail?.parking_area,
+      cctv: !!data.detail?.cctv,
+      parking_capacity: data.detail?.parking_capacity ?? 0,
+      warehouse_area: data.detail?.warehouse_area ?? 0,
+      shop_front_width: data.detail?.shop_front_width ?? "",
+      land_type: data.detail?.land_type ?? "datar",
+      land_contour: data.detail?.land_contour ?? "",
+      zoning: data.detail?.zoning ?? "",
     },
     existingImageIds: (data.existingImages || []).map((img) => img.id).sort(),
     imagesToDelete: (data.imagesToDelete || []).slice().sort(),
@@ -356,9 +519,41 @@ export default function Properti() {
     setPrimaryExistingId(imageId);
     setPrimaryNewIndex(null);
   };
+  const getTypeDetailDefaults = (type) => ({
+    water: "pdam",
+    listrik_type: "overground",
+    ...(type === "kos"
+      ? { bathroom_position: "dalam", gender_type: "laki-laki" }
+      : {}),
+    ...(type === "tanah"
+      ? { road_access: "aspal", land_type: "datar" }
+      : {}),
+  });
+
   const updateField = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      if (field !== "type") return { ...prev, [field]: value };
+
+      return {
+        ...prev,
+        type: value,
+        listing_type:
+          value === "kos" ? "sewa" : prev.listing_type,
+        detail: {
+          ...prev.detail,
+          ...getTypeDetailDefaults(value),
+        },
+      };
+    });
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: null }));
+  };
+  const handleListingTypeChange = (value) => {
+    const normalized = String(value || "").trim();
+    setFormData((prev) => ({
+      ...prev,
+      listing_type: value,
+      rent_period: normalized === "sewa" ? prev.rent_period || "bulan" : "",
+    }));
   };
   const updateDetail = (field, value) => {
     const key = `detail.${field}`;
@@ -369,110 +564,62 @@ export default function Properti() {
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: null }));
   };
 
-  const validateRequiredFields = () => {
-    const requiredMain = [
-      "title",
-      "price",
-      "type",
-      "listing_type",
-      "status",
-      "city",
-      "kecamatan",
-      "certificate_type",
-    ];
-    for (const field of requiredMain) {
-      if (!String(formData[field] ?? "").trim())
-        return "Semua data wajib diisi dan tidak boleh kosong.";
-    }
-    if (!String(formData.detail.luas_tanah ?? "").trim())
-      return "Luas tanah wajib diisi.";
-    const totalImages =
-      (formData.existingImages?.length || 0) +
-      (formData.newImages?.length || 0);
-    if (totalImages < 1) return "Minimal upload 1 gambar.";
-    return null;
-  };
-
-  const prepareJsonPayload = () => ({
-    title: formData.title,
-    price: Number(formData.price),
-    type: formData.type,
-    building_type: formData.building_type || null, // ✅ DIBUAT STRING SESUAI FORMAT BARU
-    listing_type: formData.listing_type,
-    kecamatan: formData.kecamatan,
-    city: formData.city,
-    certificate_type: formData.certificate_type,
-    certificate_status: formData.certificate_status,
-    status: formData.status,
-    description: formData.description,
-    detail: {
-      luas_tanah: Number(formData.detail.luas_tanah),
-      luas_bangunan: formData.detail.luas_bangunan
-        ? Number(formData.detail.luas_bangunan)
-        : null,
-      floors: Number(formData.detail.floors),
-      bedrooms: Number(formData.detail.bedrooms),
-      bathrooms: Number(formData.detail.bathrooms),
-      kitchens: Number(formData.detail.kitchens),
-      living_rooms: Number(formData.detail.living_rooms),
-      carport: formData.detail.carport,
-      garden: formData.detail.garden,
-      electricity_capacity: formData.detail.electricity_capacity
-        ? Number(formData.detail.electricity_capacity)
-        : null,
-      water: formData.detail.water,
-      one_gate_system: formData.detail.one_gate_system,
-      security_24jam: formData.detail.security_24jam,
-      listrik_type: formData.detail.listrik_type,
-      wifi_provider: formData.detail.wifi_provider,
-    },
-  });
-
-  const prepareFormData = (jsonPayload) => {
-    const formDataToSend = new FormData();
-    Object.keys(jsonPayload).forEach((key) => {
-      if (key === "detail") {
-        Object.keys(jsonPayload.detail).forEach((dKey) => {
-          formDataToSend.append(`detail[${dKey}]`, jsonPayload.detail[dKey]);
-        });
-      } else {
-        formDataToSend.append(key, jsonPayload[key]);
-      }
-    });
-    formData.newImages.forEach((file) => {
-      formDataToSend.append("images[]", file);
-    });
-    formData.imagesToDelete.forEach((id) => {
-      formDataToSend.append("images_to_delete[]", id);
-    });
-    return formDataToSend;
-  };
-
   const handleCreate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
     setErrors({});
+    if (formData.type === "kos") {
+    setFormData((prev) => ({ ...prev, listing_type: "sewa" }));
+  }
     try {
-      const jsonPayload = prepareJsonPayload();
+      // ✅ VALIDASI MANUAL (karena library validatePropertyForm tidak handle imagesToDelete di sini)
+      const requiredMain = [
+        "title",
+        "price",
+        "type",
+        "listing_type",
+        "status",
+        "city",
+        "kecamatan",
+      ];
+      if (showCertificate) requiredMain.push("certificate_type");
+      for (const field of requiredMain) {
+        if (!String(formData[field] ?? "").trim())
+          throw new Error("Semua data wajib diisi dan tidak boleh kosong.");
+      }
+      if (formData.type === "kos") {
+        if (!String(formData.detail.panjang_ruangan ?? "").trim())
+          throw new Error("Panjang ruangan wajib diisi.");
+        if (!String(formData.detail.lebar_ruangan ?? "").trim())
+          throw new Error("Lebar ruangan wajib diisi.");
+      } else if (!String(formData.detail.luas_tanah ?? "").trim()) {
+        throw new Error("Luas tanah wajib diisi.");
+      }
+      const totalImages =
+        (formData.existingImages?.length || 0) +
+        (formData.newImages?.length || 0);
+      if (totalImages < 1) throw new Error("Minimal upload 1 gambar.");
+
+      // ✅ BUILD PAYLOAD MENGGUNAKAN LIBRARY
+      const jsonPayload = buildJsonPayload(formData);
+      if (formData.listing_type === "sewa") {
+        delete jsonPayload.certificate_type;
+        delete jsonPayload.certificate_status;
+      }
       const hasImages = formData.newImages?.length > 0;
       const primaryPayload =
         primaryNewIndex !== null ? { primary_new_index: primaryNewIndex } : {};
       const payload = hasImages
-        ? prepareFormData({ ...jsonPayload, ...primaryPayload })
+        ? buildFormDataPayload(formData, primaryNewIndex)
         : { ...jsonPayload, ...primaryPayload };
+
       const config = hasImages
         ? {
             headers: { "Content-Type": "multipart/form-data" },
             timeout: 120000,
           }
         : { timeout: 30000 };
-      if (
-        hasImages &&
-        payload instanceof FormData &&
-        primaryNewIndex !== null
-      ) {
-        payload.append("primary_new_index", primaryNewIndex);
-      }
+
       await api.post("/admin/properties", payload, config);
       showSuccess("Properti berhasil ditambahkan");
       closeAll();
@@ -494,6 +641,9 @@ export default function Properti() {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    if (formData.type === "kos") {
+    setFormData((prev) => ({ ...prev, listing_type: "sewa" }));
+  }
     if (!activeProperty?.id) return;
     if (!isEditDirty) {
       showAttention("Tidak ada perubahan untuk disimpan.");
@@ -501,18 +651,21 @@ export default function Properti() {
     }
     setFormLoading(true);
     setErrors({});
-    const requiredError = validateRequiredFields();
+
+    // ✅ VALIDASI
+    const requiredError = validatePropertyForm(formData);
     if (requiredError) {
       showAttention(requiredError);
       setFormLoading(false);
       return;
     }
+
     try {
-      const jsonPayload = prepareJsonPayload();
-      if (!jsonPayload.detail || Object.keys(jsonPayload.detail).length === 0)
-        delete jsonPayload.detail;
-      if (jsonPayload.detail?.luas_tanah === " ")
-        delete jsonPayload.detail.luas_tanah;
+      const jsonPayload = buildJsonPayload(formData);
+      if (formData.listing_type === "sewa") {
+        delete jsonPayload.certificate_type;
+        delete jsonPayload.certificate_status;
+      }
       const isMultipart =
         formData.newImages.length > 0 || formData.imagesToDelete.length > 0;
       const primaryPayload = primaryExistingId
@@ -520,34 +673,31 @@ export default function Properti() {
         : primaryNewIndex !== null
           ? { primary_new_index: primaryNewIndex }
           : {};
+
       const payload = isMultipart
-        ? prepareFormData({ ...jsonPayload, ...primaryPayload })
+        ? buildFormDataPayload(formData, primaryNewIndex)
         : { ...jsonPayload, ...primaryPayload };
+
       if (isMultipart && payload instanceof FormData) {
         if (primaryPayload.primary_image_id)
           payload.append("primary_image_id", primaryPayload.primary_image_id);
         if (primaryPayload.primary_new_index !== undefined)
           payload.append("primary_new_index", primaryPayload.primary_new_index);
-      }
-      const config = isMultipart
-        ? {
-            headers: { "Content-Type": "multipart/form-data" },
-            timeout: 120000,
-          }
-        : { timeout: 30000 };
-      if (isMultipart && payload instanceof FormData) {
         payload.append("_method", "PUT");
         await api.post(
           `/admin/properties/${activeProperty.id}`,
           payload,
-          config,
+          isMultipart
+            ? {
+                headers: { "Content-Type": "multipart/form-data" },
+                timeout: 120000,
+              }
+            : { timeout: 30000 },
         );
       } else {
-        await api.put(
-          `/admin/properties/${activeProperty.id}`,
-          payload,
-          config,
-        );
+        await api.put(`/admin/properties/${activeProperty.id}`, payload, {
+          timeout: 30000,
+        });
       }
       showSuccess("Properti berhasil diperbarui");
       closeAll();
@@ -581,42 +731,10 @@ export default function Properti() {
       setIsDeleting(false);
     }
   };
-
-  const formatCompactId = (amount) => {
-    const value = Number(amount);
-    if (!value) return "0";
-    const formatUnit = (num) => {
-      const rounded = Math.round(num * 10) / 10;
-      const text =
-        rounded % 1 === 0
-          ? String(rounded).replace(/\.0$/, "")
-          : String(rounded);
-      return text.replace(".", ",");
-    };
-    if (value >= 1_000_000_000)
-      return `${formatUnit(value / 1_000_000_000)} milyar`;
-    if (value >= 1_000_000) return `${formatUnit(value / 1_000_000)} juta`;
-    if (value >= 1_000) return `${formatUnit(value / 1_000)} ribu`;
-    return String(value);
-  };
-
-  const formatFullRupiah = (amount) => {
-    const digits = String(amount ?? "").replace(/\D/g, "");
-    if (!digits) return "Rp 0";
-    return `Rp ${formatThousands(digits)}`;
-  };
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
+  // ✅ Tampilkan sertifikat untuk tipe yang membutuhkannya, kecuali sewa
+  const showCertificate =
+    CERTIFICATE_REQUIRED_TYPES.includes(formData.type) &&
+    formData.listing_type !== "sewa";
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
@@ -641,7 +759,6 @@ export default function Properti() {
           title="Perhatian"
           message={attentionMessage}
         />
-
         <div className="row mb-3">
           <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
@@ -650,12 +767,12 @@ export default function Properti() {
                   Status: <span>*</span>
                 </label>
                 <DropdownSelect
-                  options={["All", "published", "draft", "sold", "pending"]}
+                  options={["All", "published", "draft", "sold"]}
                   selectedValue={filters.status}
                   onChange={(value) =>
                     setFilters((prev) => ({ ...prev, status: value }))
                   }
-                  addtionalParentClass=" "
+                  addtionalParentClass=""
                 />
               </fieldset>
             </form>
@@ -685,7 +802,7 @@ export default function Properti() {
             <h3 className="title">Properti Saya</h3>
             <button
               type="button"
-              className={`tf-btn style-border pd-23${formLoading ? " is-loading" : " "}`}
+              className={`tf-btn style-border pd-23${formLoading ? " is-loading" : ""}`}
               onClick={openCreate}
               disabled={formLoading}
             >
@@ -762,7 +879,7 @@ export default function Properti() {
                         </td>
                         <td>
                           <span
-                            className={`px-3 py-1 text-xs rounded-full ${property.status === "published" ? "bg-green-100 text-green-800" : property.status === "sold" ? "bg-red-100 text-red-800" : property.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800"}`}
+                            className={`px-3 py-1 text-xs rounded-full ${property.status === "published" ? "bg-green-100 text-green-800" : property.status === "sold" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800"}`}
                           >
                             {property.status}
                           </span>
@@ -772,7 +889,7 @@ export default function Properti() {
                             className="font-semibold text-blue-600"
                             title={formatFullRupiah(property.price)}
                           >
-                            {formatCompactId(property.price)}
+                            {formatCompact(property.price)}
                           </span>
                         </td>
                         <td>
@@ -804,6 +921,7 @@ export default function Properti() {
                                   <path
                                     d="M11.2413 2.9915L12.366 1.86616C12.6005 1.63171 12.9184 1.5 13.25 1.5C13.5816 1.5 13.8995 1.63171 14.134 1.86616C14.3685 2.10062 14.5002 2.4186 14.5002 2.75016C14.5002 3.08173 14.3685 3.39971 14.134 3.63416L4.55467 13.2135C4.20222 13.5657 3.76758 13.8246 3.29 13.9668L1.5 14.5002L2.03333 12.7102C2.17552 12.2326 2.43442 11.7979 2.78667 11.4455L11.242 2.9915H11.2413ZM11.2413 2.9915L13 4.75016"
                                     stroke="#A3ABB0"
+                                    strokeWidth="1.6"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                   />
@@ -831,8 +949,9 @@ export default function Properti() {
                                   xmlns="http://www.w3.org/2000/svg"
                                 >
                                   <path
-                                    d="M9.82667 6.00035L9.596 12.0003M6.404 12.0003L6.17333 6.00035M12.8187 3.86035C13.0467 3.89501 13.2733 3.93168 13.5 3.97101M12.8187 3.86035L12.1067 13.1157C12.0776 13.4925 11.9074 13.8445 11.63 14.1012C11.3527 14.3579 10.9886 14.5005 10.6107 14.5003H5.38933C5.0114 14.5005 4.64735 14.3579 4.36999 14.1012C4.09262 13.8445 3.92239 13.4925 3.89333 13.1157L3.18133 3.86035M12.8187 3.86035C12.0492 3.74403 11.2758 3.65574 10.5 3.59568M3.18133 3.86035C2.95333 3.89435 2.72667 3.93101 2.5 3.97035M3.18133 3.86035C3.95076 3.74403 4.72416 3.65575 5.5 3.59568M10.5 3.59568V2.98501C10.5 2.19835 9.89333 1.54235 9.10667 1.51768C8.36908 1.49411 7.63092 1.49411 6.89333 1.51768C6.10667 1.54235 5.5 2.19901 5.5 2.98501V3.59568M10.5 3.59568C8.83581 3.46707 7.16419 3.46707 7.5 3.59568"
+                                    d="M9.82667 6.00035L9.596 12.0003M6.404 12.0003L6.17333 6.00035M12.8187 3.86035C13.0467 3.89501 13.2733 3.93168 13.5 3.97101M12.8187 3.86035L12.1067 13.1157C12.0776 13.4925 11.9074 13.8445 11.63 14.1012C11.3527 14.3579 10.9886 14.5005 10.6107 14.5003H5.38933C5.0114 14.5005 4.64735 14.3579 4.36999 14.1012C4.09262 13.8445 3.92239 13.4925 3.89333 13.1157L3.18133 3.86035M12.8187 3.86035C12.0492 3.74403 11.2758 3.65574 10.5 3.59568M3.18133 3.86035C2.95333 3.89435 2.72667 3.93101 2.5 3.97035M3.18133 3.86035C3.95076 3.74403 4.72416 3.65575 5.5 3.59568M10.5 3.59568V2.98501C10.5 2.19835 9.89333 1.54235 9.10667 1.51768C8.36908 1.49411 7.63092 1.49411 6.89333 1.51768C6.10667 1.54235 5.5 2.19901 5.5 2.98501V3.59568M10.5 3.59568C8.83581 3.46707 7.16419 3.46707 5.5 3.59568"
                                     stroke="#A3ABB0"
+                                    strokeWidth="1.6"
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                   />
@@ -886,7 +1005,7 @@ export default function Properti() {
       </div>
 
       <div
-        className={`overlay-dashboard ${isCreateOpen || isEditOpen ? " show" : " "}`}
+        className={`overlay-dashboard ${isCreateOpen || isEditOpen ? " show" : ""}`}
         onClick={closeAll}
       />
 
@@ -896,7 +1015,7 @@ export default function Properti() {
             <div className="modal-content">
               <div className="modal-header modal-header-title">
                 <h5 className="modal-title">
-                  {isCreateOpen && "Tambah Properti "}
+                  {isCreateOpen && "Tambah Properti"}
                   {isEditOpen && `Ubah: ${activeTitle}`}
                 </h5>
                 <button
@@ -919,6 +1038,7 @@ export default function Properti() {
                   onSubmit={isCreateOpen ? handleCreate : handleUpdate}
                 >
                   <div className="row g-3">
+                    {/* INFORMASI DASAR */}
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         📋 Informasi Dasar
@@ -930,7 +1050,7 @@ export default function Properti() {
                         <input
                           type="text"
                           name="title"
-                          className={`form-control ${errors.title ? "border-red-500" : " "}`}
+                          className={`form-control ${errors.title ? "border-red-500" : ""}`}
                           placeholder="Contoh: Rumah Komersil Strategis di Jember"
                           value={formData.title}
                           onChange={handleChange}
@@ -950,7 +1070,7 @@ export default function Properti() {
                           type="text"
                           inputMode="numeric"
                           name="price"
-                          className={`form-control ${errors.price ? "border-red-500" : " "}`}
+                          className={`form-control ${errors.price ? "border-red-500" : ""}`}
                           placeholder="Contoh: 500000000"
                           value={formatThousands(formData.price)}
                           onChange={handlePriceChange}
@@ -967,20 +1087,12 @@ export default function Properti() {
                       <fieldset className="box-fieldset">
                         <label>Tipe</label>
                         <DropdownSelect
-                          options={[
-                            "rumah",
-                            "perumahan",
-                            "ruko",
-                            "kos",
-                            "tanah",
-                          ]}
+                          options={["rumah", "villa", "ruko", "kos", "tanah"]}
                           selectedValue={formData.type}
                           onChange={(value) => updateField("type", value)}
                         />
                       </fieldset>
                     </div>
-
-                    {/* ✅ BUILDING TYPE READONLY */}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Tipe Bangunan</label>
@@ -988,13 +1100,16 @@ export default function Properti() {
                           type="text"
                           name="building_type"
                           className="form-control bg-gray-100"
-                          value={formData.building_type}
+                          value={buildingTypeDisplay}
                           readOnly
-                          placeholder="Otomatis: Luas Bangunan / Luas Tanah"
+                          placeholder={
+                            formData.type === "tanah"
+                              ? "Otomatis: Luas Tanah"
+                              : "Otomatis: Luas Bangunan / Luas Tanah"
+                          }
                         />
                       </fieldset>
                     </div>
-
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Status</label>
@@ -1009,14 +1124,61 @@ export default function Properti() {
                       <fieldset className="box-fieldset">
                         <label>Tipe Listing</label>
                         <DropdownSelect
-                          options={["jual", "sewa"]}
-                          selectedValue={formData.listing_type}
-                          onChange={(value) =>
-                            updateField("listing_type", value)
+                          options={
+                            formData.type === "kos"
+                              ? ["sewa"]
+                              : ["jual", "sewa"]
                           }
+                          selectedValue={formData.listing_type}
+                          onChange={(value) => handleListingTypeChange(value)}
                         />
                       </fieldset>
                     </div>
+                    {String(formData.listing_type || "").trim() === "sewa" && (
+                      <div className="col-md-6">
+                        <fieldset className="box-fieldset">
+                          <label>Periode Sewa</label>
+                          <DropdownSelect
+                            options={[
+                              "Hari",
+                              "Minggu",
+                              "Bulan",
+                              "3 Bulan",
+                              "6 Bulan",
+                              "Tahun",
+                            ]}
+                            selectedValue={
+                              formData.rent_period === "hari"
+                                ? "Hari"
+                                : formData.rent_period === "minggu"
+                                  ? "Minggu"
+                                  : formData.rent_period === "3bulan"
+                                    ? "3 Bulan"
+                                    : formData.rent_period === "6bulan"
+                                      ? "6 Bulan"
+                                      : formData.rent_period === "tahun"
+                                        ? "Tahun"
+                                        : "Bulan"
+                            }
+                            onChange={(value) => {
+                              const periodValue =
+                                value === "Hari"
+                                  ? "hari"
+                                  : value === "Minggu"
+                                    ? "minggu"
+                                    : value === "3 Bulan"
+                                      ? "3bulan"
+                                      : value === "6 Bulan"
+                                        ? "6bulan"
+                                        : value === "Tahun"
+                                          ? "tahun"
+                                          : "bulan";
+                              updateField("rent_period", periodValue);
+                            }}
+                          />
+                        </fieldset>
+                      </div>
+                    )}
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
                         <label>Kota</label>
@@ -1037,7 +1199,7 @@ export default function Properti() {
                         <input
                           type="text"
                           name="kecamatan"
-                          className={`form-control ${errors.kecamatan ? "border-red-500" : " "}`}
+                          className={`form-control ${errors.kecamatan ? "border-red-500" : ""}`}
                           placeholder="Contoh: Sumbersari"
                           value={formData.kecamatan}
                           onChange={handleChange}
@@ -1050,30 +1212,50 @@ export default function Properti() {
                         )}
                       </fieldset>
                     </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Status Sertifikat</label>
-                        <DropdownSelect
-                          options={["lunas", "bank"]}
-                          selectedValue={formData.certificate_status}
-                          onChange={(value) =>
-                            updateField("certificate_status", value)
-                          }
-                        />
-                      </fieldset>
+
+                    {showCertificate && (
+                      <>
+                        <div className="col-md-6">
+                          <fieldset className="box-fieldset">
+                            <label>Status Sertifikat</label>
+                            <DropdownSelect
+                              options={["lunas", "bank"]}
+                              selectedValue={formData.certificate_status}
+                              onChange={(value) =>
+                                updateField("certificate_status", value)
+                              }
+                            />
+                          </fieldset>
+                        </div>
+                        <div className="col-md-6">
+                          <fieldset className="box-fieldset">
+                            <label>Jenis Sertifikat</label>
+                            <DropdownSelect
+                              options={["SHM", "SHGB"]}
+                              selectedValue={formData.certificate_type}
+                              onChange={(value) =>
+                                updateField("certificate_type", value)
+                              }
+                            />
+                          </fieldset>
+                        </div>
+                      </>
+                    )}
+
+                    <div className="col-12">
+                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
+                        📍 Lokasi Detail
+                      </h6>
+                      <LocationPicker
+                        address={formData.address}
+                        latitude={formData.latitude}
+                        longitude={formData.longitude}
+                        onChange={(next) =>
+                          setFormData((prev) => ({ ...prev, ...next }))
+                        }
+                      />
                     </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Jenis Sertifikat</label>
-                        <DropdownSelect
-                          options={["SHM", "SHGB"]}
-                          selectedValue={formData.certificate_type}
-                          onChange={(value) =>
-                            updateField("certificate_type", value)
-                          }
-                        />
-                      </fieldset>
-                    </div>
+
                     <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Deskripsi</label>
@@ -1088,209 +1270,132 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
+                    {/* ✅ DETAIL PROPERTI DINAMIS */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🏠 Detail Properti
+                        🏠 Detail Properti -{" "}
+                        {PROPERTY_TYPE_CONFIG[formData.type]?.label}
                       </h6>
                     </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            name="detail.carport"
-                            checked={formData.detail.carport}
-                            onChange={handleChange}
-                          />{" "}
-                          Carport
-                        </label>
-                      </fieldset>
-                    </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            name="detail.garden"
-                            checked={formData.detail.garden}
-                            onChange={handleChange}
-                          />{" "}
-                          Taman
-                        </label>
-                      </fieldset>
-                    </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            name="detail.one_gate_system"
-                            checked={formData.detail.one_gate_system}
-                            onChange={handleChange}
-                          />{" "}
-                          One Gate System
-                        </label>
-                      </fieldset>
-                    </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label className="d-flex align-items-center gap-2">
-                          <input
-                            type="checkbox"
-                            name="detail.security_24jam"
-                            checked={formData.detail.security_24jam}
-                            onChange={handleChange}
-                          />{" "}
-                          Keamanan 24 Jam
-                        </label>
-                      </fieldset>
-                    </div>
-                    <div className="col-md-4">
-                      <fieldset className="box-fieldset">
-                        <label>Luas Tanah (m²)</label>
-                        <input
-                          type="number"
-                          name="detail.luas_tanah"
-                          className={`form-control ${errors["detail.luas_tanah"] ? "border-red-500" : " "}`}
-                          placeholder="Contoh: 120"
-                          value={formData.detail.luas_tanah}
-                          onChange={handleChange}
-                          required
-                        />
-                        {errors["detail.luas_tanah"] && (
-                          <p className="text-red-500 text-xs mt-1">
-                            {errors["detail.luas_tanah"][0]}
-                          </p>
-                        )}
-                      </fieldset>
-                    </div>
-                    <div className="col-md-4">
-                      <fieldset className="box-fieldset">
-                        <label>Luas Bangunan (m²)</label>
-                        <input
-                          type="number"
-                          name="detail.luas_bangunan"
-                          className="form-control"
-                          placeholder="Contoh: 90"
-                          value={formData.detail.luas_bangunan}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-4">
-                      <fieldset className="box-fieldset">
-                        <label>Jumlah Lantai</label>
-                        <input
-                          type="number"
-                          name="detail.floors"
-                          className="form-control"
-                          placeholder="Contoh: 2"
-                          value={formData.detail.floors}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label>Kamar Tidur</label>
-                        <input
-                          type="number"
-                          name="detail.bedrooms"
-                          className="form-control"
-                          placeholder="Contoh: 3"
-                          value={formData.detail.bedrooms}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label>Kamar Mandi</label>
-                        <input
-                          type="number"
-                          name="detail.bathrooms"
-                          className="form-control"
-                          placeholder="Contoh: 2"
-                          value={formData.detail.bathrooms}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label>Dapur</label>
-                        <input
-                          type="number"
-                          name="detail.kitchens"
-                          className="form-control"
-                          placeholder="Contoh: 1"
-                          value={formData.detail.kitchens}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-3">
-                      <fieldset className="box-fieldset">
-                        <label>Ruang Tamu</label>
-                        <input
-                          type="number"
-                          name="detail.living_rooms"
-                          className="form-control"
-                          placeholder="Contoh: 1"
-                          value={formData.detail.living_rooms}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Daya Listrik (VA)</label>
-                        <input
-                          type="number"
-                          name="detail.electricity_capacity"
-                          className="form-control"
-                          placeholder="Contoh: 2200"
-                          value={formData.detail.electricity_capacity}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Penyedia WiFi</label>
-                        <input
-                          type="text"
-                          name="detail.wifi_provider"
-                          className="form-control"
-                          placeholder="Contoh: IndiHome, Biznet"
-                          value={formData.detail.wifi_provider}
-                          onChange={handleChange}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Sumber Air</label>
-                        <DropdownSelect
-                          options={["pdam", "sumur"]}
-                          selectedValue={formData.detail.water}
-                          onChange={(value) => updateDetail("water", value)}
-                        />
-                      </fieldset>
-                    </div>
-                    <div className="col-md-6">
-                      <fieldset className="box-fieldset">
-                        <label>Jenis Listrik</label>
-                        <DropdownSelect
-                          options={["overground", "underground"]}
-                          selectedValue={formData.detail.listrik_type}
-                          onChange={(value) =>
-                            updateDetail("listrik_type", value)
-                          }
-                        />
-                      </fieldset>
-                    </div>
 
+                    {(() => {
+                      const fields =
+                        PROPERTY_TYPE_CONFIG[formData.type]?.fields || [];
+                      const rows = [];
+                      let currentRow = [];
+                      let currentColSum = 0;
+
+                      fields.forEach((field) => {
+                        const fieldCol = field.col || 4;
+                        if (currentColSum + fieldCol > 12) {
+                          rows.push(currentRow);
+                          currentRow = [field];
+                          currentColSum = fieldCol;
+                        } else {
+                          currentRow.push(field);
+                          currentColSum += fieldCol;
+                        }
+                      });
+                      if (currentRow.length > 0) rows.push(currentRow);
+
+                      return rows.map((row, rowIndex) => (
+                        <div
+                          className="col-12 mb-2"
+                          key={`detail-row-${rowIndex}`}
+                        >
+                          <div className="row g-3">
+                            {row.map((field) => {
+                              const errorKey = `detail.${field.name}`;
+                              const commonClass = `form-control ${errors?.[errorKey] ? "border-red-500" : ""}`;
+                              const fieldCol = field.col || 4;
+
+                              return (
+                                <div
+                                  className={`col-md-${fieldCol}`}
+                                  key={field.name}
+                                >
+                                  <fieldset className="box-fieldset detail-fieldset">
+                                    <label>
+                                      {field.label}{" "}
+                                      {field.required && (
+                                        <span className="text-danger">*</span>
+                                      )}
+                                    </label>
+                                    {field.type === "checkbox" ? (
+                                      <div
+                                        className={`detail-checkbox ${errors?.[errorKey] ? "border-red-500" : ""}`}
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          name={errorKey}
+                                          className="form-check-input m-0"
+                                          checked={
+                                            !!formData.detail[field.name]
+                                          }
+                                          onChange={handleChange}
+                                        />
+                                        {formData.detail[field.name] && (
+                                          <span
+                                            className="detail-checkbox-check"
+                                            aria-hidden="true"
+                                          >
+                                            <svg
+                                              width={14}
+                                              height={14}
+                                              viewBox="0 0 16 16"
+                                              fill="none"
+                                              xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                              <path
+                                                d="M3.5 8.5L6.5 11.5L12.5 5.5"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                              />
+                                            </svg>
+                                          </span>
+                                        )}
+                                        <span>Ya</span>
+                                      </div>
+                                    ) : field.type === "select" ? (
+                                      <DropdownSelect
+                                        options={field.options}
+                                        selectedValue={
+                                          formData.detail[field.name] || ""
+                                        }
+                                        onChange={(val) =>
+                                          updateDetail(field.name, val)
+                                        }
+                                      />
+                                    ) : (
+                                      <input
+                                        type={field.type}
+                                        name={errorKey}
+                                        className={commonClass}
+                                        placeholder={field.label}
+                                        value={
+                                          formData.detail[field.name] ?? ""
+                                        }
+                                        onChange={handleChange}
+                                        required={field.required}
+                                      />
+                                    )}
+                                    {errors?.[errorKey] && (
+                                      <p className="text-red-500 text-xs mt-1">
+                                        {errors[errorKey][0]}
+                                      </p>
+                                    )}
+                                  </fieldset>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+
+                    {/* ✅ GAMBAR PROPERTI */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         🖼️ Gambar Properti
@@ -1309,7 +1414,7 @@ export default function Properti() {
                             return (
                               <div
                                 key={img.id}
-                                className={`item-upload file-delete${isPrimary ? " is-primary" : " "}`}
+                                className={`item-upload file-delete${isPrimary ? " is-primary" : ""}`}
                               >
                                 <Image
                                   src={img.full_url}
@@ -1397,7 +1502,7 @@ export default function Properti() {
                             {Array.from(formData.newImages).map((file, idx) => (
                               <div
                                 key={idx}
-                                className={`item-upload file-delete${primaryNewIndex === idx ? " is-primary" : " "}`}
+                                className={`item-upload file-delete${primaryNewIndex === idx ? " is-primary" : ""}`}
                               >
                                 <Image
                                   src={URL.createObjectURL(file)}
@@ -1459,7 +1564,7 @@ export default function Properti() {
                     </button>
                     <button
                       type="submit"
-                      className={`tf-btn style-border pd-23${formLoading ? " is-loading" : " "}`}
+                      className={`tf-btn style-border pd-23${formLoading ? " is-loading" : ""}`}
                       disabled={formLoading || (isEditOpen && !isEditDirty)}
                     >
                       {formLoading && (
