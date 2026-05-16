@@ -1,7 +1,7 @@
 import Breadcumb from "@/components/common/Breadcumb";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
-import RekomendasiProperti from "@/components/otherPages/RekomendasiProperti";
+import RekomendasiProperti from "@/components/otherPages/rekomendasi/RekomendasiProperti";
 import React from "react";
 
 export const metadata = {

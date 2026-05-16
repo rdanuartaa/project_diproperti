@@ -113,7 +113,7 @@ export default function Slider1({ slug }) {
                 style={{
                   bottom: "20px",
                   left: "20px",
-                  backgroundColor: "#ff9800",
+                  backgroundColor: "var(--Primary, #02469B)",
                   color: "#fff",
                   padding: "8px 16px",
                   borderRadius: "20px",
@@ -200,7 +200,7 @@ export default function Slider1({ slug }) {
                         style={{
                           bottom: "20px",
                           left: "20px",
-                          backgroundColor: "#ff9800",
+                          backgroundColor: "var(--Primary, #02469B)",
                           color: "#fff",
                           padding: "8px 16px",
                           borderRadius: "20px",

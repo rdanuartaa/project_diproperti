@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import PropertyOverview from "./PropertyOverview";
 import ExtraInfo from "./ExtraInfo";
-import Features from "./Features";
+import Features, { hasAdditionalFeatures } from "./Features";
 import Location from "./Location";
 import Sidebar from "./Sidebar";
 
@@ -86,9 +86,11 @@ export default function Details1({ slug }) {
             <div className="wg-property box-property-detail">
               <ExtraInfo property={property} />
             </div>
-            <div className="wg-property box-amenities">
-              <Features property={property} />
-            </div>
+            {hasAdditionalFeatures(property) && (
+              <div className="wg-property box-amenities">
+                <Features property={property} />
+              </div>
+            )}
             <div className="wg-property single-property-map">
               <Location property={property} />
             </div>

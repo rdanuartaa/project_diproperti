@@ -1,4 +1,5 @@
 import React from "react";
+import { getPropertyCardMetaItems, getPropertyConfig } from "@/lib/property";
 
 export default function PropertyOverview({ property }) {
   // ✅ Fallback jika property belum ada
@@ -59,6 +60,30 @@ export default function PropertyOverview({ property }) {
     return type || "-";
   };
 
+  const propertyMetaItems = getPropertyCardMetaItems(property, 6);
+  const topMetaItems = propertyMetaItems.slice(0, 3);
+  const typeLabel = getPropertyConfig(property.type).label || property.type || "N/A";
+  const detailInfoItems = [
+    { key: "type", label: "Kategori", value: typeLabel },
+    {
+      key: "listing_type",
+      label: "Penawaran",
+      value: getListingTypeLabel(property.listing_type),
+    },
+    property.listing_type === "sewa"
+      ? {
+          key: "rent_period",
+          label: "Periode Sewa",
+          value: getRentPeriodLabel(property),
+        }
+      : {
+          key: "certificate_type",
+          label: "Sertifikat",
+          value: property.certificate_type || "N/A",
+        },
+    ...propertyMetaItems.filter((item) => item.key !== "price_period"),
+  ].slice(0, 8);
+
   return (
     <>
       <div className="heading flex justify-between">
@@ -81,20 +106,15 @@ export default function PropertyOverview({ property }) {
             </span>
           </p>
           <ul className="meta-list flex">
-            {/* KT - dari property.detail.bedrooms */}
-            <li className="text-1 flex">
-              <span className="fw-5">{property.detail?.bedrooms ?? 0}</span> KT
-            </li>
-
-            {/* KM - dari property.detail.bathrooms */}
-            <li className="text-1 flex">
-              <span className="fw-5">{property.detail?.bathrooms ?? 0}</span> KM
-            </li>
-
-            {/* Tipe - dari property.type (dengan mapping Bahasa Indonesia) */}
-            <li className="text-1 flex">
-              <span className="fw-5">{property.building_type ?? 0}</span> m²
-            </li>
+            {topMetaItems.map((item) => (
+              <li className="text-1 flex" key={item.key}>
+                <span className="fw-5">
+                  {item.value}
+                  {item.suffix || ""}
+                </span>{" "}
+                {item.label}
+              </li>
+            ))}
           </ul>
         </div>
         <div className="action">
@@ -141,58 +161,30 @@ export default function PropertyOverview({ property }) {
         </div>
       </div>
       <div className="info-detail">
-        <div className="wrap-box">
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-HouseLine" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Kategori:</div>
-              <div className="text-1 text-color-heading">
-                {property.type || "N/A"}
+        {detailInfoItems.map((item, index) => (
+          <div className="wrap-box" key={`${item.key}-${index}`}>
+            <div className="box-icon">
+              <div className="icons">
+                <i
+                  className={
+                    index === 0
+                      ? "icon-HouseLine"
+                      : index === 1
+                        ? "icon-Garage-1"
+                        : "icon-SlidersHorizontal"
+                  }
+                />
+              </div>
+              <div className="content">
+                <div className="text-4 text-color-default">{item.label}:</div>
+                <div className="text-1 text-color-heading">
+                  {item.value}
+                  {item.suffix || ""}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="wrap-box">
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-Garage-1" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Penawaran</div>
-              <div className="text-1 text-color-heading">
-                {getListingTypeLabel(property.listing_type)}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="wrap-box">
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-SlidersHorizontal" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Tipe Bangunan:</div>
-              <div className="text-1 text-color-heading">
-                {property.building_type || "N/A"}m²
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="wrap-box">
-          <div className="box-icon">
-            <div className="icons">
-              <i className="icon-Ruler" />
-            </div>
-            <div className="content">
-              <div className="text-4 text-color-default">Sertifikat:</div>
-              <div className="text-1 text-color-heading">
-                {property.certificate_type || "N/A"}
-              </div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
     </>
   );

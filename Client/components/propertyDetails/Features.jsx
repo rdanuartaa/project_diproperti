@@ -1,111 +1,69 @@
 import React from "react";
+import { getPropertyConfig } from "@/lib/property";
+
+const FIELD_LABELS = {
+  carport: "Carport",
+  garden: "Taman Pribadi",
+  one_gate_system: "One Gate System",
+  security_24jam: "Keamanan 24 Jam",
+  swimming_pool: "Kolam Renang",
+  private_pool: "Private Pool",
+  furnished: "Fully Furnished",
+  near_tourism: "Dekat Wisata",
+  wifi_included: "Termasuk WiFi",
+  electricity_included: "Termasuk Listrik",
+  water_included: "Termasuk Air",
+  shared_kitchen: "Dapur Bersama",
+  parking_area: "Area Parkir",
+  cctv: "CCTV",
+};
+
+function formatWater(value) {
+  if (value === "pdam") return "Air PDAM";
+  if (value === "sumur") return "Air Sumur";
+  return value ? `Air ${value}` : null;
+}
+
+function formatElectricity(value) {
+  if (value === "overground") return "Listrik Tiang";
+  if (value === "underground") return "Listrik Bawah Tanah";
+  return value ? `Listrik ${value}` : null;
+}
+
+function buildFeatureItems(property) {
+  const detail = property?.detail || {};
+  const type = property?.type || "rumah";
+  const fields = getPropertyConfig(type).fields || [];
+
+  return fields
+    .map((field) => {
+      const value = detail[field.name];
+
+      if (field.type === "checkbox") {
+        return value ? FIELD_LABELS[field.name] || field.label : null;
+      }
+
+      if (field.name === "water") return formatWater(value);
+      if (field.name === "listrik_type") return formatElectricity(value);
+      if (field.name === "wifi_provider") return value ? `WiFi ${value}` : null;
+
+      return null;
+    })
+    .filter(Boolean);
+}
+
+export function hasAdditionalFeatures(property) {
+  return buildFeatureItems(property).length > 0;
+}
 
 export default function Features({ property }) {
-  // ✅ Fallback jika property belum tersedia
-  if (!property || !property.detail) {
-    return (
-      <>
-        <div className="wg-title text-11 fw-6 text-color-heading">
-          Fasilitas Tambahan
-        </div>
-        <div className="wrap-feature">
-          <div className="box-feature">
-            <ul>
-              {[...Array(5)].map((_, i) => (
-                <li key={i} className="feature-item text-color-default">
-                  Memuat fasilitas...
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="box-feature">
-            <ul>
-              {[...Array(5)].map((_, i) => (
-                <li key={i} className="feature-item text-color-default">
-                  -
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="box-feature">
-            <ul>
-              {[...Array(4)].map((_, i) => (
-                <li key={i} className="feature-item text-color-default">
-                  -
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </>
-    );
-  }
+  const features = buildFeatureItems(property);
+  if (!features.length) return null;
 
-  const detail = property.detail || {};
-
-  // ✅ Helper: Format water type dengan label
-  const formatWater = (val) => {
-    const map = { 
-      pdam: "Air PDAM", 
-      sumur: "Air Sumur" 
-    };
-    return val ? map[val.toLowerCase()] || `Air: ${val}` : null;
-  };
-
-  // ✅ Helper: Format electricity type dengan label
-  const formatElectricity = (val) => {
-    const map = { 
-      overground: "Listrik Tiang", 
-      underground: "Listrik Bawah Tanah" 
-    };
-    return val ? map[val.toLowerCase()] || `Listrik: ${val}` : null;
-  };
-
-  // ✅ Helper: Format WiFi provider dengan label
-  const formatWifi = (val) => {
-    return val ? `WiFi ${val}` : null;
-  };
-
-  // ✅ Build dynamic features list (SEMUA BAHASA INDONESIA)
-  const features = [
-    // Boolean facilities - tampilkan nama jika true
-    detail.carport ? "Garasi Mobil" : null,
-    detail.garden ? "Taman Pribadi" : null,
-    detail.one_gate_system ? "Sistem Satu Pintu" : null,
-    detail.security_24jam ? "Keamanan 24 Jam" : null,
-    
-    // Water type - tampilkan dengan label
-    formatWater(detail.water),
-    
-    // Electricity type - tampilkan dengan label
-    formatElectricity(detail.listrik_type),
-    
-    // WiFi provider - tampilkan dengan label
-    formatWifi(detail.wifi_provider),
-  ].filter(item => item); // ✅ Filter: hanya tampilkan yang ada value-nya
-
-  // ✅ DISTRIBUTE ITEMS EVENLY ACROSS 3 COLUMNS
-  const col1 = [];
-  const col2 = [];
-  const col3 = [];
-
+  const columns = [[], [], []];
   features.forEach((item, index) => {
-    if (index % 3 === 0) {
-      col1.push(item);
-    } else if (index % 3 === 1) {
-      col2.push(item);
-    } else {
-      col3.push(item);
-    }
+    columns[index % 3].push(item);
   });
-
-  // ✅ Render list items helper
-  const renderItems = (items) =>
-    items.map((item, idx) => (
-      <li key={idx} className="feature-item">
-        {item}
-      </li>
-    ));
 
   return (
     <>
@@ -113,34 +71,17 @@ export default function Features({ property }) {
         Fasilitas Tambahan
       </div>
       <div className="wrap-feature">
-        
-        {/* KOLOM 1 */}
-        <div className="box-feature">
-          <ul>
-            {col1.length > 0 ? renderItems(col1) : (
-              <li className="feature-item text-color-default">-</li>
-            )}
-          </ul>
-        </div>
-
-        {/* KOLOM 2 */}
-        <div className="box-feature">
-          <ul>
-            {col2.length > 0 ? renderItems(col2) : (
-              <li className="feature-item text-color-default">-</li>
-            )}
-          </ul>
-        </div>
-
-        {/* KOLOM 3 */}
-        <div className="box-feature">
-          <ul>
-            {col3.length > 0 ? renderItems(col3) : (
-              <li className="feature-item text-color-default">-</li>
-            )}
-          </ul>
-        </div>
-
+        {columns.map((items, columnIndex) => (
+          <div className="box-feature" key={columnIndex}>
+            <ul>
+              {items.map((item, index) => (
+                <li key={`${item}-${index}`} className="feature-item">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
     </>
   );

@@ -1,7 +1,7 @@
 import React from "react";
+import { CERTIFICATE_REQUIRED_TYPES, getPropertyConfig } from "@/lib/property";
 
 export default function ExtraInfo({ property }) {
-  // ✅ Fallback jika property belum tersedia
   if (!property) {
     return (
       <>
@@ -11,43 +11,98 @@ export default function ExtraInfo({ property }) {
         <div className="content">
           <p className="description text-1">Memuat informasi...</p>
         </div>
-        <div className="box">
-          <ul>
-            {[...Array(5)].map((_, i) => (
-              <li key={i} className="flex">
-                <p className="fw-6">-</p>
-                <p>-</p>
-              </li>
-            ))}
-          </ul>
-          <ul>
-            {[...Array(5)].map((_, i) => (
-              <li key={i} className="flex">
-                <p className="fw-6">-</p>
-                <p>-</p>
-              </li>
-            ))}
-          </ul>
-        </div>
       </>
     );
   }
 
-  // ✅ Helper: Ambil nilai dengan fallback
-  const getVal = (val, fallback = "-") => {
-    if (val === null || val === undefined || val === "") return fallback;
-    return val;
-  };
-
-  // ✅ Helper: Format angka dengan titik (ribuan)
-  const formatNumber = (num) => {
-    if (!num && num !== 0) return "-";
-    return Number(num).toLocaleString("id-ID");
-  };
-
-  // ✅ Ambil data dari property dan detail
   const detail = property.detail || {};
   const description = property.description || "Tidak ada deskripsi tersedia.";
+  const propertyType = property.type || "rumah";
+  const propertyConfig = getPropertyConfig(propertyType);
+
+  const getVal = (value, fallback = "-") => {
+    if (value === null || value === undefined || value === "") return fallback;
+    return value;
+  };
+
+  const formatNumber = (value) => {
+    if (value === null || value === undefined || value === "") return "-";
+    return Number(value).toLocaleString("id-ID");
+  };
+
+  const formatText = (value) => {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "boolean") return value ? "Ya" : "Tidak";
+    return String(value)
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("-");
+  };
+
+  const formatRentPeriod = (value) => {
+    const period = String(value || "bulan");
+    if (period === "hari") return "Harian";
+    if (period === "minggu") return "Mingguan";
+    if (period === "3bulan") return "3 Bulan";
+    if (period === "6bulan") return "6 Bulan";
+    if (period === "tahun") return "Tahunan";
+    return "Bulanan";
+  };
+
+  const cleanLabel = (label) => label.replace(/\s*\([^)]+\)/g, "");
+
+  const formatFieldValue = (field) => {
+    const value = detail[field.name];
+    if (field.type === "number") {
+      const unit = field.label.match(/\(([^)]+)\)/)?.[1];
+      return `${formatNumber(value)}${unit ? ` ${unit}` : ""}`;
+    }
+    return formatText(value);
+  };
+
+  const detailItems = [
+    {
+      key: "listing_type",
+      label: "Status Listing",
+      value: property.listing_type === "sewa" ? "Disewakan" : "Dijual",
+    },
+    ...(property.listing_type === "sewa"
+      ? [
+          {
+            key: "rent_period",
+            label: "Periode Sewa",
+            value: formatRentPeriod(property.price_period || property.rent_period),
+          },
+        ]
+      : CERTIFICATE_REQUIRED_TYPES.includes(propertyType)
+        ? [
+            {
+              key: "certificate_type",
+              label: "Sertifikat",
+              value: `${getVal(property.certificate_type)} (${getVal(property.certificate_status)})`,
+            },
+          ]
+        : []),
+    ...propertyConfig.fields
+      .filter((field) => field.type !== "checkbox")
+      .map((field) => ({
+        key: field.name,
+        label: cleanLabel(field.label),
+        value: formatFieldValue(field),
+      })),
+  ].filter((item) => item.value !== "-");
+
+  const midpoint = Math.ceil(detailItems.length / 2);
+  const columns = [detailItems.slice(0, midpoint), detailItems.slice(midpoint)];
+
+  const renderDetailItem = (item) => (
+    <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }} key={item.key}>
+      <p className="fw-6" style={{ minWidth: "140px" }}>
+        {item.label}
+      </p>
+      <p>{item.value}</p>
+    </li>
+  );
 
   return (
     <>
@@ -55,53 +110,12 @@ export default function ExtraInfo({ property }) {
         Detail Properti
       </div>
       <div className="content">
-        <p className="description text-1">
-          {description}
-        </p>
+        <p className="description text-1">{description}</p>
       </div>
       <div className="box">
-        {/* KOLOM 1 */}
-        <ul>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Luas Tanah</p>
-            <p>{formatNumber(detail.luas_tanah)} m²</p>
-          </li>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Luas Bangunan</p>
-            <p>{formatNumber(detail.luas_bangunan)} m²</p>
-          </li>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Sertifikat</p>
-            <p>{getVal(property.certificate_type)} ({getVal(property.certificate_status)})</p>
-          </li>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Listrik</p>
-            <p>{formatNumber(detail.electricity_capacity)} Watt</p>
-          </li>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Jumlah Lantai</p>
-            <p>{formatNumber(detail.floors)} Lantai</p>
-          </li>
-        </ul>
-        {/* KOLOM 2 */}
-        <ul>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Kamar Tidur</p>
-            <p>{formatNumber(detail.bedrooms)}</p>
-          </li>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Kamar Mandi</p>
-            <p>{formatNumber(detail.bathrooms)}</p>
-          </li>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Ruang Tamu</p>
-            <p>{formatNumber(detail.living_rooms)}</p>
-          </li>
-          <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }}>
-            <p className="fw-6" style={{ minWidth: "120px" }}>Ruang Dapur</p>
-            <p>{formatNumber(detail.kitchens)}</p>
-          </li>
-        </ul>
+        {columns.map((items, index) => (
+          <ul key={index}>{items.map(renderDetailItem)}</ul>
+        ))}
       </div>
     </>
   );

@@ -19,6 +19,8 @@ export {
   formatDateTime,
 } from './formatters';
 
+export { getPropertyCardMetaItems } from './cardMeta';
+
 // Export dari transformers.js
 export {
   validatePropertyForm,

@@ -20,8 +20,13 @@ class User extends Authenticatable
         'password',
         'google_id',
         'avatar',
+        'id_card_file',
         'role',
         'email_verified_at',
+    ];
+
+    protected $appends = [
+        'id_card_file_url',
     ];
 
     protected $hidden = [
@@ -54,6 +59,18 @@ class User extends Authenticatable
         }
         $emailHash = md5(strtolower(trim($this->email)));
         return "https://www.gravatar.com/avatar/{$emailHash}?d=mp";
+    }
+
+    public function getIdCardFileUrlAttribute(): ?string
+    {
+        if (!$this->id_card_file) {
+            return null;
+        }
+        if (str_starts_with($this->id_card_file, 'http://') || str_starts_with($this->id_card_file, 'https://')) {
+            return $this->id_card_file;
+        }
+        $accountId = 'a0eea8f875e1416b9ea4a5c4a1cea45e';
+        return "https://pub-{$accountId}.r2.dev/{$this->id_card_file}";
     }
 
     public function properties(): HasMany

@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [GoogleAuthController::class, 'me']);
     Route::post('/logout', [GoogleAuthController::class, 'logout']);
     Route::patch('/user/profile', [ProfileController::class, 'update']);
+    Route::post('/user/profile', [ProfileController::class, 'update']);
 
     // ✅ Harus di sini — sebelum /properties/{slug} dan /articles/{slug}
     Route::get('/properties/my-submissions', [PropertyController::class, 'mySubmissions']);
@@ -58,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/property-images/{image}/download', [PropertyController::class, 'downloadPropertyImage']);
         Route::get('/admin/property-submissions', [PropertyController::class, 'submissions']);
         Route::get('/admin/property-submissions/{property}/documents/{document}/download', [PropertyController::class, 'downloadSubmissionDocument']);
+        Route::get('/admin/property-submissions/{property}/seller-id-card/download', [PropertyController::class, 'downloadSellerIdCard']);
         Route::put('/admin/property-submissions/{property}/approve', [PropertyController::class, 'approveSubmission']);
 
         Route::get('/admin/articles', [ArticleController::class, 'adminIndex']);

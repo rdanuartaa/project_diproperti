@@ -167,6 +167,34 @@ export default function PropertySubmissions() {
       ? String(field)
       : fallback;
 
+  const formatSellerPhone = (phone) => {
+    if (!phone) return "-";
+    const digits = String(phone).replace(/\D/g, "");
+    if (!digits) return "-";
+    if (digits.startsWith("62")) return `+${digits}`;
+    if (digits.startsWith("0")) return `+62${digits.slice(1)}`;
+    return `+62${digits}`;
+  };
+
+  const getSellerWhatsAppUrl = (submission) => {
+    const digits = String(submission?.user?.phone || "").replace(/\D/g, "");
+    if (!digits) return null;
+    const normalizedPhone = digits.startsWith("62")
+      ? digits
+      : digits.startsWith("0")
+        ? `62${digits.slice(1)}`
+        : `62${digits}`;
+    const message = [
+      `Halo ${submission?.user?.full_name || submission?.user?.name || "Bapak/Ibu"},`,
+      "",
+      `Saya admin DIPROPERTI ingin mengonfirmasi pengajuan properti "${submission?.title || "-"}".`,
+      "Apakah benar properti tersebut milik Anda dan sedang Anda jual/sewakan melalui DIPROPERTI?",
+      "",
+      "Mohon konfirmasinya. Terima kasih.",
+    ].join("\n");
+    return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+  };
+
   const getLocationInfo = (submission) => {
     if (!submission) {
       return {
@@ -230,6 +258,11 @@ export default function PropertySubmissions() {
       label: "Tagihan Air",
       url: submission?.water_bill_file_url,
       downloadUrl: `/admin/property-submissions/${submission?.id}/documents/water-bill/download`,
+    },
+    {
+      label: "KTP Penjual",
+      url: submission?.user?.id_card_file_url,
+      downloadUrl: `/admin/property-submissions/${submission?.id}/seller-id-card/download`,
     },
   ];
 
@@ -560,8 +593,133 @@ export default function PropertySubmissions() {
                   onSubmit={(e) => e.preventDefault()}
                 >
                   <div className="row g-3">
-                    {/* INFORMASI DASAR */}
+                    {/* INFORMASI PENJUAL */}
                     <div className="col-12">
+                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
+                        Informasi Penjual
+                      </h6>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Nama Akun</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={val(activeSubmission.user?.name)}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Nama Lengkap</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={val(activeSubmission.user?.full_name)}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Email</label>
+                        <input
+                          type="email"
+                          className="form-control bg-gray-100"
+                          value={val(activeSubmission.user?.email)}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>No. WhatsApp</label>
+                        <div className="d-flex flex-wrap gap-2">
+                          <input
+                            type="text"
+                            className="form-control bg-gray-100"
+                            style={{ flex: "1 1 220px" }}
+                            value={formatSellerPhone(activeSubmission.user?.phone)}
+                            readOnly
+                          />
+                          {getSellerWhatsAppUrl(activeSubmission) ? (
+                            <a
+                              href={getSellerWhatsAppUrl(activeSubmission)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="tf-btn bg-color-primary pd-23"
+                            >
+                              Hubungi Penjual
+                            </a>
+                          ) : null}
+                        </div>
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Role</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100 text-capitalize"
+                          value={val(activeSubmission.user?.role)}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Waktu Pengajuan</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={formatDateTime(activeSubmission.created_at)}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Foto KTP</label>
+                        {activeSubmission.user?.id_card_file_url ? (
+                          <div className="d-flex flex-wrap gap-2">
+                            <a
+                              href={activeSubmission.user.id_card_file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="tf-btn style-border pd-23"
+                            >
+                              Lihat KTP
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleDownload(
+                                  `/admin/property-submissions/${activeSubmission.id}/seller-id-card/download`,
+                                  getDocumentFilename(
+                                    "ktp-penjual",
+                                    activeSubmission.user.id_card_file_url,
+                                  ),
+                                )
+                              }
+                              className="tf-btn bg-color-primary pd-23"
+                            >
+                              Download KTP
+                            </button>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            className="form-control bg-gray-100"
+                            value="Belum diunggah"
+                            readOnly
+                          />
+                        )}
+                      </fieldset>
+                    </div>
+
+                    {/* INFORMASI DASAR */}
+                    <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         Informasi Dasar
                       </h6>

@@ -125,6 +125,19 @@
   height: 100%;
   @include mixin.transition4;
   transform: translateX(0);
+  .sidebar-dashboard-logo {
+    margin-bottom: 28px;
+    padding: 0 18px;
+    a {
+      display: inline-flex;
+      align-items: center;
+    }
+    img {
+      width: 180px;
+      height: auto;
+      display: block;
+    }
+  }
   .box-menu-dashboard {
     .nav-menu-item {
       &:not(:last-child) {

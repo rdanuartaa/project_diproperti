@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useCompare } from "@/components/compare/CompareContext";
 import AttentionModal from "@/components/common/AttentionModal";
+import { getPropertyConfig } from "@/lib/property";
 
 const formatRupiah = (value) => {
   if (!value && value !== 0) return "-";
@@ -75,10 +76,129 @@ const COMPARE_ROWS = [
   },
 ];
 
+const CERTIFICATE_TYPES = new Set(["rumah", "villa", "ruko", "tanah"]);
+
+const FIELD_UNITS = {
+  luas_tanah: "m²",
+  luas_bangunan: "m²",
+  electricity_capacity: "VA",
+  panjang_ruangan: "m",
+  lebar_ruangan: "m",
+  room_size: "m²",
+  warehouse_area: "m²",
+  shop_front_width: "m",
+};
+
+const VALUE_LABELS = {
+  listing_type: { jual: "Dijual", sewa: "Disewa" },
+  price_period: {
+    hari: "Hari",
+    minggu: "Minggu",
+    bulan: "Bulan",
+    "3bulan": "3 Bulan",
+    "6bulan": "6 Bulan",
+    tahun: "Tahun",
+  },
+  water: { pdam: "PDAM", sumur: "Sumur", PDAM: "PDAM", Sumur: "Sumur" },
+  listrik_type: { overground: "Overground", underground: "Underground", PLN: "PLN" },
+  bathroom_position: { dalam: "Dalam", luar: "Luar" },
+  gender_type: {
+    "laki-laki": "Laki-laki",
+    perempuan: "Perempuan",
+    campuran: "Campuran",
+  },
+  road_access: { aspal: "Aspal", cor: "Cor", batu: "Batu", belum: "Belum" },
+  land_type: { datar: "Datar", miring: "Miring", bukit: "Bukit" },
+};
+
+const RANK_VALUE_MAPS = {
+  water: { pdam: 1, sumur: 0.75, PDAM: 1, Sumur: 0.75 },
+  listrik_type: { underground: 1, overground: 0.85, PLN: 1 },
+  bathroom_position: { dalam: 1, luar: 0.7 },
+  road_access: { aspal: 1, cor: 0.9, batu: 0.65, belum: 0.35 },
+  land_type: { datar: 1, miring: 0.75, bukit: 0.65 },
+};
+
+const BASE_COMPARE_ROWS = [
+  { key: "type", label: "Tipe Properti", source: "root" },
+  { key: "listing_type", label: "Status", source: "root", badge: true },
+  { key: "price", label: "Harga", source: "root", format: "rupiah" },
+  { key: "kecamatan", label: "Kecamatan", source: "root" },
+  { key: "city", label: "Kota", source: "root" },
+];
+
+const cleanLabel = (label) => String(label || "").replace(/\s*\([^)]*\)/g, "");
+
+const getRoomSize = (property) => {
+  const length = Number(property?.detail?.panjang_ruangan ?? 0);
+  const width = Number(property?.detail?.lebar_ruangan ?? 0);
+  if (length > 0 && width > 0) {
+    const area = length * width;
+    return Number.isInteger(area) ? area : Number(area.toFixed(2));
+  }
+  return null;
+};
+
+const buildCompareRows = (properties) => {
+  const type = properties[0]?.type || "rumah";
+  const listingType = properties[0]?.listing_type;
+  const config = getPropertyConfig(type);
+  const rows = [...BASE_COMPARE_ROWS];
+
+  if (listingType === "sewa") {
+    rows.splice(3, 0, {
+      key: "price_period",
+      label: "Periode Sewa",
+      source: "root",
+    });
+  }
+
+  if (CERTIFICATE_TYPES.has(type)) {
+    rows.push({ key: "certificate_type", label: "Sertifikat", source: "root" });
+  }
+
+  if (type === "kos") {
+    rows.push({
+      key: "room_size",
+      label: "Luas Kamar",
+      source: "computed",
+      unit: FIELD_UNITS.room_size,
+      compare: "max",
+    });
+  }
+
+  config.fields.forEach((field) => {
+    rows.push({
+      key: field.name,
+      label: cleanLabel(field.label),
+      source: "detail",
+      unit: FIELD_UNITS[field.name],
+      boolean: field.type === "checkbox",
+      compare:
+        field.type === "checkbox"
+          ? "boolean"
+          : field.type === "number"
+            ? "max"
+            : RANK_VALUE_MAPS[field.name]
+              ? "rank"
+              : undefined,
+    });
+  });
+
+  return rows;
+};
+
+const getRawFieldValue = (property, row) => {
+  if (row.key === "price_period") return property?.price_period || "bulan";
+  if (row.source === "computed") {
+    return row.key === "room_size" ? getRoomSize(property) : null;
+  }
+  return row.source === "detail" ? property.detail?.[row.key] : property[row.key];
+};
+
 const getFieldValue = (property, row) => {
   if (!property) return "-";
-  const val =
-    row.source === "detail" ? property.detail?.[row.key] : property[row.key];
+  const val = getRawFieldValue(property, row);
   if (val === null || val === undefined || val === "") return "-";
   if (row.boolean) return val ? "✓ Ada" : "✗ Tidak";
   if (row.format === "rupiah") {
@@ -88,11 +208,33 @@ const getFieldValue = (property, row) => {
     return `${base}/${getRentPeriodLabel(property)}`;
   }
   if (row.unit) return `${Number(val).toLocaleString("id-ID")} ${row.unit}`;
-  if (row.key === "listing_type") return val === "jual" ? "Dijual" : "Disewa";
+  if (VALUE_LABELS[row.key]?.[val]) return VALUE_LABELS[row.key][val];
   return String(val);
 };
 
 const getBestIndex = (properties, row) => {
+  if (row.compare === "max" || row.compare === "rank") {
+    const valuesWithIndex = properties.map((p, idx) => {
+      const rawValue = getRawFieldValue(p, row);
+      const value =
+        row.compare === "rank"
+          ? RANK_VALUE_MAPS[row.key]?.[rawValue]
+          : rawValue;
+      return {
+        idx,
+        value:
+          value !== null && value !== undefined && value !== ""
+            ? Number(value)
+            : null,
+      };
+    });
+    const valid = valuesWithIndex.filter((item) => item.value !== null);
+    if (valid.length < 2) return -1;
+    const bestValue = Math.max(...valid.map((v) => v.value));
+    if (valid.filter((v) => v.value === bestValue).length > 1) return -1;
+    return valid.find((v) => v.value === bestValue)?.idx ?? -1;
+  }
+
   const numericKeys = [
     "price",
     "luas_bangunan",
@@ -220,13 +362,63 @@ const calculateScore = (properties) => {
   return scores.map((s) => Math.round(s * 100));
 };
 
-const buildProsCons = (properties) => {
+const calculateTypeScore = (properties, compareRows) => {
   if (!properties.length) return [];
 
-  const rowsForProsCons = COMPARE_ROWS.filter(
+  const scoreRows = compareRows.filter(
+    (row) => row.key === "price" || row.compare || row.boolean,
+  );
+  if (!scoreRows.length) return properties.map(() => 0);
+
+  const hasPrice = scoreRows.some((row) => row.key === "price");
+  const priceWeight = hasPrice ? 0.3 : 0;
+  const nonPriceRows = scoreRows.filter((row) => row.key !== "price");
+  const nonPriceWeight = nonPriceRows.length
+    ? (1 - priceWeight) / nonPriceRows.length
+    : 0;
+
+  const getNumericValue = (property, row) => {
+    const rawValue = getRawFieldValue(property, row);
+    if (rawValue === null || rawValue === undefined || rawValue === "") return null;
+    if (typeof rawValue === "boolean") return rawValue ? 1 : 0;
+    if (row.compare === "rank") return RANK_VALUE_MAPS[row.key]?.[rawValue] ?? null;
+    const value = Number(rawValue);
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const matrix = properties.map((property) =>
+    scoreRows.map((row) => getNumericValue(property, row)),
+  );
+  const scores = properties.map(() => 0);
+
+  scoreRows.forEach((row, colIndex) => {
+    const column = matrix.map((item) => item[colIndex]).filter((value) => value !== null);
+    if (!column.length) return;
+
+    const min = Math.min(...column);
+    const max = Math.max(...column);
+    const weight = row.key === "price" ? priceWeight : nonPriceWeight;
+
+    matrix.forEach((item, index) => {
+      const value = item[colIndex];
+      if (value === null) return;
+
+      const normalized = row.key === "price" ? min / value : max ? value / max : 0;
+      scores[index] += normalized * weight;
+    });
+  });
+
+  return scores.map((score) => Math.round(score * 100));
+};
+
+const buildProsCons = (properties, compareRows = COMPARE_ROWS) => {
+  if (!properties.length) return [];
+
+  const rowsForProsCons = compareRows.filter(
     (row) =>
       row.key === "price" ||
       row.boolean ||
+      row.compare ||
       [
         "luas_bangunan",
         "luas_tanah",
@@ -302,8 +494,15 @@ export default function Compare() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [attention, setAttention] = useState({ open: false, message: "" });
-  const scores = useMemo(() => calculateScore(properties), [properties]);
-  const prosCons = useMemo(() => buildProsCons(properties), [properties]);
+  const compareRows = useMemo(() => buildCompareRows(properties), [properties]);
+  const scores = useMemo(
+    () => calculateTypeScore(properties, compareRows),
+    [properties, compareRows],
+  );
+  const prosCons = useMemo(
+    () => buildProsCons(properties, compareRows),
+    [properties, compareRows],
+  );
 
   const bestScoreIndex = useMemo(() => {
     if (!scores.length) return -1;
@@ -422,7 +621,7 @@ export default function Compare() {
               <h2 className="fw-7 mb-8">Komparasi Properti</h2>
               <p className="text-1" style={{ color: "#666" }}>
                 {properties.length > 0
-                  ? `Membandingkan ${properties.length} properti`
+                  ? `Membandingkan ${properties.length} properti ${VALUE_LABELS.listing_type[properties[0]?.listing_type] || ""} tipe ${getPropertyConfig(properties[0]?.type).label}. Field komparasi disesuaikan dengan tipe properti ini.`
                   : "Belum ada properti yang dibandingkan"}
               </p>
               {error && (
@@ -613,7 +812,7 @@ export default function Compare() {
                   </div>
                 ))}
               </div>
-              {COMPARE_ROWS.map((row) => {
+              {compareRows.map((row) => {
                 const bestIdx = getBestIndex(properties, row);
 
                 return (

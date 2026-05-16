@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Slider from "rc-slider";
 import DropdownSelect from "../common/DropdownSelect";
+import { getPropertyCardMetaItems } from "@/lib/property";
 
 const META_CONFIG_BY_TYPE = {
   rumah: [
@@ -338,7 +339,7 @@ export default function ListingSidebar({
         <ul>
           {featuredProperties.length > 0 ? (
             featuredProperties.map((property) => {
-              const metaItems = getPropertyMetaItems(property);
+              const metaItems = getPropertyCardMetaItems(property);
 
               return (
               <li key={property.id} className="box-listings style-2 hover-img">

@@ -208,11 +208,16 @@ export default function SubmitPropertyForm() {
   const [waterBillPreview, setWaterBillPreview] = useState(null);
   const redirectOnce = useRef(false);
   const [userProfile, setUserProfile] = useState(null);
-  const [profileForm, setProfileForm] = useState({ full_name: "", phone: "" });
+  const [profileForm, setProfileForm] = useState({
+    full_name: "",
+    phone: "",
+    idCardFile: null,
+  });
   const [profileErrors, setProfileErrors] = useState({});
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [showProfileSuccessModal, setShowProfileSuccessModal] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
+  const [idCardPreview, setIdCardPreview] = useState(null);
 
   // ✅ TRACKER STATES & LOGIC
   const [showTracker, setShowTracker] = useState(false);
@@ -298,6 +303,7 @@ export default function SubmitPropertyForm() {
         setProfileForm({
           full_name: u?.full_name || "",
           phone: u?.phone || "",
+          idCardFile: null,
         });
       })
       .catch(() => {});
@@ -324,6 +330,9 @@ export default function SubmitPropertyForm() {
     if (!profileForm.full_name.trim())
       errs.full_name = "Nama lengkap wajib diisi.";
     if (!profileForm.phone.trim()) errs.phone = "Nomor WhatsApp wajib diisi.";
+    if (!userProfile?.id_card_file_url && !profileForm.idCardFile) {
+      errs.id_card_file = "Foto KTP wajib diunggah.";
+    }
     if (Object.keys(errs).length) {
       setProfileErrors(errs);
       return;
@@ -331,12 +340,20 @@ export default function SubmitPropertyForm() {
     setIsSavingProfile(true);
     setProfileErrors({});
     try {
-      const res = await api.patch("/user/profile", {
-        full_name: profileForm.full_name.trim(),
-        phone: profileForm.phone.trim(),
+      const payload = new FormData();
+      payload.append("full_name", profileForm.full_name.trim());
+      payload.append("phone", profileForm.phone.trim());
+      if (profileForm.idCardFile) {
+        payload.append("id_card_file", profileForm.idCardFile);
+      }
+
+      const res = await api.post("/user/profile", payload, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
       const updated = res.data?.data || res.data;
       setUserProfile((prev) => ({ ...prev, ...updated }));
+      setProfileForm((prev) => ({ ...prev, idCardFile: null }));
+      setIdCardPreview(null);
       setShowProfileSuccessModal(true);
       setProfileSaved(true);
       setTimeout(() => setProfileSaved(false), 3000);
@@ -346,6 +363,7 @@ export default function SubmitPropertyForm() {
         setProfileErrors({
           full_name: serverErrs.full_name?.[0],
           phone: serverErrs.phone?.[0],
+          id_card_file: serverErrs.id_card_file?.[0],
         });
       } else {
         setAttention({
@@ -364,7 +382,8 @@ export default function SubmitPropertyForm() {
     formData.listing_type !== "sewa";
   const isProfileComplete =
     !!String(userProfile?.full_name || "").trim() &&
-    !!String(userProfile?.phone || "").trim();
+    !!String(userProfile?.phone || "").trim() &&
+    !!String(userProfile?.id_card_file_url || "").trim();
   const isMainFormLocked = isAdminUser || !isProfileComplete;
 
   // ✅ AUTO-CALCULATE BUILDING TYPE
@@ -789,9 +808,12 @@ export default function SubmitPropertyForm() {
             className="modal fade show"
             style={{ display: "block", backgroundColor: "rgba(0,0,0,0.5)" }}
           >
-            <div className="modal-dialog modal-dialog-centered">
-              <div className="modal-content">
-                <div className="modal-header">
+            <div
+              className="modal-dialog modal-dialog-centered modal-xl"
+              style={{ maxWidth: "960px", width: "calc(100% - 32px)" }}
+            >
+              <div className="modal-content" style={{ borderRadius: "18px" }}>
+                <div className="modal-header" style={{ padding: "22px 32px" }}>
                   <h5 className="modal-title">
                     Syarat & Ketentuan Penjualan Properti
                   </h5>
@@ -804,15 +826,19 @@ export default function SubmitPropertyForm() {
                 </div>
                 <div
                   className="modal-body"
-                  style={{ maxHeight: "60vh", overflowY: "auto" }}
+                  style={{
+                    maxHeight: "58vh",
+                    overflowY: "auto",
+                    padding: "28px 34px",
+                  }}
                 >
-                  <div className="alert alert-info mb-3">
+                  <div className="alert alert-info mb-4">
                     <strong>
                       Harap baca dengan seksama sebelum menyetujui.
                     </strong>
                   </div>
                   <h6 className="fw-bold mb-2">1. Kebijakan Biaya Platform</h6>
-                  <ul className="mb-3">
+                  <ul className="mb-4">
                     <li>
                       <strong>GRATIS 100%</strong> untuk mengupload/mendaftarkan
                       properti di platform kami.
@@ -828,15 +854,22 @@ export default function SubmitPropertyForm() {
                       <strong>2.5% dari harga jual final</strong>.
                     </li>
                     <li>
+                      <strong>Komisi Sewa:</strong> Jika properti Anda berhasil{" "}
+                      <u>disewa</u> melalui platform kami, akan dikenakan komisi
+                      admin sebesar{" "}
+                      <strong>2.5% dari nilai sewa final</strong> yang
+                      disepakati penyewa dan pemilik.
+                    </li>
+                    <li>
                       Komisi hanya dibayarkan{" "}
                       <strong>setelah transaksi berhasil</strong> dan dana telah
-                      diterima oleh penjual.
+                      diterima oleh penjual atau pemilik properti.
                     </li>
                   </ul>
                   <h6 className="fw-bold mb-2">
                     2. Verifikasi & Persetujuan Admin
                   </h6>
-                  <ul className="mb-3">
+                  <ul className="mb-4">
                     <li>
                       Semua pengajuan properti akan diverifikasi oleh tim admin
                       sebelum ditampilkan di listing publik.
@@ -850,7 +883,7 @@ export default function SubmitPropertyForm() {
                     </li>
                   </ul>
                   <h6 className="fw-bold mb-2">3. Keabsahan Data</h6>
-                  <ul className="mb-3">
+                  <ul className="mb-4">
                     <li>
                       Penjual bertanggung jawab penuh atas keakuratan dan
                       keabsahan semua data yang diupload.
@@ -865,7 +898,7 @@ export default function SubmitPropertyForm() {
                     </li>
                   </ul>
                   <h6 className="fw-bold mb-2">4. Privasi & Keamanan</h6>
-                  <ul className="mb-3">
+                  <ul className="mb-4">
                     <li>
                       Data pribadi penjual hanya digunakan untuk keperluan
                       verifikasi dan transaksi.
@@ -875,7 +908,7 @@ export default function SubmitPropertyForm() {
                       ketiga tanpa izin eksplisit.
                     </li>
                   </ul>
-                  <div className="alert alert-warning">
+                  <div className="alert alert-warning mb-0">
                     <strong>
                       Dengan mengklik "Saya Setuju", Anda menyatakan telah
                       membaca, memahami, dan menyetujui seluruh syarat &
@@ -883,7 +916,7 @@ export default function SubmitPropertyForm() {
                     </strong>
                   </div>
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ padding: "18px 32px" }}>
                   <button
                     type="button"
                     className="tf-btn style-border pd-23"
@@ -944,7 +977,7 @@ export default function SubmitPropertyForm() {
               <span className="text-1">
                 Listing properti <strong>GRATIS</strong>. Komisi{" "}
                 <strong>2.5%</strong> hanya dikenakan jika properti{" "}
-                <u>berhasil terjual</u>.
+                <u>berhasil terjual atau disewa</u>.
               </span>
             </div>
           </div>
@@ -981,20 +1014,20 @@ export default function SubmitPropertyForm() {
               </span>
               <div>
                 <p
+                  className="text-1"
                   style={{
                     margin: "0 0 4px",
                     fontWeight: 700,
                     color: "#1d4ed8",
-                    fontSize: "0.95rem",
                   }}
                 >
                   Mode Admin
                 </p>
                 <p
+                  className="text-1"
                   style={{
                     margin: 0,
                     color: "#1e40af",
-                    fontSize: "0.85rem",
                     lineHeight: 1.5,
                   }}
                 >
@@ -1007,8 +1040,8 @@ export default function SubmitPropertyForm() {
 
           {/* ✅ SECTION: PROFIL PENJUAL */}
           <SectionCard
-            title="Profil Penjual"
-            subtitle="Pastikan nama dan nomor WhatsApp Anda sudah benar sebelum mengajukan properti"
+            title="Informasi Data Pribadi Penjual"
+            subtitle="Pastikan nama, nomor WhatsApp, dan foto KTP Anda sudah benar sebelum mengajukan properti"
           >
             <div
               style={{
@@ -1207,6 +1240,87 @@ export default function SubmitPropertyForm() {
               </div>
 
               <div className="col-12">
+                <fieldset className="box-fieldset">
+                  <label>
+                    Foto KTP <span className="text-danger">*</span>
+                  </label>
+                  {userProfile?.id_card_file_url && !profileForm.idCardFile && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        gap: "10px",
+                        marginBottom: "12px",
+                        padding: "10px 12px",
+                        borderRadius: "10px",
+                        background: "#f0fdf4",
+                        border: "1px solid #bbf7d0",
+                      }}
+                    >
+                      <span style={{ color: "#166534", fontWeight: 600 }}>
+                        KTP sudah tersimpan
+                      </span>
+                      <a
+                        href={userProfile.id_card_file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="tf-btn style-border pd-23"
+                      >
+                        Lihat KTP
+                      </a>
+                    </div>
+                  )}
+                  <DocUploadCard
+                    label={
+                      profileForm.idCardFile
+                        ? "Foto KTP Baru"
+                        : userProfile?.id_card_file_url
+                          ? "Ganti Foto KTP"
+                          : "Upload Foto KTP"
+                    }
+                    icon="ID"
+                    file={profileForm.idCardFile}
+                    preview={idCardPreview}
+                    accept=".jpg,.jpeg,.png,.pdf,image/*"
+                    onSelect={(e) => {
+                      if (isAdminUser) return;
+                      const file = e.target.files?.[0] || null;
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        idCardFile: file,
+                      }));
+                      setIdCardPreview(file ? URL.createObjectURL(file) : null);
+                      if (profileErrors.id_card_file) {
+                        setProfileErrors((prev) => ({
+                          ...prev,
+                          id_card_file: null,
+                        }));
+                      }
+                    }}
+                    onRemove={() => {
+                      if (isAdminUser) return;
+                      setProfileForm((prev) => ({
+                        ...prev,
+                        idCardFile: null,
+                      }));
+                      setIdCardPreview(null);
+                    }}
+                  />
+                  {profileErrors.id_card_file && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {profileErrors.id_card_file}
+                    </p>
+                  )}
+                  <p className="text-muted mt-4" style={{ marginBottom: 0 }}>
+                    KTP disimpan di profil penjual dan digunakan admin untuk
+                    verifikasi identitas. Format JPG, PNG, atau PDF maksimal
+                    5MB.
+                  </p>
+                </fieldset>
+              </div>
+
+              <div className="col-12">
                 <div
                   style={{ display: "flex", alignItems: "center", gap: "12px" }}
                 >
@@ -1276,26 +1390,27 @@ export default function SubmitPropertyForm() {
               </span>
               <div>
                 <p
+                  className="text-1"
                   style={{
                     margin: "0 0 4px",
                     fontWeight: 700,
                     color: "#9a3412",
-                    fontSize: "0.95rem",
                   }}
                 >
                   Lengkapi Profil Terlebih Dahulu
                 </p>
                 <p
+                  className="text-1"
                   style={{
                     margin: 0,
                     color: "#c2410c",
-                    fontSize: "0.85rem",
                     lineHeight: 1.5,
                   }}
                 >
                   <strong>Nama Lengkap</strong> dan{" "}
-                  <strong>Nomor WhatsApp</strong> wajib diisi dan disimpan
-                  sebelum Anda dapat mengisi form pengajuan properti. Klik{" "}
+                  <strong>Nomor WhatsApp</strong>, serta{" "}
+                  <strong>Foto KTP</strong> wajib diisi dan disimpan sebelum
+                  Anda dapat mengisi form pengajuan properti. Klik{" "}
                   <strong>"Simpan Profil"</strong> di atas untuk melanjutkan.
                 </p>
               </div>
@@ -1336,17 +1451,18 @@ export default function SubmitPropertyForm() {
                 >
                   <p style={{ fontSize: "28px", margin: "0 0 8px" }}>🔒</p>
                   <p
+                    className="text-1"
                     style={{
                       fontWeight: 700,
                       color: "#9a3412",
                       margin: "0 0 4px",
-                      fontSize: "0.95rem",
                     }}
                   >
                     {isAdminUser ? "Form Dikunci untuk Admin" : "Form Terkunci"}
                   </p>
                   <p
-                    style={{ color: "#c2410c", margin: 0, fontSize: "0.82rem" }}
+                    className="text-1"
+                    style={{ color: "#c2410c", margin: 0 }}
                   >
                     {isAdminUser
                       ? "Admin tidak dapat mengisi pengajuan user"

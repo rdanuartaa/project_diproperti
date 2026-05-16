@@ -3,6 +3,13 @@
 import React from "react";
 import { useAuth } from "@/context/AuthContext";
 
+const ADMIN_PHONE = "6281234776677";
+
+const parseCoordinate = (value) => {
+  const coordinate = Number(value);
+  return Number.isFinite(coordinate) ? coordinate : null;
+};
+
 export default function Location({ property }) {
   const { user, isAdmin } = useAuth();
   const isOwner =
@@ -18,15 +25,19 @@ export default function Location({ property }) {
 
   const fallbackLat = -8.1736;
   const fallbackLng = 113.7032;
-  const lat = typeof latitude === "number" ? latitude : fallbackLat;
-  const lng = typeof longitude === "number" ? longitude : fallbackLng;
+  const lat = parseCoordinate(latitude) ?? fallbackLat;
+  const lng = parseCoordinate(longitude) ?? fallbackLng;
   const delta = canViewLocation ? 0.005 : 0.02;
   const left = lng - delta;
   const right = lng + delta;
   const top = lat + delta;
   const bottom = lat - delta;
-  const marker = canViewLocation ? `&marker=${lat}%2C${lng}` : "";
+  const marker = `&marker=${lat}%2C${lng}`;
   const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik${marker}`;
+  const askLocationMessage = encodeURIComponent(
+    `Halo Admin, saya ingin bertanya detail lokasi properti "${property?.title || "ini"}". Mohon informasinya.`,
+  );
+  const askLocationUrl = `https://wa.me/${ADMIN_PHONE}?text=${askLocationMessage}`;
 
   return (
     <>
@@ -59,7 +70,9 @@ export default function Location({ property }) {
                 Hubungi Agen untuk mengetahui detail lokasi properti
               </div>
               <a
-                href="#contact-admin"
+                href={askLocationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="tf-btn style-border pd-4"
                 style={{ marginTop: "12px", display: "inline-block" }}
               >
