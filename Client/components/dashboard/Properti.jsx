@@ -14,13 +14,54 @@ import {
   PROPERTY_TYPE_CONFIG,
   CERTIFICATE_REQUIRED_TYPES,
   formatThousands,
-  formatCompact,
-  formatFullRupiah,
   formatDateTime,
+  getAutoBuildingType,
+  getBuildingTypeLabel,
+  getBuildingTypePlaceholder,
   validatePropertyForm,
   buildJsonPayload,
   buildFormDataPayload,
 } from "@/lib/property";
+
+const ALL_TYPE_OPTION = "Semua Tipe";
+const ALL_LISTING_TYPE_OPTION = "Semua Penawaran";
+const LISTING_TYPE_LABELS = {
+  jual: "Dijual",
+  sewa: "Disewakan",
+};
+const PROPERTY_TYPE_OPTIONS = [
+  ALL_TYPE_OPTION,
+  ...Object.values(PROPERTY_TYPE_CONFIG).map((config) => config.label),
+];
+const LISTING_TYPE_OPTIONS = [
+  ALL_LISTING_TYPE_OPTION,
+  ...Object.values(LISTING_TYPE_LABELS),
+];
+
+const getPropertyTypeLabel = (type) =>
+  PROPERTY_TYPE_CONFIG[type]?.label || String(type || "-");
+
+const getPropertyTypeValue = (label) => {
+  const match = Object.entries(PROPERTY_TYPE_CONFIG).find(
+    ([, config]) => config.label === label,
+  );
+  return match?.[0] || "";
+};
+
+const getListingTypeLabel = (listingType) =>
+  LISTING_TYPE_LABELS[listingType] || String(listingType || "-");
+
+const getListingTypeValue = (label) => {
+  const match = Object.entries(LISTING_TYPE_LABELS).find(
+    ([, value]) => value === label,
+  );
+  return match?.[0] || "";
+};
+
+const getListingTypeFilterOptions = (typeLabel) =>
+  getPropertyTypeValue(typeLabel) === "kos"
+    ? [LISTING_TYPE_LABELS.sewa]
+    : LISTING_TYPE_OPTIONS;
 
 export default function Properti() {
   const [properties, setProperties] = useState([]);
@@ -37,7 +78,12 @@ export default function Properti() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAttentionModal, setShowAttentionModal] = useState(false);
   const [attentionMessage, setAttentionMessage] = useState("");
-  const [filters, setFilters] = useState({ status: "All", search: "" });
+  const [filters, setFilters] = useState({
+    search: "",
+    sort: "Terbaru",
+    type: ALL_TYPE_OPTION,
+    listingType: ALL_LISTING_TYPE_OPTION,
+  });
   const [primaryExistingId, setPrimaryExistingId] = useState(null);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
 
@@ -49,7 +95,7 @@ export default function Properti() {
     listing_type: "jual",
     rent_period: "",
     kecamatan: "",
-    city: "Jember",
+    city: "",
     address: "",
     latitude: "",
     longitude: "",
@@ -107,50 +153,34 @@ export default function Properti() {
     [activeProperty],
   );
 
-  const buildingTypeDisplay = useMemo(() => {
-    if (formData.type === "tanah") {
-      return formData.detail?.luas_tanah ?? "";
-    }
-    if (formData.type === "kos") {
-      const panjang = Number(formData.detail?.panjang_ruangan ?? 0);
-      const lebar = Number(formData.detail?.lebar_ruangan ?? 0);
-      const total = panjang + lebar;
-      return total > 0 ? String(total) : "";
-    }
-    return formData.building_type;
-  }, [
+  const buildingTypeDisplay = useMemo(() => getAutoBuildingType(formData), [
     formData.type,
     formData.detail?.luas_tanah,
+    formData.detail?.luas_bangunan,
     formData.detail?.panjang_ruangan,
     formData.detail?.lebar_ruangan,
-    formData.building_type,
   ]);
+
+  const buildingTypePlaceholder = useMemo(
+    () => getBuildingTypePlaceholder(formData.type),
+    [formData.type],
+  );
+
+  const buildingTypeLabel = useMemo(
+    () => getBuildingTypeLabel(formData.type),
+    [formData.type],
+  );
 
   // ✅ AUTO-CALCULATE BUILDING TYPE
   useEffect(() => {
     const applicableTypes = ["rumah", "villa", "ruko", "tanah", "kos"];
     if (!applicableTypes.includes(formData.type)) return;
-    const luasT = String(formData.detail?.luas_tanah ?? "").trim();
-    const luasB = String(formData.detail?.luas_bangunan ?? "").trim();
-    if (formData.type === "tanah") {
-      if (luasT) setFormData((prev) => ({ ...prev, building_type: luasT }));
-      return;
-    }
-    if (formData.type === "kos") {
-      const panjang = String(formData.detail?.panjang_ruangan ?? "").trim();
-      const lebar = String(formData.detail?.lebar_ruangan ?? "").trim();
-      if (panjang || lebar) {
-        const total = Number(panjang || 0) + Number(lebar || 0);
-        setFormData((prev) => ({
-          ...prev,
-          building_type: total > 0 ? String(total) : "",
-        }));
-      }
-      return;
-    }
-    if (luasT && luasB) {
-      setFormData((prev) => ({ ...prev, building_type: `${luasB}/${luasT}` }));
-    }
+    const nextBuildingType = getAutoBuildingType(formData);
+    setFormData((prev) =>
+      prev.building_type === nextBuildingType
+        ? prev
+        : { ...prev, building_type: nextBuildingType },
+    );
   }, [
     formData.type,
     formData.detail.luas_tanah,
@@ -160,34 +190,42 @@ export default function Properti() {
   ]);
 
   const filteredProperties = useMemo(() => {
-    const statusFilter = filters.status?.toLowerCase();
     const searchQuery = filters.search?.toLowerCase().trim();
-    return properties.filter((property) => {
+    let result = properties.filter((property) => {
       if (property.is_verified === false) return false;
-      const matchesStatus =
-        !statusFilter || statusFilter === "all"
-          ? true
-          : (property.status || "").toLowerCase() === statusFilter;
-      if (!searchQuery) return matchesStatus;
+      if (filters.type && filters.type !== ALL_TYPE_OPTION) {
+        const selectedType = getPropertyTypeValue(filters.type);
+        if (property.type !== selectedType) return false;
+      }
+      if (
+        filters.listingType &&
+        filters.listingType !== ALL_LISTING_TYPE_OPTION
+      ) {
+        const selectedListingType = getListingTypeValue(filters.listingType);
+        if (property.listing_type !== selectedListingType) return false;
+      }
+      if (!searchQuery) return true;
       const title = (property.title || "").toLowerCase();
       const description = (property.description || "").toLowerCase();
       const kecamatan = (property.kecamatan || "").toLowerCase();
-      const matchesSearch =
+      return (
         title.includes(searchQuery) ||
         description.includes(searchQuery) ||
-        kecamatan.includes(searchQuery);
-      return matchesStatus && matchesSearch;
+        kecamatan.includes(searchQuery)
+      );
     });
+    result.sort((a, b) => {
+      const dateA = new Date(a.updated_at || a.created_at || 0);
+      const dateB = new Date(b.updated_at || b.created_at || 0);
+      return filters.sort === "Terbaru" ? dateB - dateA : dateA - dateB;
+    });
+    return result;
   }, [properties, filters]);
 
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (filters.status && filters.status !== "All")
-        params.append("status", filters.status);
-      if (filters.search) params.append("search", filters.search);
-      const response = await api.get(`/admin/properties?${params}`);
+      const response = await api.get("/admin/properties");
       const data = response.data.data || response.data || [];
       setProperties(data.filter((property) => property.is_verified !== false));
     } catch (error) {
@@ -199,7 +237,7 @@ export default function Properti() {
 
   useEffect(() => {
     fetchProperties();
-  }, [filters]);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -296,7 +334,7 @@ export default function Properti() {
       listing_type: "jual",
       rent_period: "",
       kecamatan: "",
-      city: "Jember",
+      city: "",
       address: "",
       latitude: "",
       longitude: "",
@@ -364,7 +402,7 @@ export default function Properti() {
     listing_type: property.listing_type || "jual",
     rent_period: property.price_period || "",
     kecamatan: property.kecamatan || "",
-    city: property.city || "Jember",
+    city: property.city || "",
     address: "",
     latitude: property.latitude ?? "",
     longitude: property.longitude ?? "",
@@ -735,6 +773,59 @@ export default function Properti() {
   const showCertificate =
     CERTIFICATE_REQUIRED_TYPES.includes(formData.type) &&
     formData.listing_type !== "sewa";
+
+  const getRentPeriodLabel = (item) => {
+    const period = String(item?.price_period || item?.rent_period || "bulan");
+    if (period === "hari") return "hari";
+    if (period === "minggu") return "minggu";
+    if (period === "3bulan") return "3 bulan";
+    if (period === "6bulan") return "6 bulan";
+    if (period === "tahun") return "tahun";
+    return "bulan";
+  };
+
+  const formatPriceDisplay = (item) => {
+    const base = `Rp ${Number(item?.price || 0).toLocaleString("id-ID")}`;
+    if (item?.listing_type !== "sewa") return base;
+    if (!item?.price) return base;
+    return `${base}/${getRentPeriodLabel(item)}`;
+  };
+
+  const getStatusBadge = (item) => {
+    const status = String(item?.status || "draft").toLowerCase();
+    const badgeStyle = {
+      padding: "4px 8px",
+      borderRadius: "999px",
+      fontSize: "12px",
+      fontWeight: 600,
+      display: "inline-flex",
+      alignItems: "center",
+      lineHeight: 1.2,
+    };
+
+    if (status === "published") {
+      return (
+        <span style={{ ...badgeStyle, background: "#e8f8ef", color: "#168a4a" }}>
+          Disetujui
+        </span>
+      );
+    }
+
+    if (status === "sold") {
+      return (
+        <span style={{ ...badgeStyle, background: "#feecec", color: "#dc2626" }}>
+          Laku
+        </span>
+      );
+    }
+
+    return (
+      <span style={{ ...badgeStyle, background: "#fff7d6", color: "#b77900" }}>
+        Pending
+      </span>
+    );
+  };
+
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
@@ -764,29 +855,70 @@ export default function Properti() {
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
-                  Status: <span>*</span>
+                  Urutkan: <span>*</span>
                 </label>
                 <DropdownSelect
-                  options={["All", "published", "draft", "sold"]}
-                  selectedValue={filters.status}
+                  options={["Terbaru", "Terlama"]}
+                  selectedValue={filters.sort}
                   onChange={(value) =>
-                    setFilters((prev) => ({ ...prev, status: value }))
+                    setFilters((prev) => ({ ...prev, sort: value }))
                   }
-                  addtionalParentClass=""
+                  addtionalParentClass=" "
                 />
               </fieldset>
             </form>
           </div>
-          <div className="col-md-9">
+          <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
-                  Search: <span>*</span>
+                  Tipe Properti: <span>*</span>
+                </label>
+                <DropdownSelect
+                  options={PROPERTY_TYPE_OPTIONS}
+                  selectedValue={filters.type}
+                  onChange={(value) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      type: value,
+                      listingType:
+                        getPropertyTypeValue(value) === "kos"
+                          ? LISTING_TYPE_LABELS.sewa
+                          : prev.listingType,
+                    }))
+                  }
+                  addtionalParentClass=" "
+                />
+              </fieldset>
+            </form>
+          </div>
+          <div className="col-md-3">
+            <form onSubmit={(e) => e.preventDefault()}>
+              <fieldset className="box-fieldset">
+                <label>
+                  Penawaran: <span>*</span>
+                </label>
+                <DropdownSelect
+                  options={getListingTypeFilterOptions(filters.type)}
+                  selectedValue={filters.listingType}
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, listingType: value }))
+                  }
+                  addtionalParentClass=" "
+                />
+              </fieldset>
+            </form>
+          </div>
+          <div className="col-md-3">
+            <form onSubmit={(e) => e.preventDefault()}>
+              <fieldset className="box-fieldset">
+                <label>
+                  Cari Properti: <span>*</span>
                 </label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="Search by title..."
+                  placeholder="Cari berdasarkan judul..."
                   value={filters.search}
                   onChange={(e) =>
                     setFilters((prev) => ({ ...prev, search: e.target.value }))
@@ -821,8 +953,10 @@ export default function Properti() {
                 </div>
               ) : filteredProperties.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {filters.status === "published"
-                    ? "Belum ada properti yang disetujui. Klik 'Tambah Properti' untuk menambah, atau tunggu persetujuan admin untuk pengajuan user."
+                  {filters.search ||
+                  filters.type !== ALL_TYPE_OPTION ||
+                  filters.listingType !== ALL_LISTING_TYPE_OPTION
+                    ? "Properti tidak ditemukan untuk pencarian tersebut."
                     : "Tidak ada properti dengan filter ini."}
                 </div>
               ) : (
@@ -831,8 +965,9 @@ export default function Properti() {
                     <tr>
                       <th>Properti</th>
                       <th>Tipe</th>
-                      <th>Status</th>
+                      <th>Penawaran</th>
                       <th>Harga</th>
+                      <th>Status</th>
                       <th>Diperbarui</th>
                       <th>Aksi</th>
                     </tr>
@@ -874,24 +1009,20 @@ export default function Properti() {
                         </td>
                         <td>
                           <span className="text-sm text-gray-600">
-                            {property.type || "-"}
+                            {getPropertyTypeLabel(property.type)}
                           </span>
                         </td>
                         <td>
-                          <span
-                            className={`px-3 py-1 text-xs rounded-full ${property.status === "published" ? "bg-green-100 text-green-800" : property.status === "sold" ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-800"}`}
-                          >
-                            {property.status}
+                          <span className="text-sm text-gray-600">
+                            {getListingTypeLabel(property.listing_type)}
                           </span>
                         </td>
                         <td>
-                          <span
-                            className="font-semibold text-blue-600"
-                            title={formatFullRupiah(property.price)}
-                          >
-                            {formatCompact(property.price)}
+                          <span className="font-semibold text-blue-600">
+                            {formatPriceDisplay(property)}
                           </span>
                         </td>
+                        <td>{getStatusBadge(property)}</td>
                         <td>
                           <span className="text-xs text-gray-500 whitespace-nowrap">
                             {formatDateTime(property.updated_at)}
@@ -1095,18 +1226,14 @@ export default function Properti() {
                     </div>
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Tipe Bangunan</label>
+                        <label>{buildingTypeLabel}</label>
                         <input
                           type="text"
                           name="building_type"
                           className="form-control bg-gray-100"
                           value={buildingTypeDisplay}
                           readOnly
-                          placeholder={
-                            formData.type === "tanah"
-                              ? "Otomatis: Luas Tanah"
-                              : "Otomatis: Luas Bangunan / Luas Tanah"
-                          }
+                          placeholder={buildingTypePlaceholder}
                         />
                       </fieldset>
                     </div>
@@ -1185,10 +1312,10 @@ export default function Properti() {
                         <input
                           type="text"
                           name="city"
-                          className="form-control"
-                          placeholder="Contoh: Jember"
+                          className="form-control bg-gray-100"
+                          placeholder="Otomatis terisi dari lokasi peta"
                           value={formData.city}
-                          onChange={handleChange}
+                          readOnly
                           required
                         />
                       </fieldset>
@@ -1199,10 +1326,10 @@ export default function Properti() {
                         <input
                           type="text"
                           name="kecamatan"
-                          className={`form-control ${errors.kecamatan ? "border-red-500" : ""}`}
-                          placeholder="Contoh: Sumbersari"
+                          className={`form-control bg-gray-100 ${errors.kecamatan ? "border-red-500" : ""}`}
+                          placeholder="Otomatis terisi dari lokasi peta"
                           value={formData.kecamatan}
-                          onChange={handleChange}
+                          readOnly
                           required
                         />
                         {errors.kecamatan && (
@@ -1281,118 +1408,85 @@ export default function Properti() {
                     {(() => {
                       const fields =
                         PROPERTY_TYPE_CONFIG[formData.type]?.fields || [];
-                      const rows = [];
-                      let currentRow = [];
-                      let currentColSum = 0;
 
-                      fields.forEach((field) => {
+                      return fields.map((field) => {
+                        const errorKey = `detail.${field.name}`;
+                        const commonClass = `form-control ${errors?.[errorKey] ? "border-red-500" : ""}`;
                         const fieldCol = field.col || 4;
-                        if (currentColSum + fieldCol > 12) {
-                          rows.push(currentRow);
-                          currentRow = [field];
-                          currentColSum = fieldCol;
-                        } else {
-                          currentRow.push(field);
-                          currentColSum += fieldCol;
-                        }
-                      });
-                      if (currentRow.length > 0) rows.push(currentRow);
 
-                      return rows.map((row, rowIndex) => (
+                        return (
                         <div
-                          className="col-12 mb-2"
-                          key={`detail-row-${rowIndex}`}
+                          className={`col-md-${fieldCol}`}
+                          key={field.name}
                         >
-                          <div className="row g-3">
-                            {row.map((field) => {
-                              const errorKey = `detail.${field.name}`;
-                              const commonClass = `form-control ${errors?.[errorKey] ? "border-red-500" : ""}`;
-                              const fieldCol = field.col || 4;
-
-                              return (
-                                <div
-                                  className={`col-md-${fieldCol}`}
-                                  key={field.name}
-                                >
-                                  <fieldset className="box-fieldset detail-fieldset">
-                                    <label>
-                                      {field.label}{" "}
-                                      {field.required && (
-                                        <span className="text-danger">*</span>
-                                      )}
-                                    </label>
-                                    {field.type === "checkbox" ? (
-                                      <div
-                                        className={`detail-checkbox ${errors?.[errorKey] ? "border-red-500" : ""}`}
-                                      >
-                                        <input
-                                          type="checkbox"
-                                          name={errorKey}
-                                          className="form-check-input m-0"
-                                          checked={
-                                            !!formData.detail[field.name]
-                                          }
-                                          onChange={handleChange}
-                                        />
-                                        {formData.detail[field.name] && (
-                                          <span
-                                            className="detail-checkbox-check"
-                                            aria-hidden="true"
-                                          >
-                                            <svg
-                                              width={14}
-                                              height={14}
-                                              viewBox="0 0 16 16"
-                                              fill="none"
-                                              xmlns="http://www.w3.org/2000/svg"
-                                            >
-                                              <path
-                                                d="M3.5 8.5L6.5 11.5L12.5 5.5"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                              />
-                                            </svg>
-                                          </span>
-                                        )}
-                                        <span>Ya</span>
-                                      </div>
-                                    ) : field.type === "select" ? (
-                                      <DropdownSelect
-                                        options={field.options}
-                                        selectedValue={
-                                          formData.detail[field.name] || ""
-                                        }
-                                        onChange={(val) =>
-                                          updateDetail(field.name, val)
-                                        }
+                          <fieldset className="box-fieldset detail-fieldset">
+                            <label>
+                              {field.label}{" "}
+                              {field.required && (
+                                <span className="text-danger">*</span>
+                              )}
+                            </label>
+                            {field.type === "checkbox" ? (
+                              <div
+                                className={`detail-checkbox ${errors?.[errorKey] ? "border-red-500" : ""}`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  name={errorKey}
+                                  className="form-check-input m-0"
+                                  checked={!!formData.detail[field.name]}
+                                  onChange={handleChange}
+                                />
+                                {formData.detail[field.name] && (
+                                  <span
+                                    className="detail-checkbox-check"
+                                    aria-hidden="true"
+                                  >
+                                    <svg
+                                      width={14}
+                                      height={14}
+                                      viewBox="0 0 16 16"
+                                      fill="none"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                      <path
+                                        d="M3.5 8.5L6.5 11.5L12.5 5.5"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
                                       />
-                                    ) : (
-                                      <input
-                                        type={field.type}
-                                        name={errorKey}
-                                        className={commonClass}
-                                        placeholder={field.label}
-                                        value={
-                                          formData.detail[field.name] ?? ""
-                                        }
-                                        onChange={handleChange}
-                                        required={field.required}
-                                      />
-                                    )}
-                                    {errors?.[errorKey] && (
-                                      <p className="text-red-500 text-xs mt-1">
-                                        {errors[errorKey][0]}
-                                      </p>
-                                    )}
-                                  </fieldset>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                    </svg>
+                                  </span>
+                                )}
+                                <span>Ya</span>
+                              </div>
+                            ) : field.type === "select" ? (
+                              <DropdownSelect
+                                options={field.options}
+                                selectedValue={formData.detail[field.name] || ""}
+                                onChange={(val) => updateDetail(field.name, val)}
+                              />
+                            ) : (
+                              <input
+                                type={field.type}
+                                name={errorKey}
+                                className={commonClass}
+                                placeholder={field.label}
+                                value={formData.detail[field.name] ?? ""}
+                                onChange={handleChange}
+                                required={field.required}
+                              />
+                            )}
+                            {errors?.[errorKey] && (
+                              <p className="text-red-500 text-xs mt-1">
+                                {errors[errorKey][0]}
+                              </p>
+                            )}
+                          </fieldset>
                         </div>
-                      ));
+                        );
+                      });
                     })()}
 
                     {/* ✅ GAMBAR PROPERTI */}

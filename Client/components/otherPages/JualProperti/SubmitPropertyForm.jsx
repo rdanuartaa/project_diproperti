@@ -15,6 +15,9 @@ import {
   formatCompact,
   formatFullRupiah,
   formatDateTime,
+  getAutoBuildingType,
+  getBuildingTypeLabel,
+  getBuildingTypePlaceholder,
   validatePropertyForm,
   buildFormDataPayload,
 } from "@/lib/property";
@@ -27,7 +30,7 @@ const EMPTY_FORM = {
   listing_type: "jual",
   rent_period: "",
   kecamatan: "",
-  city: "Jember",
+  city: "",
   address: "",
   latitude: "",
   longitude: "",
@@ -390,27 +393,12 @@ export default function SubmitPropertyForm() {
   useEffect(() => {
     const applicableTypes = ["rumah", "villa", "ruko", "tanah", "kos"];
     if (!applicableTypes.includes(formData.type)) return;
-    const luasT = String(formData.detail?.luas_tanah ?? "").trim();
-    const luasB = String(formData.detail?.luas_bangunan ?? "").trim();
-    if (formData.type === "tanah") {
-      if (luasT) setFormData((prev) => ({ ...prev, building_type: luasT }));
-      return;
-    }
-    if (formData.type === "kos") {
-      const panjang = String(formData.detail?.panjang_ruangan ?? "").trim();
-      const lebar = String(formData.detail?.lebar_ruangan ?? "").trim();
-      if (panjang || lebar) {
-        const total = Number(panjang || 0) + Number(lebar || 0);
-        setFormData((prev) => ({
-          ...prev,
-          building_type: total > 0 ? String(total) : "",
-        }));
-      }
-      return;
-    }
-    if (luasT && luasB) {
-      setFormData((prev) => ({ ...prev, building_type: `${luasB}/${luasT}` }));
-    }
+    const nextBuildingType = getAutoBuildingType(formData);
+    setFormData((prev) =>
+      prev.building_type === nextBuildingType
+        ? prev
+        : { ...prev, building_type: nextBuildingType },
+    );
   }, [
     formData.type,
     formData.detail.luas_tanah,
@@ -1542,20 +1530,14 @@ export default function SubmitPropertyForm() {
 
                 <div className="col-md-6">
                   <fieldset className="box-fieldset">
-                    <label>Tipe Bangunan</label>
+                    <label>{getBuildingTypeLabel(formData.type)}</label>
                     <input
                       type="text"
                       className="form-control"
                       style={{ background: "#f9fafb", color: "#6b7280" }}
                       value={formData.building_type}
                       readOnly
-                      placeholder={
-                        formData.type === "tanah"
-                          ? "Otomatis: Luas Tanah"
-                          : formData.type === "kos"
-                            ? "Otomatis: Panjang + Lebar"
-                            : "Otomatis: Luas Bangunan / Luas Tanah"
-                      }
+                      placeholder={getBuildingTypePlaceholder(formData.type)}
                     />
                   </fieldset>
                 </div>
@@ -1626,10 +1608,10 @@ export default function SubmitPropertyForm() {
                     <input
                       type="text"
                       name="kecamatan"
-                      className={`form-control ${errors.kecamatan ? "border-red-500" : " "}`}
-                      placeholder="Contoh: Sumbersari"
+                      className={`form-control bg-gray-100 ${errors.kecamatan ? "border-red-500" : " "}`}
+                      placeholder="Otomatis terisi dari lokasi peta"
                       value={formData.kecamatan}
-                      onChange={handleChange}
+                      readOnly
                       required
                     />
                     {errors.kecamatan && (
@@ -1648,10 +1630,10 @@ export default function SubmitPropertyForm() {
                     <input
                       type="text"
                       name="city"
-                      className={`form-control ${errors.city ? "border-red-500" : " "}`}
-                      placeholder="Contoh: Jember"
+                      className={`form-control bg-gray-100 ${errors.city ? "border-red-500" : " "}`}
+                      placeholder="Otomatis terisi dari lokasi peta"
                       value={formData.city}
-                      onChange={handleChange}
+                      readOnly
                       required
                     />
                     {errors.city && (

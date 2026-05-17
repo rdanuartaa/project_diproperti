@@ -11,6 +11,10 @@ class PropertyFilterService
     {
         $sortOrder = strtolower((string) $request->input('sort_order', 'desc'));
 
+        if (in_array($sortOrder, ['popular', 'terpopuler'], true)) {
+            return $query->orderByDesc('views')->latest();
+        }
+
         return in_array($sortOrder, ['asc', 'oldest', 'terlama'], true)
             ? $query->orderBy('created_at', 'asc')
             : $query->latest();

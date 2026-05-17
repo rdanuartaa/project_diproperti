@@ -39,7 +39,8 @@ Mohon bantuannya. Terima kasih 🙏
               alt="DiProperti"
               width={200}
               height={200}
-              src="/images/avatar/seller.jpg"
+              src="/images/diproperti/logoadmin.svg"
+              style={{ transform: "scale(1.12)" }}
             />
           </div>
 
@@ -86,7 +87,7 @@ Mohon bantuannya. Terima kasih 🙏
         <button
           type="button"
           onClick={handleWhatsApp}
-          className="tf-btn bg-color-primary w-full"
+          className="tf-btn style-border pd-23 w-full"
         >
           Tanya via WhatsApp
         </button>

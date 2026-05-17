@@ -103,9 +103,7 @@ export default function LoanCalculator() {
     if (!form.hargaProperti || harga === 0)
       newErrors.hargaProperti = "Harga properti wajib diisi";
 
-    if (!form.uangMuka || um === 0)
-      newErrors.uangMuka = "Uang muka wajib diisi";
-    else if (harga > 0 && um >= harga)
+    if (harga > 0 && um >= harga)
       newErrors.uangMuka =
         "Uang muka tidak boleh lebih besar dari harga properti";
 
@@ -208,8 +206,8 @@ export default function LoanCalculator() {
                     data-wow-duration="1s"
                     data-wow-delay="0s"
                   >
-                    Simulasikan cicilan KPR Anda dengan metode bunga flat. Isi
-                    semua kolom lalu klik Hitung Sekarang.
+                    Simulasikan cicilan KPR Anda dengan metode bunga flat. Uang
+                    muka boleh dikosongkan untuk DP 0%.
                   </p>
                 </div>
 

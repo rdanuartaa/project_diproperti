@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { useCompare } from "@/components/compare/CompareContext";
+import { getPropertyCardMetaItems } from "@/lib/property";
 
 const fallbackImage = "/images/section/location-24.jpg";
 
@@ -164,7 +165,7 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
       {visibleItems.map((property, index) => {
         const added = isInCompare(property.id);
         const disabled = !added && isFull;
-        const metaItems = getPropertyMetaItems(property);
+        const metaItems = getPropertyCardMetaItems(property);
         const rankStyle = showTopRankBadges ? RANK_STYLES[index] : null;
 
         return (
@@ -250,18 +251,9 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
                       : addToCompare(property)
                   }
                   disabled={disabled}
-                  style={{
-                    opacity: disabled ? 0.4 : 1,
-                    cursor: disabled ? "not-allowed" : "pointer",
-                    background: "none",
-                    border: "none",
-                    padding: 0,
-                  }}
+                  aria-pressed={added}
                 >
-                  <i
-                    className="icon-compare"
-                    style={{ color: added ? "var(--Primary, #1a3c6e)" : "" }}
-                  />
+                  <i className="icon-compare" />
                   <span className="tooltip">
                     {added
                       ? "Hapus Komparasi"
@@ -305,6 +297,7 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
                 <h6 className="price">{formatPriceDisplay(property)}</h6>
 
                 <div className="wrap-btn flex">
+                  {false && (
                   <button
                     type="button"
                     className="compare flex gap-8 items-center text-1"
@@ -327,6 +320,7 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
                     <i className="icon-compare" />
                     {added ? "Dibandingkan ✓" : "Compare"}
                   </button>
+                  )}
 
                   <Link
                     href={`/properti/${property.slug}`}

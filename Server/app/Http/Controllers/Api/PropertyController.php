@@ -52,7 +52,14 @@ class PropertyController extends Controller
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', "%{$request->search}%")
                   ->orWhere('description', 'like', "%{$request->search}%")
-                  ->orWhere('kecamatan', 'like', "%{$request->search}%");
+                  ->orWhere('kecamatan', 'like', "%{$request->search}%")
+                  ->orWhere('city', 'like', "%{$request->search}%");
+            });
+        }
+        if ($request->filled('location')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('kecamatan', 'like', "%{$request->location}%")
+                  ->orWhere('city', 'like', "%{$request->location}%");
             });
         }
         if ($request->filled('kecamatan')) $query->where('kecamatan', 'like', "%{$request->kecamatan}%");
@@ -97,7 +104,14 @@ class PropertyController extends Controller
             $query->where(function ($q) use ($request) {
                 $q->where('title', 'like', "%{$request->search}%")
                   ->orWhere('description', 'like', "%{$request->search}%")
-                  ->orWhere('kecamatan', 'like', "%{$request->search}%");
+                  ->orWhere('kecamatan', 'like', "%{$request->search}%")
+                  ->orWhere('city', 'like', "%{$request->search}%");
+            });
+        }
+        if ($request->filled('location')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('kecamatan', 'like', "%{$request->location}%")
+                  ->orWhere('city', 'like', "%{$request->location}%");
             });
         }
         if ($request->filled('kecamatan')) $query->where('kecamatan', 'like', "%{$request->kecamatan}%");

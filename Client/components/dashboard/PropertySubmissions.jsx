@@ -6,13 +6,59 @@ import SuccessModal from "@/components/common/SuccesModal";
 import AttentionModal from "@/components/common/AttentionModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import DropdownSelect from "../common/DropdownSelect";
+import { PROPERTY_TYPE_CONFIG, getBuildingTypeDisplay } from "@/lib/property";
+
+const ALL_TYPE_OPTION = "Semua Tipe";
+const ALL_LISTING_TYPE_OPTION = "Semua Penawaran";
+const LISTING_TYPE_LABELS = {
+  jual: "Dijual",
+  sewa: "Disewakan",
+};
+const PROPERTY_TYPE_OPTIONS = [
+  ALL_TYPE_OPTION,
+  ...Object.values(PROPERTY_TYPE_CONFIG).map((config) => config.label),
+];
+const LISTING_TYPE_OPTIONS = [
+  ALL_LISTING_TYPE_OPTION,
+  ...Object.values(LISTING_TYPE_LABELS),
+];
+
+const getPropertyTypeLabel = (type) =>
+  PROPERTY_TYPE_CONFIG[type]?.label || String(type || "-");
+
+const getPropertyTypeValue = (label) => {
+  const match = Object.entries(PROPERTY_TYPE_CONFIG).find(
+    ([, config]) => config.label === label,
+  );
+  return match?.[0] || "";
+};
+
+const getListingTypeLabel = (listingType) =>
+  LISTING_TYPE_LABELS[listingType] || String(listingType || "-");
+
+const getListingTypeValue = (label) => {
+  const match = Object.entries(LISTING_TYPE_LABELS).find(
+    ([, value]) => value === label,
+  );
+  return match?.[0] || "";
+};
+
+const getListingTypeFilterOptions = (typeLabel) =>
+  getPropertyTypeValue(typeLabel) === "kos"
+    ? [LISTING_TYPE_LABELS.sewa]
+    : LISTING_TYPE_OPTIONS;
 
 export default function PropertySubmissions() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [activeSubmission, setActiveSubmission] = useState(null);
-  const [filters, setFilters] = useState({ search: "", sort: "Terbaru" });
+  const [filters, setFilters] = useState({
+    search: "",
+    sort: "Terbaru",
+    type: ALL_TYPE_OPTION,
+    listingType: ALL_LISTING_TYPE_OPTION,
+  });
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [attention, setAttention] = useState({ open: false, message: "" });
@@ -46,6 +92,19 @@ export default function PropertySubmissions() {
       const query = filters.search.toLowerCase().trim();
       result = result.filter((item) =>
         (item.title || "").toLowerCase().includes(query),
+      );
+    }
+    if (filters.type && filters.type !== ALL_TYPE_OPTION) {
+      const selectedType = getPropertyTypeValue(filters.type);
+      result = result.filter((item) => item.type === selectedType);
+    }
+    if (
+      filters.listingType &&
+      filters.listingType !== ALL_LISTING_TYPE_OPTION
+    ) {
+      const selectedListingType = getListingTypeValue(filters.listingType);
+      result = result.filter(
+        (item) => item.listing_type === selectedListingType,
       );
     }
     result.sort((a, b) => {
@@ -121,6 +180,7 @@ export default function PropertySubmissions() {
 
   const getSubmissionStatus = (item) => {
     if (!item) return "-";
+    if (item.status === "rejected" || item.status === "ditolak") return "rejected";
     if (item.status === "sold") return "sold";
     return item.is_verified ? "published" : "pending";
   };
@@ -132,32 +192,55 @@ export default function PropertySubmissions() {
 
   const getStatusBadge = (item) => {
     if (!item) return "-";
-    if (item.status === "sold") {
+
+    const status = getSubmissionStatus(item);
+    const badgeStyle = {
+      padding: "4px 8px",
+      borderRadius: "999px",
+      fontSize: "12px",
+      fontWeight: 600,
+      display: "inline-flex",
+      alignItems: "center",
+      lineHeight: 1.2,
+    };
+
+    if (status === "published") {
       return (
         <span
-          className="badge bg-danger"
-          style={{ padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+          style={{
+            ...badgeStyle,
+            background: "#e8f8ef",
+            color: "#168a4a",
+          }}
         >
-          🔴 Laku
+          Disetujui
         </span>
       );
     }
-    if (item.is_verified && item.status === "published") {
+
+    if (status === "rejected" || status === "sold") {
       return (
         <span
-          className="badge bg-success"
-          style={{ padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+          style={{
+            ...badgeStyle,
+            background: "#feecec",
+            color: "#dc2626",
+          }}
         >
-          ✅ Disetujui
+          {status === "sold" ? "Laku" : "Ditolak"}
         </span>
       );
     }
+
     return (
       <span
-        className="badge bg-warning"
-        style={{ padding: "0.5rem 0.75rem", fontSize: "0.85rem" }}
+        style={{
+          ...badgeStyle,
+          background: "#fff7d6",
+          color: "#b77900",
+        }}
       >
-        ⏳ Ditinjau
+        Pending
       </span>
     );
   };
@@ -288,20 +371,6 @@ export default function PropertySubmissions() {
     }
   };
 
-  const getBuildingTypeDisplay = (submission) => {
-    if (!submission) return "";
-    if (submission.type === "tanah") {
-      return submission.detail?.luas_tanah ?? submission.building_type ?? "";
-    }
-    if (submission.type === "kos") {
-      const panjang = Number(submission.detail?.panjang_ruangan ?? 0);
-      const lebar = Number(submission.detail?.lebar_ruangan ?? 0);
-      const total = panjang + lebar;
-      return total > 0 ? String(total) : (submission.building_type ?? "");
-    }
-    return submission.building_type ?? "";
-  };
-
   const ReadOnlyDetailCheckbox = ({ checked }) => (
     <div
       className="detail-checkbox"
@@ -404,7 +473,48 @@ export default function PropertySubmissions() {
               </fieldset>
             </form>
           </div>
-          <div className="col-md-9">
+          <div className="col-md-3">
+            <form onSubmit={(e) => e.preventDefault()}>
+              <fieldset className="box-fieldset">
+                <label>
+                  Tipe Properti: <span>*</span>
+                </label>
+                <DropdownSelect
+                  options={PROPERTY_TYPE_OPTIONS}
+                  selectedValue={filters.type}
+                  onChange={(value) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      type: value,
+                      listingType:
+                        getPropertyTypeValue(value) === "kos"
+                          ? LISTING_TYPE_LABELS.sewa
+                          : prev.listingType,
+                    }))
+                  }
+                  addtionalParentClass=" "
+                />
+              </fieldset>
+            </form>
+          </div>
+          <div className="col-md-3">
+            <form onSubmit={(e) => e.preventDefault()}>
+              <fieldset className="box-fieldset">
+                <label>
+                  Penawaran: <span>*</span>
+                </label>
+                <DropdownSelect
+                  options={getListingTypeFilterOptions(filters.type)}
+                  selectedValue={filters.listingType}
+                  onChange={(value) =>
+                    setFilters((prev) => ({ ...prev, listingType: value }))
+                  }
+                  addtionalParentClass=" "
+                />
+              </fieldset>
+            </form>
+          </div>
+          <div className="col-md-3">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
@@ -429,16 +539,17 @@ export default function PropertySubmissions() {
             <h3 className="title">Pengajuan Properti</h3>
           </div>
           <div className="alert alert-warning mb-4" role="alert">
-            <strong>📌 Kebijakan Platform: </strong> Upload listing properti{" "}
-            <u>GRATIS 100%</u>. Namun, jika properti berhasil <u>terjual</u>,
-            akan dikenakan komisi admin sebesar{" "}
-            <strong>2.5% dari harga jual</strong>.
+            <strong>Perhatian Admin: </strong> Pastikan survei lokasi dilakukan
+            dan seluruh data pengajuan direkap dengan baik dan benar agar
+            terhindar dari potensi penipuan properti.
           </div>
           <div className="wrap-table">
             <div className="table-responsive">
               {filteredSubmissions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {filters.search
+                  {filters.search ||
+                  filters.type !== ALL_TYPE_OPTION ||
+                  filters.listingType !== ALL_LISTING_TYPE_OPTION
                     ? "Pengajuan tidak ditemukan untuk pencarian tersebut."
                     : "Belum ada pengajuan properti saat ini."}
                 </div>
@@ -449,6 +560,7 @@ export default function PropertySubmissions() {
                       <th>Properti</th>
                       <th>Pengaju</th>
                       <th>Tipe</th>
+                      <th>Penawaran</th>
                       <th>Harga</th>
                       <th>Status</th>
                       <th>Diperbarui</th>
@@ -487,12 +599,17 @@ export default function PropertySubmissions() {
                         </td>
                         <td>
                           <span className="text-sm text-gray-600">
-                            {item.user?.name || "-"}
+                            {item.user?.full_name || item.user?.name || "-"}
                           </span>
                         </td>
                         <td>
                           <span className="text-sm text-gray-600">
-                            {item.type || "-"}
+                            {getPropertyTypeLabel(item.type)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-sm text-gray-600">
+                            {getListingTypeLabel(item.listing_type)}
                           </span>
                         </td>
                         <td>

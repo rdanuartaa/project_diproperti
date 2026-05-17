@@ -62,6 +62,7 @@ class PropertyDetailService
                 'detail.cctv' => 'nullable|boolean',
             ]),
             'ruko' => array_merge($base, $universal, [
+                'detail.luas_bangunan' => 'required|integer|min:0',
                 'detail.parking_capacity' => 'nullable|integer|min:0',
                 'detail.warehouse_area' => 'nullable|integer|min:0',
                 'detail.shop_front_width' => 'nullable|numeric|min:0',

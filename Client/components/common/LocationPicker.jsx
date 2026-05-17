@@ -21,6 +21,40 @@ const parseCoordinate = (value) => {
   return Number.isFinite(numberValue) ? numberValue : NaN;
 };
 
+const cleanPlaceName = (value) =>
+  String(value || "")
+    .replace(/^(Kecamatan|Kabupaten|Kota|City of|Regency of)\s+/i, "")
+    .trim();
+
+const getLocationFieldsFromAddress = (addressDetails = {}) => {
+  const district =
+    addressDetails.city_district ||
+    addressDetails.district ||
+    addressDetails.suburb ||
+    addressDetails.municipality ||
+    addressDetails.village ||
+    addressDetails.town ||
+    "";
+  const city =
+    addressDetails.city ||
+    addressDetails.county ||
+    addressDetails.regency ||
+    addressDetails.town ||
+    addressDetails.municipality ||
+    "";
+
+  const next = {};
+  if (district) next.kecamatan = cleanPlaceName(district);
+  if (city) next.city = cleanPlaceName(city);
+  return next;
+};
+
+const buildLocationPayload = (result, fallback = {}) => ({
+  ...fallback,
+  address: result?.display_name || fallback.address || "",
+  ...getLocationFieldsFromAddress(result?.address),
+});
+
 export default function LocationPicker({
   address,
   latitude,
@@ -62,18 +96,20 @@ export default function LocationPicker({
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${lat}&lon=${lng}`;
       const response = await fetch(url, {
         signal: controller.signal,
         headers: { "Accept-Language": "id" },
       });
       if (!response.ok) throw new Error("Reverse gagal.");
       const result = await response.json();
-      updateLocation({
-        latitude: Number(lat.toFixed(6)),
-        longitude: Number(lng.toFixed(6)),
-        address: result.display_name || address || "",
-      });
+      updateLocation(
+        buildLocationPayload(result, {
+          latitude: Number(lat.toFixed(6)),
+          longitude: Number(lng.toFixed(6)),
+          address,
+        }),
+      );
       setStatus("Lokasi diperbarui dari peta.");
     } catch (error) {
       if (error.name !== "AbortError") {
@@ -112,6 +148,7 @@ export default function LocationPicker({
           label: item.display_name,
           latitude: Number(item.lat),
           longitude: Number(item.lon),
+          address: item.address,
         })),
       );
     } catch (error) {
@@ -141,11 +178,13 @@ export default function LocationPicker({
       }
       const nextLat = Number(results[0].lat);
       const nextLng = Number(results[0].lon);
-      updateLocation({
-        latitude: Number(nextLat.toFixed(6)),
-        longitude: Number(nextLng.toFixed(6)),
-        address: results[0].display_name || trimmed,
-      });
+      updateLocation(
+        buildLocationPayload(results[0], {
+          latitude: Number(nextLat.toFixed(6)),
+          longitude: Number(nextLng.toFixed(6)),
+          address: trimmed,
+        }),
+      );
       setStatus("Lokasi ditemukan.");
     } catch (error) {
       setStatus("Gagal mencari lokasi.");
@@ -157,6 +196,7 @@ export default function LocationPicker({
       address: item.label,
       latitude: Number(item.latitude.toFixed(6)),
       longitude: Number(item.longitude.toFixed(6)),
+      ...getLocationFieldsFromAddress(item.address),
     });
     setSuggestions([]);
     setStatus("Lokasi dipilih dari rekomendasi.");

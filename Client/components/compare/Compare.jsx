@@ -111,6 +111,11 @@ const VALUE_LABELS = {
   land_type: { datar: "Datar", miring: "Miring", bukit: "Bukit" },
 };
 
+const normalizeCompareValue = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase();
+
 const RANK_VALUE_MAPS = {
   water: { pdam: 1, sumur: 0.75, PDAM: 1, Sumur: 0.75 },
   listrik_type: { underground: 1, overground: 0.85, PLN: 1 },
@@ -489,7 +494,7 @@ const buildProsCons = (properties, compareRows = COMPARE_ROWS) => {
 export default function Compare() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { setIsModalOpen, clearCompare } = useCompare();
+  const { clearCompare } = useCompare();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -512,26 +517,28 @@ export default function Compare() {
   const validateProperties = (props) => {
     if (props.length < 2) return true;
 
-    const firstType = props[0].type;
-    const firstStatus = props[0].listing_type;
+    const firstType = normalizeCompareValue(props[0].type);
+    const firstStatus = normalizeCompareValue(props[0].listing_type);
+    const typeLabel = getPropertyConfig(props[0].type).label;
+    const statusLabel = VALUE_LABELS.listing_type[props[0].listing_type] || props[0].listing_type;
 
     for (let p of props) {
-      if (p.type !== firstType) {
+      if (normalizeCompareValue(p.type) !== firstType) {
         clearCompare();
         setAttention({
           open: true,
           message:
-            "Komparasi hanya bisa untuk tipe properti yang sama (misalnya Rumah dengan Rumah).",
+            `Komparasi hanya bisa untuk tipe properti yang sama. Pilihan pertama adalah ${typeLabel}, jadi tipe lain tidak bisa dibandingkan bersama.`,
         });
         return false;
       }
 
-      if (p.listing_type !== firstStatus) {
+      if (normalizeCompareValue(p.listing_type) !== firstStatus) {
         clearCompare();
         setAttention({
           open: true,
           message:
-            "Komparasi hanya bisa untuk status yang sama (Jual dengan Jual atau Sewa dengan Sewa).",
+            `Komparasi hanya bisa untuk penawaran yang sama. Pilihan pertama adalah ${statusLabel}, jadi penawaran lain tidak bisa dibandingkan bersama.`,
         });
         return false;
       }
@@ -547,10 +554,14 @@ export default function Compare() {
       return;
     }
 
-    const slugs = decodeURIComponent(slugsParam)
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const slugs = Array.from(
+      new Set(
+        decodeURIComponent(slugsParam)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ),
+    ).slice(0, 3);
 
     if (slugs.length === 0) {
       setProperties([]);
@@ -560,6 +571,7 @@ export default function Compare() {
     const fetchAll = async () => {
   try {
     setLoading(true);
+    setError("");
 
     const results = await Promise.all(
       slugs.map((slug) =>
@@ -595,6 +607,14 @@ export default function Compare() {
   };
 
   const handleAddProperty = () => {
+    const reference = properties[0];
+    if (reference?.type && reference?.listing_type) {
+      router.push(
+        `/list-properti?type=${encodeURIComponent(reference.type)}&listing_type=${encodeURIComponent(reference.listing_type)}`,
+      );
+      return;
+    }
+
     router.push("/list-properti");
   };
 

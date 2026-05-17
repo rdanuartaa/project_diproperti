@@ -54,8 +54,8 @@ const LineChart = ({ chartData, height = 300 }) => {
 
     // Gradient
     const gradient = ctx.createLinearGradient(0, 0, 0, height);
-    gradient.addColorStop(0, "rgba(241, 145, 61, 0.2)");
-    gradient.addColorStop(1, "rgba(241, 145, 61, 0)");
+    gradient.addColorStop(0, "rgba(2, 70, 155, 0.18)");
+    gradient.addColorStop(1, "rgba(2, 70, 155, 0)");
 
     // ✅ FIX DI SINI (pakai data:)
     chartInstance.current = new Chart(ctx, {
@@ -66,6 +66,12 @@ const LineChart = ({ chartData, height = 300 }) => {
           ...dataset,
           backgroundColor:
             idx === 0 ? gradient : dataset.backgroundColor,
+          borderColor:
+            idx === 0 ? "rgba(2, 70, 155, 1)" : dataset.borderColor,
+          pointBackgroundColor:
+            idx === 0 ? "#ffffff" : dataset.pointBackgroundColor,
+          pointBorderColor:
+            idx === 0 ? "rgba(2, 70, 155, 1)" : dataset.pointBorderColor,
           fill: true,
           tension: 0.4,
           pointRadius: 4,

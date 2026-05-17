@@ -1,17 +1,18 @@
 "use client";
 import React, { useEffect, useMemo, useState } from "react";
 import LayoutHandler from "./LayoutHandler";
-import DropdownSelect from "../common/DropdownSelect";
 import PropertyGridItems from "./PropertyGridItems";
 import PropertyListItems from "./PropertyListItems";
 import ListingSidebar from "./ListingSidebar";
 import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useCompare } from "@/components/compare/CompareContext";
+import { getPropertyConfig } from "@/lib/property";
 
 const PAGE_SIZE = 12;
 
 const EMPTY_FILTERS = {
-  search: "", city: "", type: "", listing_type: "",
+  search: "", city: "", location: "", type: "", listing_type: "",
   min_price: "", max_price: "", kecamatan: "",
   bedrooms: "", bathrooms: "", living_rooms: "",
   kitchens: "", floors: "", certificate_type: "",
@@ -24,6 +25,11 @@ const EMPTY_FILTERS = {
 
 const PROPERTY_TYPE_OPTIONS = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"];
 const LISTING_TYPE_OPTIONS = ["Jual/Sewa", "Dijual", "Disewa"];
+const LISTING_TYPE_LABELS = {
+  jual: "Dijual",
+  sewa: "Disewa",
+};
+const SORT_OPTIONS = ["Terbaru", "Terlama", "Terpopuler"];
 const TYPE_FILTER_KEYS = {
   rumah: ["bedrooms", "bathrooms", "living_rooms", "kitchens", "floors", "certificate_type", "water", "listrik_type", "luas_tanah", "luas_bangunan"],
   villa: ["bedrooms", "bathrooms", "living_rooms", "kitchens", "floors", "certificate_type", "water", "listrik_type", "luas_tanah", "luas_bangunan"],
@@ -38,7 +44,7 @@ const TYPE_AMENITIES = {
   ruko: [],
   tanah: [],
 };
-const SHARED_FILTER_KEYS = ["search", "city", "type", "listing_type", "min_price", "max_price", "kecamatan", "rent_period"];
+const SHARED_FILTER_KEYS = ["search", "city", "location", "type", "listing_type", "min_price", "max_price", "kecamatan", "rent_period"];
 
 function normalizeFiltersForType(filters, type) {
   const allowedKeys = new Set([...SHARED_FILTER_KEYS, ...(TYPE_FILTER_KEYS[type] || [])]);
@@ -100,6 +106,32 @@ function getPageItems(currentPage, lastPage) {
 export default function Properties3({ defaultGrid = false }) {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { compareMeta } = useCompare();
+  const compareLock =
+    compareMeta?.type && compareMeta?.listingType
+      ? {
+          type: compareMeta.type,
+          listing_type: compareMeta.listingType,
+          typeLabel: compareMeta.typeLabel || getPropertyConfig(compareMeta.type).label,
+          listingTypeLabel:
+            compareMeta.listingTypeLabel ||
+            LISTING_TYPE_LABELS[compareMeta.listingType] ||
+            compareMeta.listingType,
+        }
+      : null;
+
+  const applyCompareLock = (nextFilters) => {
+    if (!compareLock) return nextFilters;
+    return normalizeFiltersForType(
+      {
+        ...nextFilters,
+        type: compareLock.type,
+        listing_type: compareLock.listing_type,
+      },
+      compareLock.type,
+    );
+  };
+
   const getFiltersFromUrl = () => {
     const filters = { ...EMPTY_FILTERS };
     Object.keys(EMPTY_FILTERS).forEach((key) => {
@@ -113,12 +145,15 @@ export default function Properties3({ defaultGrid = false }) {
         if (val) filters[key] = val;
       }
     });
-    return filters;
+    return applyCompareLock(filters);
   };
 
   const [filters, setFilters] = useState(getFiltersFromUrl);
   const [appliedFilters, setAppliedFilters] = useState(getFiltersFromUrl);
-  const [sortOrder, setSortOrder] = useState(() => searchParams?.get("sort_order") === "asc" ? "asc" : "desc");
+  const [sortOrder, setSortOrder] = useState(() => {
+    const value = searchParams?.get("sort_order");
+    return value === "asc" || value === "popular" ? value : "desc";
+  });
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -132,10 +167,38 @@ export default function Properties3({ defaultGrid = false }) {
     setFilters(newFilters);
     setAppliedFilters(newFilters);
     const sortFromUrl = searchParams?.get("sort_order");
-    if (sortFromUrl) setSortOrder(sortFromUrl);
+    if (sortFromUrl) setSortOrder(sortFromUrl === "asc" || sortFromUrl === "popular" ? sortFromUrl : "desc");
     const pageFromUrl = parseInt(searchParams?.get("page") || "1", 10);
     if (pageFromUrl !== page) setPage(pageFromUrl);
-  }, [searchParams]);
+  }, [searchParams, compareMeta]);
+
+  useEffect(() => {
+    if (!compareLock) return;
+
+    const lockedFilters = applyCompareLock(appliedFilters);
+    const isAlreadyLocked =
+      appliedFilters.type === compareLock.type &&
+      appliedFilters.listing_type === compareLock.listing_type;
+
+    if (!isAlreadyLocked) {
+      setFilters(lockedFilters);
+      setAppliedFilters(lockedFilters);
+      setPage(1);
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const urlType = params.get("type");
+    const urlListingType = params.get("listing_type");
+    if (
+      urlType !== compareLock.type ||
+      urlListingType !== compareLock.listing_type
+    ) {
+      params.set("type", compareLock.type);
+      params.set("listing_type", compareLock.listing_type);
+      params.set("page", "1");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
+  }, [compareMeta]);
 
   // ✅ Fetch Properties - HANYA pakai appliedFilters (bukan filters)
   useEffect(() => {
@@ -175,20 +238,9 @@ export default function Properties3({ defaultGrid = false }) {
   const featuredProperties = useMemo(() => properties.slice(0, 4), [properties]);
   const pageItems = useMemo(() => getPageItems(pagination.current_page, pagination.last_page), [pagination.current_page, pagination.last_page]);
 
-  // ✅ Handler: Update filters lokal (TIDAK trigger API)
-  const handleFilterChange = (name, value) => {
-    setFilters(prev => ({ ...prev, [name]: value }));
-    // ❌ JANGAN update URL atau API di sini
-  };
-
-  // ✅ Handler Apply: Copy filters -> appliedFilters + Update URL + Trigger API
-  const handleApplyFilters = () => {
-    setPage(1);
-    setAppliedFilters(filters); // ✅ Ini yang trigger useEffect fetch
-    
-    // Update URL untuk shareability
+  const syncUrl = (nextFilters, nextSortOrder = sortOrder) => {
     const params = new URLSearchParams(window.location.search);
-    Object.entries(filters).forEach(([key, val]) => {
+    Object.entries(nextFilters).forEach(([key, val]) => {
       if (key === "amenities" && val && typeof val === "object") {
         const active = Object.entries(val).filter(([_, v]) => v).map(([k]) => k);
         if (active.length) params.set("amenities", active.join(","));
@@ -199,53 +251,60 @@ export default function Properties3({ defaultGrid = false }) {
         params.delete(key);
       }
     });
+    params.set("sort_order", nextSortOrder);
     params.set("page", "1");
     router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
+  const applyFiltersImmediately = (nextFilters, nextSortOrder = sortOrder) => {
+    const nextAppliedFilters = applyCompareLock(nextFilters);
+    setPage(1);
+    setFilters(nextAppliedFilters);
+    setAppliedFilters(nextAppliedFilters);
+    syncUrl(nextAppliedFilters, nextSortOrder);
+  };
+
+  const handleFilterChange = (name, value) => {
+    if (compareLock && (name === "type" || name === "listing_type")) return;
+
+    const nextType = name === "type" ? value : filters.type;
+    const nextValue =
+      name === "price_range" && Array.isArray(value)
+        ? { ...filters, min_price: String(value[0]), max_price: String(value[1]) }
+        : name === "type" && value === "kos"
+        ? { ...filters, type: value, listing_type: "sewa" }
+        : name === "type"
+        ? { ...filters, type: value }
+        : { ...filters, [name]: value };
+    const nextFilters = normalizeFiltersForType(nextValue, nextType);
+    applyFiltersImmediately(nextFilters);
   };
 
   const handleSortChange = (value) => {
-    setPage(1);
-    const newSort = value === "Terlama" ? "asc" : "desc";
+    const newSort =
+      value === "Terlama"
+        ? "asc"
+        : value === "Terpopuler"
+          ? "popular"
+          : "desc";
     setSortOrder(newSort);
-    // Update appliedFilters untuk sort
-    setAppliedFilters(prev => ({ ...prev })); // Trigger re-fetch
-    const params = new URLSearchParams(window.location.search);
-    params.set("sort_order", newSort);
-    params.set("page", "1");
-    router.replace(`?${params.toString()}`, { scroll: false });
-  };
-
-  const handleTopFilterChange = (name, value) => {
-    const normalizedValue =
-      value === "Semua Tipe" || value === "Jual/Sewa"
-        ? ""
-        : name === "listing_type"
-          ? value === "Dijual" ? "jual" : "sewa"
-          : value;
-
-    const nextFilters = normalizeFiltersForType(
-      { ...appliedFilters, [name]: normalizedValue },
-      name === "type" ? normalizedValue : appliedFilters.type,
-    );
-    setFilters(nextFilters);
-    setAppliedFilters(nextFilters);
-    setPage(1);
-
-    const params = new URLSearchParams(window.location.search);
-    if (normalizedValue) {
-      params.set(name, normalizedValue);
-    } else {
-      params.delete(name);
-    }
-    params.set("page", "1");
-    router.replace(`?${params.toString()}`, { scroll: false });
+    applyFiltersImmediately(appliedFilters, newSort);
   };
 
   const handleResetFilters = () => {
-    setFilters(EMPTY_FILTERS);
-    setAppliedFilters(EMPTY_FILTERS);
+    const resetFilters = applyCompareLock(EMPTY_FILTERS);
+    setFilters(resetFilters);
+    setAppliedFilters(resetFilters);
     setSortOrder("desc");
     setPage(1);
+    if (compareLock) {
+      const params = new URLSearchParams();
+      params.set("type", compareLock.type);
+      params.set("listing_type", compareLock.listing_type);
+      params.set("page", "1");
+      router.replace(`?${params.toString()}`, { scroll: false });
+      return;
+    }
     router.replace(window.location.pathname, { scroll: false });
   };
 
@@ -274,35 +333,27 @@ export default function Properties3({ defaultGrid = false }) {
             <div className="box-title">
               <div><h2>List Daftar Properti</h2></div>
               <div className="right wrap-sort">
-                <DropdownSelect
-                  addtionalParentClass="select-filter list-sort"
-                  options={PROPERTY_TYPE_OPTIONS}
-                  selectedValue={appliedFilters.type || "Semua Tipe"}
-                  onChange={(value) => handleTopFilterChange("type", value)}
-                />
-                <DropdownSelect
-                  addtionalParentClass="select-filter list-sort"
-                  options={LISTING_TYPE_OPTIONS}
-                  selectedValue={
-                    appliedFilters.listing_type === "jual"
-                      ? "Dijual"
-                      : appliedFilters.listing_type === "sewa"
-                        ? "Disewa"
-                        : "Jual/Sewa"
-                  }
-                  onChange={(value) => handleTopFilterChange("listing_type", value)}
-                />
-                <DropdownSelect
-                  addtionalParentClass="select-filter list-sort"
-                  options={["Terbaru", "Terlama"]}
-                  selectedValue={sortOrder === "asc" ? "Terlama" : "Terbaru"}
-                  onChange={handleSortChange}
-                />
                 <ul className="nav-tab-filter group-layout" role="tablist">
                   <LayoutHandler defaultGrid={defaultGrid} />
                 </ul>
               </div>
             </div>
+            {compareLock && (
+              <div
+                style={{
+                  margin: "-10px 0 24px",
+                  padding: "10px 14px",
+                  borderRadius: "8px",
+                  background: "#eef4ff",
+                  color: "var(--Primary, #1a3c6e)",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                }}
+              >
+                Mode komparasi aktif: listing otomatis difilter ke{" "}
+                {compareLock.typeLabel} {compareLock.listingTypeLabel}.
+              </div>
+            )}
           </div>
 
           <div className="col-lg-8">
@@ -359,13 +410,18 @@ export default function Properties3({ defaultGrid = false }) {
 
           <div className="col-lg-4">
             <ListingSidebar
-              filters={filters}              // ✅ Sidebar baca dari filters (lokal)
-              onChange={handleFilterChange}  // ✅ Hanya update lokal
-              onApply={handleApplyFilters}   // ✅ Apply trigger API + URL
+              filters={filters}
+              onChange={handleFilterChange}
               onReset={handleResetFilters}
+              sortOrder={sortOrder}
+              onSortChange={handleSortChange}
+              propertyTypeOptions={PROPERTY_TYPE_OPTIONS}
+              listingTypeOptions={LISTING_TYPE_OPTIONS}
+              sortOptions={SORT_OPTIONS}
+              mainFilterLocked={Boolean(compareLock)}
               loading={loading}
               featuredProperties={featuredProperties}
-              activeFilterCount={activeFilterCount} // ✅ Hitung dari appliedFilters
+              activeFilterCount={activeFilterCount}
               priceFormatter={formatPrice}
             />
           </div>

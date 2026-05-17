@@ -27,12 +27,14 @@ class DashboardController extends Controller
             $articleCount = Article::query();
             $articlePublished = Article::query();
             $articleViews = Article::query();
+            $propertySubmissions = Property::query();
             
             // Apply filter user jika bukan admin
             if ($user && !$user->isAdmin()) {
                 $propertyCount->where('user_id', $user->id);
                 $propertyPublished->where('user_id', $user->id);
                 $propertyViews->where('user_id', $user->id);
+                $propertySubmissions->where('user_id', $user->id);
                 
                 $articleCount->where('user_id', $user->id);
                 $articlePublished->where('user_id', $user->id);
@@ -47,6 +49,10 @@ class DashboardController extends Controller
             $totalArticles = $articleCount->count();
             $publishedArticles = $articlePublished->where('status', 'published')->count();
             $totalArticleViews = $articleViews->sum('views');
+            $pendingSubmissions = $propertySubmissions
+                ->where('is_verified', false)
+                ->where('status', '!=', 'sold')
+                ->count();
             
             $userCount = User::where('role', '!=', 'admin')->count();
             
@@ -67,6 +73,9 @@ class DashboardController extends Controller
                     ],
                     'users' => [
                         'total' => $userCount,
+                    ],
+                    'submissions' => [
+                        'pending' => $pendingSubmissions,
                     ],
                     'platform' => [
                         'total_views' => $totalViews,

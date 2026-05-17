@@ -8,6 +8,7 @@ import { Pagination } from "swiper/modules";
 import { useEffect, useState } from "react";
 import { useCompare } from "@/components/compare/CompareContext";
 import { api } from "@/lib/api";
+import { getPropertyCardMetaItems } from "@/lib/property";
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -317,7 +318,7 @@ export default function Properties() {
                       {properties.map((property) => {
                         const added = isInCompare(property.id);
                         const disabled = !added && isFull;
-                        const metaItems = getPropertyMetaItems(property);
+                        const metaItems = getPropertyCardMetaItems(property);
 
                         return (
                         <SwiperSlide className="swiper-slide" key={property.id}>

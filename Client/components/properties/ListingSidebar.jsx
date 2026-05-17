@@ -35,11 +35,7 @@ const META_CONFIG_BY_TYPE = {
 };
 
 const ADVANCED_FILTER_CONFIG = {
-  default: [
-    { key: "certificate_type", label: "Jenis Sertifikat", options: ["SHM", "SHGB"] },
-    { key: "water", label: "Sumber Air", options: ["PDAM", "Sumur"], mapValue: (value) => value.toLowerCase() },
-    { key: "listrik_type", label: "Jenis Listrik", options: ["Overground", "Underground"], mapValue: (value) => value.toLowerCase() },
-  ],
+  default: [],
   rumah: [
     { key: "bedrooms", label: "Jumlah Kamar Tidur", options: ["1", "2", "3", "4", "5+"], numeric: true },
     { key: "bathrooms", label: "Jumlah Kamar Mandi", options: ["1", "2", "3", "4+"], numeric: true },
@@ -153,8 +149,13 @@ function getPropertyMetaItems(property) {
 export default function ListingSidebar({
   filters,
   onChange,
-  onApply,
   onReset,
+  sortOrder = "desc",
+  onSortChange,
+  propertyTypeOptions = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"],
+  listingTypeOptions = ["Jual/Sewa", "Dijual", "Disewa"],
+  sortOptions = ["Terbaru", "Terlama", "Terpopuler"],
+  mainFilterLocked = false,
   loading,
   featuredProperties = [],
   activeFilterCount = 0,
@@ -177,6 +178,30 @@ export default function ListingSidebar({
 
   const activeAdvancedConfig =
     ADVANCED_FILTER_CONFIG[filters.type] || ADVANCED_FILTER_CONFIG.default;
+
+  const selectedListingType =
+    filters.listing_type === "jual"
+      ? "Dijual"
+      : filters.listing_type === "sewa"
+      ? "Disewa"
+      : "Jual/Sewa";
+
+  const selectedSort =
+    sortOrder === "asc"
+      ? "Terlama"
+      : sortOrder === "popular"
+      ? "Terpopuler"
+      : "Terbaru";
+
+  const handleTypeChange = (value) => {
+    onChange("type", value === "Semua Tipe" ? "" : value);
+  };
+
+  const handleListingTypeChange = (value) => {
+    const nextValue =
+      value === "Dijual" ? "jual" : value === "Disewa" ? "sewa" : "";
+    onChange("listing_type", nextValue);
+  };
 
   const getDropdownValue = (field) => {
     if (field.key === "amenities") {
@@ -216,93 +241,75 @@ export default function ListingSidebar({
         className="form-advanced-search mb-30"
         onSubmit={(e) => {
           e.preventDefault();
-          onApply();
         }}
       >
-        {/* HEADER */}
         <div className="d-flex align-items-center justify-content-between mb-24">
-          <h4 className="heading-title mb-0">Filter Lanjutan</h4>
+          <h4 className="heading-title mb-0">Filter Utama</h4>
           <span className="text-2">{activeFilterCount} aktif</span>
         </div>
 
-        {/* ✅ KECAMATAN - Hanya ini yang text input */}
+        <div className="group-select mb-24">
+          <div className="box-select mb-20">
+            <DropdownSelect
+              addtionalParentClass="select-filter"
+              options={propertyTypeOptions}
+              selectedValue={filters.type || "Semua Tipe"}
+              onChange={handleTypeChange}
+              disabled={mainFilterLocked}
+            />
+            <p className="text-2 mb-0" style={{ marginTop: "8px" }}>Pilih tipe properti yang dicari.</p>
+          </div>
+          <div className="box-select mb-20">
+            <DropdownSelect
+              addtionalParentClass="select-filter"
+              options={listingTypeOptions}
+              selectedValue={selectedListingType}
+              onChange={handleListingTypeChange}
+              disabled={mainFilterLocked}
+            />
+            <p className="text-2 mb-0" style={{ marginTop: "8px" }}>Pilih status jual atau sewa.</p>
+          </div>
+          <div className="box-select mb-20">
+            <DropdownSelect
+              addtionalParentClass="select-filter"
+              options={sortOptions}
+              selectedValue={selectedSort}
+              onChange={onSortChange}
+            />
+            <p className="text-2 mb-0" style={{ marginTop: "8px" }}>Atur urutan hasil properti.</p>
+          </div>
+        </div>
+
         <fieldset className="mb-20">
           <input
             type="text"
             className="form-control"
-            placeholder="Kecamatan"
-            value={filters.kecamatan || ""}
-            onChange={(e) => onChange("kecamatan", e.target.value)}
+            placeholder="Lokasi"
+            value={filters.location || ""}
+            onChange={(e) => onChange("location", e.target.value)}
           />
+          <p className="text-2 mb-0" style={{ marginTop: "8px" }}>Isi kecamatan atau kota.</p>
         </fieldset>
 
-        {/* ✅ DROPDOWN ADVANCED FILTERS */}
-        <div className="group-select mb-24">
-          {activeAdvancedConfig.map((field) => (
-            <div className="box-select mb-20" key={`${field.key}-${field.amenity || field.label}`}>
-              <DropdownSelect
-                addtionalParentClass="select-filter"
-                options={[field.label, ...field.options]}
-                selectedValue={getDropdownValue(field)}
-                onChange={(value) => handleAdvancedDropdownChange(field, value)}
-              />
-            </div>
-          ))}
-
-          {filters.listing_type === "sewa" && (
-            <div className="box-select mb-20">
-              <DropdownSelect
-                addtionalParentClass="select-filter"
-                options={["Periode Sewa", "Bulan", "3 Bulan", "6 Bulan", "Tahun"]}
-                selectedValue={
-                  filters.rent_period === "3bulan"
-                    ? "3 Bulan"
-                    : filters.rent_period === "6bulan"
-                    ? "6 Bulan"
-                    : filters.rent_period === "tahun" || filters.rent_period === "12bulan"
-                    ? "Tahun"
-                    : filters.rent_period === "bulan"
-                    ? "Bulan"
-                    : "Periode Sewa"
-                }
-                onChange={(value) => {
-                  const periodValue = value === "Periode Sewa"
-                    ? ""
-                    : value === "3 Bulan"
-                    ? "3bulan"
-                    : value === "6 Bulan"
-                    ? "6bulan"
-                    : value === "Tahun"
-                    ? "tahun"
-                    : "bulan";
-                  onChange("rent_period", periodValue);
-                }}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* ✅ HARGA - Slider (jika ingin override dari Hero) */}
         <div className="widget-range mb-24">
           <div className="box-title-price mb-10">
             <div className="caption-price text-12">
               <span>
-                Harga: {priceFormatter?.(filters.min_price ? Number(filters.min_price) : 10000000) || "Rp 10 Juta"} - {priceFormatter?.(filters.max_price ? Number(filters.max_price) : 3000000000) || "Rp 3 Miliar"}
+                Harga: {priceFormatter?.(filters.min_price ? Number(filters.min_price) : 10000000) || "Rp 10 Juta"} - {priceFormatter?.(filters.max_price ? Number(filters.max_price) : 10000000000) || "Rp 10 Miliar"}
               </span>
             </div>
           </div>
           <Slider
             range
             min={10000000}
-            max={3000000000}
+            max={10000000000}
             step={10000000}
             value={[
               filters.min_price ? Number(filters.min_price) : 10000000,
-              filters.max_price ? Number(filters.max_price) : 3000000000
+              filters.max_price ? Number(filters.max_price) : 10000000000
             ]}
             onChange={(values) => {
-              onChange("min_price", String(values[0]));
-              onChange("max_price", String(values[1]));
+              onChange("price_range", values);
             }}
             trackStyle={[{ backgroundColor: "var(--Primary)" }]}
             handleStyle={[
@@ -313,19 +320,62 @@ export default function ListingSidebar({
           />
         </div>
 
-        {/* BUTTON */}
-        <button
-          type="submit"
-          className="tf-btn style-border w-full mt-20"
-          disabled={loading}
-        >
-          {loading ? "Mencari..." : "Terapkan Filter"}
-          <i className="icon-search" />
-        </button>
+        {(activeAdvancedConfig.length > 0 || filters.listing_type === "sewa") && (
+          <>
+            <div className="d-flex align-items-center justify-content-between mb-20 mt-28">
+              <h4 className="heading-title mb-0">Filter Lanjutan</h4>
+            </div>
+
+            <div className="group-select mb-24">
+              {activeAdvancedConfig.map((field) => (
+                <div className="box-select mb-20" key={`${field.key}-${field.amenity || field.label}`}>
+                  <DropdownSelect
+                    addtionalParentClass="select-filter"
+                    options={[field.label, ...field.options]}
+                    selectedValue={getDropdownValue(field)}
+                    onChange={(value) => handleAdvancedDropdownChange(field, value)}
+                  />
+                </div>
+              ))}
+
+              {filters.listing_type === "sewa" && (
+                <div className="box-select mb-20">
+                  <DropdownSelect
+                    addtionalParentClass="select-filter"
+                    options={["Periode Sewa", "Bulan", "3 Bulan", "6 Bulan", "Tahun"]}
+                    selectedValue={
+                      filters.rent_period === "3bulan"
+                        ? "3 Bulan"
+                        : filters.rent_period === "6bulan"
+                        ? "6 Bulan"
+                        : filters.rent_period === "tahun" || filters.rent_period === "12bulan"
+                        ? "Tahun"
+                        : filters.rent_period === "bulan"
+                        ? "Bulan"
+                        : "Periode Sewa"
+                    }
+                    onChange={(value) => {
+                      const periodValue = value === "Periode Sewa"
+                        ? ""
+                        : value === "3 Bulan"
+                        ? "3bulan"
+                        : value === "6 Bulan"
+                        ? "6bulan"
+                        : value === "Tahun"
+                        ? "tahun"
+                        : "bulan";
+                      onChange("rent_period", periodValue);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         <button
           type="button"
-          className="tf-btn style-border w-full mt-20"
+          className="tf-btn style-border w-full"
           onClick={onReset}
           disabled={loading}
         >

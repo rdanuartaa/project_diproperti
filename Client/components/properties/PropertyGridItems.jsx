@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { useCompare } from "@/components/compare/CompareContext";
+import { getPropertyCardMetaItems } from "@/lib/property";
 
 const fallbackImage = "/images/section/location-23.jpg";
 
@@ -138,7 +139,7 @@ export default function PropertyGridItems({ properties, showItems }) {
       {visibleItems.map((property) => {
         const added = isInCompare(property.id);
         const disabled = !added && isFull;
-        const metaItems = getPropertyMetaItems(property);
+        const metaItems = getPropertyCardMetaItems(property);
 
         return (
           <div className="box-house hover-img" key={property.id}>

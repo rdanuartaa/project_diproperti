@@ -8,6 +8,10 @@ export {
   PROPERTY_TYPE_CONFIG,
   CERTIFICATE_REQUIRED_TYPES,
   getPropertyConfig,
+  getAutoBuildingType,
+  getBuildingTypeDisplay,
+  getBuildingTypeLabel,
+  getBuildingTypePlaceholder,
   getRelevantDetailFields,
 } from './config';
 

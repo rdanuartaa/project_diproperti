@@ -132,10 +132,11 @@ export default function Sidebar({ property }) {
           <div className="avartar">
             <Image
               alt="Admin"
-              src="/images/avatar/seller.jpg"
+              src="/images/diproperti/logoadmin.svg"
               width={200}
               height={200}
               className="rounded-circle"
+              style={{ transform: "scale(1.12)" }}
             />
           </div>
           <div className="content">

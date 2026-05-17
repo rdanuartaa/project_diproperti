@@ -71,7 +71,7 @@ export const PROPERTY_TYPE_CONFIG = {
     label: "Ruko",
     fields: [
       { name: "luas_tanah", label: "Luas Tanah (m²)", type: "number", required: true, col: 6 },
-      { name: "luas_bangunan", label: "Luas Bangunan (m²)", type: "number", col: 6 },
+      { name: "luas_bangunan", label: "Luas Bangunan (m²)", type: "number", required: true, col: 6 },
       { name: "parking_capacity", label: "Kapasitas Parkir", type: "number", col: 6 },
       { name: "warehouse_area", label: "Luas Gudang (m²)", type: "number", col: 6 },
       { name: "shop_front_width", label: "Lebar Depan (m)", type: "number", col: 6 },
@@ -95,6 +95,43 @@ export const PROPERTY_TYPE_CONFIG = {
 
 // ✅ Helper aman
 export const getPropertyConfig = (type) => PROPERTY_TYPE_CONFIG[type] || PROPERTY_TYPE_CONFIG.rumah;
+
+export const getAutoBuildingType = (property) => {
+  if (!property) return "";
+
+  const type = property.type;
+  const detail = property.detail || {};
+  const luasTanah = String(detail.luas_tanah ?? "").trim();
+  const luasBangunan = String(detail.luas_bangunan ?? "").trim();
+
+  if (type === "tanah") return luasTanah;
+  if (type === "kos") {
+    const panjang = Number(detail.panjang_ruangan ?? 0);
+    const lebar = Number(detail.lebar_ruangan ?? 0);
+    const luasRuangan = panjang * lebar;
+    return luasRuangan > 0 ? String(luasRuangan) : "";
+  }
+  if (["rumah", "villa", "ruko"].includes(type) && luasTanah && luasBangunan) {
+    return `${luasBangunan}/${luasTanah}`;
+  }
+
+  return "";
+};
+
+export const getBuildingTypeDisplay = (property) =>
+  getAutoBuildingType(property) || property?.building_type || "";
+
+export const getBuildingTypePlaceholder = (type) => {
+  if (type === "tanah") return "Otomatis: Luas Tanah";
+  if (type === "kos") return "Otomatis: Panjang x Lebar Ruangan";
+  return "Otomatis: Luas Bangunan / Luas Tanah";
+};
+
+export const getBuildingTypeLabel = (type) => {
+  if (type === "kos") return "Luas Ruangan";
+  if (type === "tanah") return "Luas Tanah";
+  return "Tipe Bangunan";
+};
 
 const DETAIL_DEFAULTS = {
   water: "pdam",

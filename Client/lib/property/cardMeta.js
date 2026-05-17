@@ -1,7 +1,7 @@
 import { getPropertyConfig } from "./config";
 
 const FIELD_LABELS = {
-  luas_tanah: "LT",
+  luas_tanah: "m²",
   luas_bangunan: "LB",
   floors: "Lantai",
   bedrooms: "KT",
@@ -19,38 +19,42 @@ const FIELD_LABELS = {
   bathroom_position: "KM",
   gender_type: "Gender",
   parking_capacity: "Parkir",
+  parking_area: "Parkir",
   warehouse_area: "Gudang",
   shop_front_width: "Lebar",
   road_access: "Akses",
   land_type: "Tanah",
   land_contour: "Kontur",
-  zoning: "Fungsi",
+  zoning: "Zona",
+  room_size: "m²",
+  building_type: "m²",
 };
 
 const FIELD_SUFFIXES = {
-  luas_tanah: "m²",
+  luas_tanah: "",
   luas_bangunan: "m²",
   electricity_capacity: "VA",
   panjang_ruangan: "m",
   lebar_ruangan: "m",
   warehouse_area: "m²",
   shop_front_width: "m",
+  room_size: "",
 };
 
 const PRIMARY_FIELDS_BY_TYPE = {
-  rumah: ["bedrooms", "bathrooms", "luas_bangunan"],
-  villa: ["bedrooms", "bathrooms", "luas_bangunan"],
-  kos: ["room_size", "total_rooms", "bathroom_position"],
-  ruko: ["luas_bangunan", "parking_capacity", "shop_front_width"],
-  tanah: ["luas_tanah", "road_access", "zoning"],
+  rumah: ["bedrooms", "bathrooms", "building_type"],
+  villa: ["bedrooms", "bathrooms", "building_type"],
+  kos: ["gender_type", "bathroom_position", "room_size"],
+  ruko: ["parking_area", "warehouse_area", "building_type"],
+  tanah: ["zoning", "road_access", "luas_tanah"],
 };
 
 const SEWA_FIELDS_BY_TYPE = {
-  rumah: ["bedrooms", "bathrooms", "luas_bangunan"],
-  villa: ["bedrooms", "bathrooms", "furnished"],
-  kos: ["room_size", "total_rooms", "gender_type"],
-  ruko: ["luas_bangunan", "parking_capacity", "shop_front_width"],
-  tanah: ["luas_tanah", "road_access", "zoning"],
+  rumah: ["bedrooms", "bathrooms", "building_type"],
+  villa: ["bedrooms", "bathrooms", "building_type"],
+  kos: ["gender_type", "bathroom_position", "room_size"],
+  ruko: ["parking_area", "warehouse_area", "building_type"],
+  tanah: ["zoning", "road_access", "luas_tanah"],
 };
 
 const TITLE_CASE_FIELDS = new Set([
@@ -101,16 +105,6 @@ function getFieldValue(property, key) {
   return property?.detail?.[key] ?? property?.[key];
 }
 
-function getRentPeriodLabel(property) {
-  const period = String(property?.price_period || property?.rent_period || "bulan");
-  if (period === "hari") return "Hari";
-  if (period === "minggu") return "Minggu";
-  if (period === "3bulan") return "3 Bulan";
-  if (period === "6bulan") return "6 Bulan";
-  if (period === "tahun") return "Tahun";
-  return "Bulan";
-}
-
 export function getPropertyCardMetaItems(property, maxItems = 3) {
   const type = property?.type || "rumah";
   const config = getPropertyConfig(type);
@@ -126,27 +120,16 @@ export function getPropertyCardMetaItems(property, maxItems = 3) {
     ...configFields.filter((field) => !preferredKeys.includes(field.name)),
   ];
 
-  const detailItems = orderedFields
-    .map((field) => {
-      const key = field.name;
-      const value = formatValue(getFieldValue(property, key), key);
-      return {
-        key,
-        label: formatLabel(field),
-        suffix: FIELD_SUFFIXES[key] || "",
-        value,
-      };
-    })
-    .filter((item) => item.value !== "-");
-
-  if (property?.listing_type === "sewa") {
-    detailItems.unshift({
-      key: "price_period",
-      label: "Periode",
-      value: getRentPeriodLabel(property),
-      suffix: "",
-    });
-  }
+  const detailItems = orderedFields.map((field) => {
+    const key = field.name;
+    const value = formatValue(getFieldValue(property, key), key);
+    return {
+      key,
+      label: formatLabel(field),
+      suffix: FIELD_SUFFIXES[key] || "",
+      value,
+    };
+  });
 
   return detailItems.slice(0, maxItems);
 }

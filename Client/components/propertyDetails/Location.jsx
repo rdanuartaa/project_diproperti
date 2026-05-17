@@ -66,7 +66,7 @@ export default function Location({ property }) {
             }}
           >
             <div>
-              <div className="text-2 fw-6 text-color-heading">
+              <div className="text-4 fw-6 text-color-heading">
                 Hubungi Agen untuk mengetahui detail lokasi properti
               </div>
               <a
@@ -74,7 +74,14 @@ export default function Location({ property }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="tf-btn style-border pd-4"
-                style={{ marginTop: "12px", display: "inline-block" }}
+                style={{
+                  marginTop: "12px",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  lineHeight: 1,
+                }}
               >
                 Tanya Lokasi
               </a>

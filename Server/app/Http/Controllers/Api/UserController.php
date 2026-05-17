@@ -39,6 +39,7 @@ class UserController extends Controller
                 'avatar',
                 'email_verified_at',
                 'created_at',
+                'updated_at',
             ])
             ->latest()
             ->paginate($request->input('per_page', 10));
@@ -82,6 +83,7 @@ class UserController extends Controller
                 'role',
                 'avatar',
                 'email_verified_at',
+                'updated_at',
             ])
         ]);
     }

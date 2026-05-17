@@ -1,4 +1,4 @@
-import { CERTIFICATE_REQUIRED_TYPES, getRelevantDetailFields } from "./config";
+import { CERTIFICATE_REQUIRED_TYPES, getAutoBuildingType, getRelevantDetailFields } from "./config";
 
 export const validatePropertyForm = (formData) => {
   const requiredMain = ["title", "price", "type", "listing_type", "status", "city", "kecamatan"];
@@ -17,6 +17,9 @@ if (formData.type === "kos" && formData.listing_type !== "sewa") {
   } else if (!String(formData.detail.luas_tanah ?? "").trim()) {
     return "Luas tanah wajib diisi.";
   }
+  if (formData.type === "ruko" && !String(formData.detail.luas_bangunan ?? "").trim()) {
+    return "Luas bangunan ruko wajib diisi.";
+  }
   const totalImages = (formData.existingImages?.length || 0) + (formData.newImages?.length || 0);
   if (totalImages < 1) return "Minimal upload 1 gambar.";
   return null;
@@ -24,11 +27,12 @@ if (formData.type === "kos" && formData.listing_type !== "sewa") {
 
 export const buildJsonPayload = (formData) => {
   const { type, detail } = formData;
+  const buildingType = formData.building_type || getAutoBuildingType(formData);
   const payload = {
     title: formData.title,
     price: Number(formData.price),
     type,
-    building_type: formData.building_type || null,
+    building_type: buildingType || null,
     listing_type: formData.listing_type,
     ...(formData.listing_type === "sewa" && formData.rent_period ? { rent_period: formData.rent_period } : {}),
     kecamatan: formData.kecamatan,
@@ -51,11 +55,12 @@ export const buildJsonPayload = (formData) => {
 export const buildFormDataPayload = (formData, primaryIndex = null) => {
   const fd = new FormData();
   const { type } = formData;
+  const buildingType = formData.building_type || getAutoBuildingType(formData);
 
   fd.append("title", formData.title);
   fd.append("price", Number(formData.price));
   fd.append("type", type);
-  if (formData.building_type) fd.append("building_type", formData.building_type);
+  if (buildingType) fd.append("building_type", buildingType);
   fd.append("listing_type", formData.listing_type);
   if (formData.listing_type === "sewa" && formData.rent_period) fd.append("rent_period", formData.rent_period);
   fd.append("kecamatan", formData.kecamatan);

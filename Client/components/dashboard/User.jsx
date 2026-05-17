@@ -119,7 +119,7 @@ export default function User() {
       if (data.success) {
         setUsers((prev) =>
           prev.map((item) =>
-            item.id === activeUser.id ? { ...item, role: formData.role } : item,
+            item.id === activeUser.id ? { ...item, ...data.data } : item,
           ),
         );
         closeAll();
@@ -424,6 +424,55 @@ export default function User() {
                 <form className="modal-form-spacing" onSubmit={handleUpdate}>
                   <div className="row g-3">
                     <div className="col-12">
+                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
+                        Data User
+                      </h6>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Username</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={activeUser?.name || "-"}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Email</label>
+                        <input
+                          type="email"
+                          className="form-control bg-gray-100"
+                          value={activeUser?.email || "-"}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>Nama Lengkap</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={activeUser?.full_name || "-"}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-md-6">
+                      <fieldset className="box-fieldset">
+                        <label>No WhatsApp</label>
+                        <input
+                          type="text"
+                          className="form-control bg-gray-100"
+                          value={activeUser?.phone || "-"}
+                          readOnly
+                        />
+                      </fieldset>
+                    </div>
+                    <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         Pengaturan Role
                       </h6>

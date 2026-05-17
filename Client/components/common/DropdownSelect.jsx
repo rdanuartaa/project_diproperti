@@ -8,11 +8,13 @@ export default function DropdownSelect({
   defaultOption,
   selectedValue,
   addtionalParentClass = "",
+  disabled = false,
 }) {
   const selectRef = useRef();
   const optionsRef = useRef();
   const [selected, setSelected] = useState(options[0]);
   const toggleDropdown = () => {
+    if (disabled) return;
     selectRef.current.classList.toggle("open");
   };
   useEffect(() => {
@@ -58,15 +60,33 @@ export default function DropdownSelect({
 
   return (
     <>
-      <div className={`nice-select ${addtionalParentClass}`} ref={selectRef}>
+      <div
+        className={`nice-select ${addtionalParentClass}`}
+        ref={selectRef}
+        aria-disabled={disabled}
+        style={
+          disabled
+            ? {
+                cursor: "not-allowed",
+                opacity: 0.78,
+                backgroundColor: "#f5f7fb",
+              }
+            : undefined
+        }
+      >
         <span className="current">
           {selectedValue || selected || defaultOption || options[0]}
         </span>
-        <ul className="list" ref={optionsRef}>
+        <ul
+          className="list"
+          ref={optionsRef}
+          style={disabled ? { display: "none" } : undefined}
+        >
           {options.map((elm, i) => (
             <li
               key={i}
               onClick={() => {
+                if (disabled) return;
                 setSelected(elm);
                 onChange(elm);
                 toggleDropdown();

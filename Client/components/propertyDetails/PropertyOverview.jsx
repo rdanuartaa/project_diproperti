@@ -1,5 +1,46 @@
 import React from "react";
-import { getPropertyCardMetaItems, getPropertyConfig } from "@/lib/property";
+import { getPropertyCardMetaItems } from "@/lib/property";
+
+const DETAIL_FIELDS_BY_TYPE = {
+  rumah: ["bedrooms", "bathrooms", "luas_bangunan", "luas_tanah"],
+  villa: ["bedrooms", "bathrooms", "luas_bangunan", "view_type"],
+  kos: ["room_size", "total_rooms", "gender_type", "bathroom_position"],
+  ruko: ["luas_bangunan", "parking_capacity", "shop_front_width", "warehouse_area"],
+  tanah: ["luas_tanah", "road_access", "land_type", "zoning"],
+};
+
+const DETAIL_FIELD_LABELS = {
+  bedrooms: "Kamar Tidur",
+  bathrooms: "Kamar Mandi",
+  luas_bangunan: "Luas Bangunan",
+  luas_tanah: "Luas Tanah",
+  view_type: "Pemandangan",
+  room_size: "Luas Kamar",
+  total_rooms: "Jumlah Kamar",
+  gender_type: "Gender",
+  bathroom_position: "KM",
+  parking_capacity: "Parkir",
+  shop_front_width: "Lebar Depan",
+  warehouse_area: "Gudang",
+  road_access: "Akses Jalan",
+  land_type: "Kondisi Tanah",
+  zoning: "Peruntukan",
+};
+
+const DETAIL_FIELD_SUFFIXES = {
+  luas_bangunan: "m²",
+  luas_tanah: "m²",
+  room_size: "m²",
+  shop_front_width: "m",
+  warehouse_area: "m²",
+};
+
+const TITLE_CASE_FIELDS = new Set([
+  "gender_type",
+  "bathroom_position",
+  "road_access",
+  "land_type",
+]);
 
 export default function PropertyOverview({ property }) {
   // ✅ Fallback jika property belum ada
@@ -54,35 +95,42 @@ export default function PropertyOverview({ property }) {
     return `${base}/${getRentPeriodLabel(item)}`;
   };
 
-  const getListingTypeLabel = (type) => {
-    if (type === "jual") return "Dijual";
-    if (type === "sewa") return "Disewakan";
-    return type || "-";
+  const formatDetailValue = (value, key) => {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "boolean") return value ? "Ya" : "Tidak";
+    if (TITLE_CASE_FIELDS.has(key)) {
+      return String(value)
+        .split("-")
+        .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+        .join("-");
+    }
+    return String(value);
+  };
+
+  const getRoomSize = (item) => {
+    const panjang = Number(item?.detail?.panjang_ruangan ?? 0);
+    const lebar = Number(item?.detail?.lebar_ruangan ?? 0);
+    if (panjang > 0 && lebar > 0) {
+      const area = panjang * lebar;
+      return Number.isInteger(area) ? String(area) : String(Number(area.toFixed(2)));
+    }
+    return null;
+  };
+
+  const getDetailFieldValue = (item, key) => {
+    if (key === "room_size") return getRoomSize(item);
+    return item?.detail?.[key] ?? item?.[key];
   };
 
   const propertyMetaItems = getPropertyCardMetaItems(property, 6);
   const topMetaItems = propertyMetaItems.slice(0, 3);
-  const typeLabel = getPropertyConfig(property.type).label || property.type || "N/A";
-  const detailInfoItems = [
-    { key: "type", label: "Kategori", value: typeLabel },
-    {
-      key: "listing_type",
-      label: "Penawaran",
-      value: getListingTypeLabel(property.listing_type),
-    },
-    property.listing_type === "sewa"
-      ? {
-          key: "rent_period",
-          label: "Periode Sewa",
-          value: getRentPeriodLabel(property),
-        }
-      : {
-          key: "certificate_type",
-          label: "Sertifikat",
-          value: property.certificate_type || "N/A",
-        },
-    ...propertyMetaItems.filter((item) => item.key !== "price_period"),
-  ].slice(0, 8);
+  const detailFields = DETAIL_FIELDS_BY_TYPE[property.type] || DETAIL_FIELDS_BY_TYPE.rumah;
+  const detailInfoItems = detailFields.map((key) => ({
+    key,
+    label: DETAIL_FIELD_LABELS[key] || key,
+    value: formatDetailValue(getDetailFieldValue(property, key), key),
+    suffix: DETAIL_FIELD_SUFFIXES[key] || "",
+  }));
 
   return (
     <>

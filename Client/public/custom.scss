@@ -290,6 +290,20 @@
   .box-uploadfile { margin-bottom: 12px; }
   .box-img-upload { margin-top: 12px; }
   h6 { margin-top: 8px; }
+  .detail-fieldset {
+    margin-bottom: 12px;
+
+    label {
+      display: block;
+      margin-bottom: 8px !important;
+      line-height: 1.35;
+    }
+
+    .nice-select,
+    .form-control {
+      margin-top: 0;
+    }
+  }
 }
 .modal-body-wide {
   padding: 2rem 2.25rem;
@@ -390,7 +404,8 @@ select.form-control-equal {
 }
 
 .detail-fieldset label {
-  min-height: 45px;
+  min-height: 0;
+  margin-bottom: 3px !important;
 }
 
 .detail-checkbox {

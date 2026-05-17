@@ -2,13 +2,17 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCompare } from "./CompareContext";
+import AttentionModal from "@/components/common/AttentionModal";
 
 export default function CompareBar() {
   const router = useRouter();
   const {
     compareList,
+    compareMeta,
     isBarOpen,
     setIsBarOpen,
+    compareNotice,
+    setCompareNotice,
     removeFromCompare,
     clearCompare,
     MAX_COMPARE,
@@ -16,12 +20,16 @@ export default function CompareBar() {
 
   const handleCompare = () => {
     const slugs = compareList
+      .slice(0, MAX_COMPARE)
       .map((p) => p.slug?.trim())
       .filter(Boolean)
       .join(",");
     
-    if (!slugs) {
-      alert("Pilih minimal 2 properti untuk dibandingkan");
+    if (compareList.length < 2 || !slugs) {
+      setCompareNotice({
+        open: true,
+        message: "Pilih minimal 2 properti yang selaras untuk dibandingkan.",
+      });
       return;
     }
 
@@ -30,6 +38,13 @@ export default function CompareBar() {
 
   // ✅ Redirect ke halaman listing untuk menambah properti
   const handleAddProperty = () => {
+    if (compareMeta?.type && compareMeta?.listingType) {
+      router.push(
+        `/list-properti?type=${encodeURIComponent(compareMeta.type)}&listing_type=${encodeURIComponent(compareMeta.listingType)}`,
+      );
+      return;
+    }
+
     router.push("/list-properti");
   };
 
@@ -111,9 +126,44 @@ export default function CompareBar() {
               Bandingkan Properti
             </h6>
             <p style={{ margin: "6px 0 0", fontSize: "14px", color: "#6b7280" }}>
-              Pilih 2 hingga 3 properti untuk dibandingkan. Hindari membandingkan tipe
-              atau status yang berbeda (misalnya Rumah dan Ruko/ Dijual dan Disewa).
+              Pilih 2 hingga 3 properti. Bar ini hanya menerima tipe dan penawaran
+              yang sama agar tabel komparasi tetap selaras.
             </p>
+            {compareMeta && (
+              <div
+                style={{
+                  display: "flex",
+                  gap: "6px",
+                  flexWrap: "wrap",
+                  marginTop: "8px",
+                }}
+              >
+                <span
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: "999px",
+                    background: "#eef4ff",
+                    color: "var(--Primary, #1a3c6e)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {compareMeta.typeLabel}
+                </span>
+                <span
+                  style={{
+                    padding: "4px 8px",
+                    borderRadius: "999px",
+                    background: "#eef4ff",
+                    color: "var(--Primary, #1a3c6e)",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {compareMeta.listingTypeLabel}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Slot properti yang dipilih */}
@@ -237,6 +287,11 @@ export default function CompareBar() {
           </div>
         </div>
       </div>
+      <AttentionModal
+        isOpen={compareNotice.open}
+        onClose={() => setCompareNotice({ open: false, message: "" })}
+        message={compareNotice.message}
+      />
     </>
   );
 }
