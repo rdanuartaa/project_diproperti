@@ -106,7 +106,7 @@ export default function Hero() {
               <div className="widget-tabs style-1">
                 <div className="wg-filter style-2">
                   <div className="widget-content-inner active">
-                    <div className="form-title style-2">
+                    <div className="form-title style-2" style={{ justifyContent: "center" }}>
                       <div className="box-select style-2">
                         <DropdownSelect
                           options={PROPERTY_TYPE_OPTIONS}

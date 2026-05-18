@@ -43,9 +43,9 @@ export default function Banner() {
                     className="wow animate__fadeInRight animate__animated"
                     data-wow-duration="2s"
                     alt="agent"
-                    width={346}
-                    height={499}
-                    src="/images/diproperti/bannerhome.webp"
+                    width={486}
+                    height={650}
+                    src="/images/diproperti/womenbannerhome.png"
                   />
                 </div>
               </div>

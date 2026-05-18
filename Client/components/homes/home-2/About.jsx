@@ -336,8 +336,8 @@ export default function About() {
           <Image
             alt="About Home"
             width={576}
-            height={766}
-            src="/images/diproperti/abouthome.webp"
+            height={790}
+            src="/images/diproperti/women.png"
             priority
           />
         </div>

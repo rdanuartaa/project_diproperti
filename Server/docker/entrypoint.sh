@@ -9,14 +9,20 @@ mkdir -p storage/framework/cache/data
 mkdir -p storage/framework/sessions
 mkdir -p storage/framework/views
 mkdir -p storage/logs
-
+    
 echo ">>> Waiting for database..."
 until php -r "new PDO('mysql:host=db;dbname=${DB_DATABASE}', '${DB_USERNAME}', '${DB_PASSWORD}');" 2>/dev/null; do
     echo "Database not ready, waiting 2s..."
     sleep 2
 done
 
+echo ">>> Clearing stale cache..."
+rm -f /var/www/html/bootstrap/cache/packages.php
+rm -f /var/www/html/bootstrap/cache/services.php
+rm -f /var/www/html/bootstrap/cache/config.php
+
 echo ">>> Running artisan commands..."
+php artisan package:discover --ansi || true
 php artisan key:generate --force || true
 php artisan config:clear || true
 php artisan config:cache || true
