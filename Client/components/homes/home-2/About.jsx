@@ -337,7 +337,7 @@ export default function About() {
             alt="About Home"
             width={576}
             height={790}
-            src="/images/diproperti/women.png"
+            src="/images/diproperti/womenhome.png"
             priority
           />
         </div>
