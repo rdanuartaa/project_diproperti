@@ -5,25 +5,61 @@ import Link from "next/link";
 import Image from "next/image";
 import { Pagination } from "swiper/modules";
 import { api } from "@/lib/api";
+import ArticleViewMeta from "./ArticleViewMeta";
 import "swiper/css";
 import "swiper/css/pagination";
 
-export default function RelatedArtikel() {
+export default function RelatedArtikel({ currentSlug }) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLatestArticles = async () => {
+    const normalizeArticles = (payload) =>
+      Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
+    const fetchRelatedArticles = async () => {
       try {
-        const res = await api.get("/articles", {
-          params: {
-            page: 1,
-            per_page: 6, // Ambil 6 artikel untuk slider
-            status: "published",
-          },
-        });
-        const data = res.data.data || [];
-        setArticles(data);
+        setLoading(true);
+
+        if (!currentSlug) {
+          setArticles([]);
+          return;
+        }
+
+        const articleRes = await api.get(`/articles/${currentSlug}`);
+        const currentArticle = articleRes.data;
+        const tagSlugs = (currentArticle?.tags || [])
+          .map((tag) => tag.slug)
+          .filter(Boolean);
+
+        if (tagSlugs.length === 0) {
+          setArticles([]);
+          return;
+        }
+
+        const relatedResponses = await Promise.all(
+          tagSlugs.map((tag) =>
+            api.get("/articles", {
+              params: {
+                page: 1,
+                per_page: 7,
+                tag,
+              },
+            })
+          )
+        );
+
+        const uniqueArticles = new Map();
+        relatedResponses
+          .flatMap((response) => normalizeArticles(response.data))
+          .filter((article) => article.slug !== currentSlug)
+          .forEach((article) => uniqueArticles.set(article.id || article.slug, article));
+
+        setArticles(Array.from(uniqueArticles.values()).slice(0, 6));
       } catch (error) {
         console.error("Gagal ambil related articles:", error);
         setArticles([]);
@@ -32,8 +68,8 @@ export default function RelatedArtikel() {
       }
     };
 
-    fetchLatestArticles();
-  }, []);
+    fetchRelatedArticles();
+  }, [currentSlug]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -103,7 +139,8 @@ export default function RelatedArtikel() {
                     </div>
                     <div className="article-content">
                       <div className="time">
-                        <div className="icons">
+                        <ArticleViewMeta views={article.views} compact />
+                        <div className="icons" style={{ marginLeft: "8px" }}>
                           <i className="icon-clock" />
                         </div>
                         {/* Format tanggal sesuai API */}
@@ -121,7 +158,7 @@ export default function RelatedArtikel() {
                         href={`/artikel/${article.slug}`}
                         className="tf-btn-link"
                       >
-                        <span> Read More </span>
+                        <span>Lanjut Baca</span>
                         <i className="icon-circle-arrow" />
                       </Link>
                     </div>

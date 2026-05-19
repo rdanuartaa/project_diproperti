@@ -15,6 +15,8 @@ const FIELD_LABELS = {
   view_type: "View",
   panjang_ruangan: "Panjang",
   lebar_ruangan: "Lebar",
+  panjang_tanah: "Panjang",
+  lebar_tanah: "Lebar",
   total_rooms: "Kamar",
   bathroom_position: "KM",
   gender_type: "Gender",
@@ -31,11 +33,14 @@ const FIELD_LABELS = {
 };
 
 const FIELD_SUFFIXES = {
-  luas_tanah: "",
+  luas_tanah: "m²",
   luas_bangunan: "m²",
   electricity_capacity: "VA",
   panjang_ruangan: "m",
   lebar_ruangan: "m",
+  panjang_tanah: "m",
+  lebar_tanah: "m",
+  parking_capacity: " mobil",
   warehouse_area: "m²",
   shop_front_width: "m",
   room_size: "",
@@ -45,16 +50,16 @@ const PRIMARY_FIELDS_BY_TYPE = {
   rumah: ["bedrooms", "bathrooms", "building_type"],
   villa: ["bedrooms", "bathrooms", "building_type"],
   kos: ["gender_type", "bathroom_position", "room_size"],
-  ruko: ["parking_area", "warehouse_area", "building_type"],
-  tanah: ["zoning", "road_access", "luas_tanah"],
+  ruko: ["parking_capacity", "warehouse_area", "building_type"],
+  tanah: ["panjang_tanah", "lebar_tanah", "luas_tanah"],
 };
 
 const SEWA_FIELDS_BY_TYPE = {
   rumah: ["bedrooms", "bathrooms", "building_type"],
   villa: ["bedrooms", "bathrooms", "building_type"],
   kos: ["gender_type", "bathroom_position", "room_size"],
-  ruko: ["parking_area", "warehouse_area", "building_type"],
-  tanah: ["zoning", "road_access", "luas_tanah"],
+  ruko: ["parking_capacity", "warehouse_area", "building_type"],
+  tanah: ["panjang_tanah", "lebar_tanah", "luas_tanah"],
 };
 
 const TITLE_CASE_FIELDS = new Set([

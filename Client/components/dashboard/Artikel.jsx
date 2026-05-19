@@ -8,6 +8,7 @@ import DropdownSelect from "../common/DropdownSelect";
 import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
+import { formatViewCount } from "@/lib/property";
 
 const emptyForm = {
   title: "",
@@ -483,6 +484,7 @@ export default function Artikel() {
                       <th>Artikel</th>
                       <th>Tag</th>
                       <th>Status</th>
+                      <th>Kunjungan</th>
                       <th>Diperbarui</th>
                       <th>Aksi</th>
                     </tr>
@@ -549,6 +551,11 @@ export default function Artikel() {
                             }`}
                           >
                             {article.status}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-sm text-gray-500">
+                            {formatViewCount(article.views)}
                           </span>
                         </td>
                         <td>
@@ -637,13 +644,10 @@ export default function Artikel() {
           <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
           <ul className="list">
             <li>
-              <a href="#">Privasi</a>
+              <a href="/faq">FAQ</a>
             </li>
             <li>
-              <a href="#">Syarat</a>
-            </li>
-            <li>
-              <a href="#">Bantuan</a>
+              <a href="/contact">Bantuan</a>
             </li>
           </ul>
         </div>

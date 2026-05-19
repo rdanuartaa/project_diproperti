@@ -63,11 +63,15 @@ class PropertyDetailService
             ]),
             'ruko' => array_merge($base, $universal, [
                 'detail.luas_bangunan' => 'required|integer|min:0',
+                'detail.bedrooms' => 'nullable|integer|min:0',
+                'detail.bathrooms' => 'nullable|integer|min:0',
                 'detail.parking_capacity' => 'nullable|integer|min:0',
                 'detail.warehouse_area' => 'nullable|integer|min:0',
                 'detail.shop_front_width' => 'nullable|numeric|min:0',
             ]),
             'tanah' => array_merge($base, $universal, [
+                'detail.panjang_tanah' => 'required|numeric|min:0',
+                'detail.lebar_tanah' => 'required|numeric|min:0',
                 'detail.road_access' => 'required|in:aspal,cor,batu,belum',
                 'detail.land_type' => 'nullable|in:datar,miring,bukit',
                 'detail.land_contour' => 'nullable|string|max:100',
@@ -101,12 +105,21 @@ class PropertyDetailService
         if (array_key_exists('lebar_ruangan', $detail) && !array_key_exists('luas_bangunan', $detail)) {
             $detail['luas_bangunan'] = $detail['lebar_ruangan'];
         }
+        if (
+            array_key_exists('panjang_tanah', $detail) &&
+            array_key_exists('lebar_tanah', $detail) &&
+            (!array_key_exists('luas_tanah', $detail) || $detail['luas_tanah'] === null || $detail['luas_tanah'] === '')
+        ) {
+            $detail['luas_tanah'] = round((float) $detail['panjang_tanah'] * (float) $detail['lebar_tanah']);
+        }
 
         $integerFields = [
             'luas_tanah',
             'luas_bangunan',
             'panjang_ruangan',
             'lebar_ruangan',
+            'panjang_tanah',
+            'lebar_tanah',
             'floors',
             'bedrooms',
             'bathrooms',
@@ -176,7 +189,7 @@ class PropertyDetailService
             $data[$field] = ($val === null || $val === '' || $val === 'null') ? $default : (int) $val;
         }
 
-        foreach (['panjang_ruangan', 'lebar_ruangan'] as $field) {
+        foreach (['panjang_ruangan', 'lebar_ruangan', 'panjang_tanah', 'lebar_tanah'] as $field) {
             $val = $detail[$field] ?? null;
             $data[$field] = ($val === null || $val === '' || $val === 'null') ? null : (float) $val;
         }

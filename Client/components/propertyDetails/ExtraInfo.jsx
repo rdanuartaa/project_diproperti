@@ -1,5 +1,21 @@
 import React from "react";
-import { CERTIFICATE_REQUIRED_TYPES, getPropertyConfig } from "@/lib/property";
+import {
+  CERTIFICATE_REQUIRED_TYPES,
+  formatPropertyValue,
+  getPropertyConfig,
+} from "@/lib/property";
+
+const MAIN_DETAIL_FIELDS_BY_TYPE = {
+  rumah: ["bedrooms", "bathrooms"],
+  villa: ["bedrooms", "bathrooms"],
+  kos: [
+    "gender_type",
+    "bathroom_position",
+    "total_rooms",
+  ],
+  ruko: ["parking_capacity", "shop_front_width", "warehouse_area"],
+  tanah: ["panjang_tanah", "lebar_tanah", "luas_tanah", "road_access"],
+};
 
 export default function ExtraInfo({ property }) {
   if (!property) {
@@ -19,6 +35,7 @@ export default function ExtraInfo({ property }) {
   const description = property.description || "Tidak ada deskripsi tersedia.";
   const propertyType = property.type || "rumah";
   const propertyConfig = getPropertyConfig(propertyType);
+  const excludedMainFields = new Set(MAIN_DETAIL_FIELDS_BY_TYPE[propertyType] || []);
 
   const getVal = (value, fallback = "-") => {
     if (value === null || value === undefined || value === "") return fallback;
@@ -31,12 +48,7 @@ export default function ExtraInfo({ property }) {
   };
 
   const formatText = (value) => {
-    if (value === null || value === undefined || value === "") return "-";
-    if (typeof value === "boolean") return value ? "Ya" : "Tidak";
-    return String(value)
-      .split("-")
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join("-");
+    return formatPropertyValue(null, value);
   };
 
   const formatRentPeriod = (value) => {
@@ -54,16 +66,17 @@ export default function ExtraInfo({ property }) {
   const formatFieldValue = (field) => {
     const value = detail[field.name];
     if (field.type === "number") {
+      if (value === null || value === undefined || value === "") return "-";
       const unit = field.label.match(/\(([^)]+)\)/)?.[1];
       return `${formatNumber(value)}${unit ? ` ${unit}` : ""}`;
     }
-    return formatText(value);
+    return formatPropertyValue(field.name, value);
   };
 
   const detailItems = [
     {
       key: "listing_type",
-      label: "Status Listing",
+      label: "Penawaran",
       value: property.listing_type === "sewa" ? "Disewakan" : "Dijual",
     },
     ...(property.listing_type === "sewa"
@@ -79,28 +92,31 @@ export default function ExtraInfo({ property }) {
             {
               key: "certificate_type",
               label: "Sertifikat",
-              value: `${getVal(property.certificate_type)} (${getVal(property.certificate_status)})`,
+              value: `${getVal(property.certificate_type)} (${formatPropertyValue(
+                "certificate_status",
+                property.certificate_status,
+              )})`,
             },
           ]
         : []),
     ...propertyConfig.fields
-      .filter((field) => field.type !== "checkbox")
+      .filter((field) => field.type !== "checkbox" && !excludedMainFields.has(field.name))
       .map((field) => ({
         key: field.name,
         label: cleanLabel(field.label),
         value: formatFieldValue(field),
       })),
-  ].filter((item) => item.value !== "-");
+  ];
 
   const midpoint = Math.ceil(detailItems.length / 2);
   const columns = [detailItems.slice(0, midpoint), detailItems.slice(midpoint)];
 
   const renderDetailItem = (item) => (
-    <li className="flex" style={{ whiteSpace: "nowrap", gap: "8px" }} key={item.key}>
-      <p className="fw-6" style={{ minWidth: "140px" }}>
+    <li className="detail-item flex" key={item.key}>
+      <p className="detail-label fw-6">
         {item.label}
       </p>
-      <p>{item.value}</p>
+      <p className="detail-value">{item.value}</p>
     </li>
   );
 

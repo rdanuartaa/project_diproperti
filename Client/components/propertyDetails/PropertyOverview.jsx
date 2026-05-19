@@ -1,19 +1,24 @@
 import React from "react";
-import { getPropertyCardMetaItems } from "@/lib/property";
+import Link from "next/link";
+import PropertyViewMeta from "@/components/properties/PropertyViewMeta";
 
 const DETAIL_FIELDS_BY_TYPE = {
-  rumah: ["bedrooms", "bathrooms", "luas_bangunan", "luas_tanah"],
-  villa: ["bedrooms", "bathrooms", "luas_bangunan", "view_type"],
-  kos: ["room_size", "total_rooms", "gender_type", "bathroom_position"],
-  ruko: ["luas_bangunan", "parking_capacity", "shop_front_width", "warehouse_area"],
-  tanah: ["luas_tanah", "road_access", "land_type", "zoning"],
+  rumah: ["building_type", "listing_type", "bedrooms", "bathrooms"],
+  villa: ["building_type", "listing_type", "bedrooms", "bathrooms"],
+  kos: ["gender_type", "bathroom_position", "room_size", "total_rooms"],
+  ruko: ["building_type", "parking_capacity", "shop_front_width", "warehouse_area"],
+  tanah: ["panjang_tanah", "lebar_tanah", "luas_tanah", "road_access"],
 };
 
 const DETAIL_FIELD_LABELS = {
   bedrooms: "Kamar Tidur",
   bathrooms: "Kamar Mandi",
+  building_type: "Tipe Bangunan",
+  listing_type: "Penawaran",
   luas_bangunan: "Luas Bangunan",
   luas_tanah: "Luas Tanah",
+  panjang_tanah: "Panjang Tanah",
+  lebar_tanah: "Lebar Tanah",
   view_type: "Pemandangan",
   room_size: "Luas Kamar",
   total_rooms: "Jumlah Kamar",
@@ -24,14 +29,19 @@ const DETAIL_FIELD_LABELS = {
   warehouse_area: "Gudang",
   road_access: "Akses Jalan",
   land_type: "Kondisi Tanah",
+  land_contour: "Kondisi Tanah",
   zoning: "Peruntukan",
 };
 
 const DETAIL_FIELD_SUFFIXES = {
+  building_type: " m²",
   luas_bangunan: "m²",
   luas_tanah: "m²",
+  panjang_tanah: "m",
+  lebar_tanah: "m",
   room_size: "m²",
-  shop_front_width: "m",
+  parking_capacity: " mobil",
+  shop_front_width: "m²",
   warehouse_area: "m²",
 };
 
@@ -40,7 +50,31 @@ const TITLE_CASE_FIELDS = new Set([
   "bathroom_position",
   "road_access",
   "land_type",
+  "land_contour",
 ]);
+
+const DETAIL_FIELD_ICONS = {
+  building_type: "icon-house",
+  listing_type: "icon-sale",
+  luas_bangunan: "icon-sqft",
+  luas_tanah: "icon-land",
+  panjang_tanah: "icon-Ruler",
+  lebar_tanah: "icon-Ruler",
+  bedrooms: "icon-Bed-2",
+  bathrooms: "icon-Bathtub",
+  view_type: "icon-view",
+  gender_type: "icon-user-2",
+  bathroom_position: "icon-bath",
+  room_size: "icon-Ruler",
+  total_rooms: "icon-beds-3",
+  parking_capacity: "icon-Garage-1",
+  shop_front_width: "icon-Ruler",
+  warehouse_area: "icon-warehouse",
+  road_access: "icon-location-4",
+  land_type: "icon-land",
+  land_contour: "icon-SlidersHorizontal",
+  zoning: "icon-settings",
+};
 
 export default function PropertyOverview({ property }) {
   // ✅ Fallback jika property belum ada
@@ -119,17 +153,26 @@ export default function PropertyOverview({ property }) {
 
   const getDetailFieldValue = (item, key) => {
     if (key === "room_size") return getRoomSize(item);
+    if (key === "listing_type") return item?.listing_type === "sewa" ? "Disewakan" : "Dijual";
     return item?.detail?.[key] ?? item?.[key];
   };
 
-  const propertyMetaItems = getPropertyCardMetaItems(property, 6);
-  const topMetaItems = propertyMetaItems.slice(0, 3);
+  const handleShareWhatsApp = () => {
+    if (typeof window === "undefined") return;
+    const url = window.location.href;
+    const title = property?.title ? `${property.title} - ` : "";
+    const message = `${title}${url}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  };
+
   const detailFields = DETAIL_FIELDS_BY_TYPE[property.type] || DETAIL_FIELDS_BY_TYPE.rumah;
   const detailInfoItems = detailFields.map((key) => ({
     key,
     label: DETAIL_FIELD_LABELS[key] || key,
     value: formatDetailValue(getDetailFieldValue(property, key), key),
     suffix: DETAIL_FIELD_SUFFIXES[key] || "",
+    icon: DETAIL_FIELD_ICONS[key] || "icon-SlidersHorizontal",
   }));
 
   return (
@@ -143,32 +186,30 @@ export default function PropertyOverview({ property }) {
           
         </div>
       </div>
-      <div className="info flex justify-between">
+      <div className="info property-overview-info flex justify-between items-center">
         <div className="feature">
-          <p className="location text-1 flex items-center gap-10">
-            <i className="icon-location" />
-            <span className="fw-5">
-              {property.address ||
-                [property.kecamatan, property.city].filter(Boolean).join(", ") ||
-                "Alamat tidak tersedia"}
-            </span>
-          </p>
-          <ul className="meta-list flex">
-            {topMetaItems.map((item) => (
-              <li className="text-1 flex" key={item.key}>
-                <span className="fw-5">
-                  {item.value}
-                  {item.suffix || ""}
-                </span>{" "}
-                {item.label}
-              </li>
-            ))}
-          </ul>
+          <div className="property-location-row text-1 flex items-center">
+            <p className="location flex items-center gap-10" style={{ margin: 0 }}>
+              <i className="icon-location" />
+              <span className="fw-5">
+                {property.address ||
+                  [property.kecamatan, property.city].filter(Boolean).join(", ") ||
+                  "Alamat tidak tersedia"}
+              </span>
+            </p>
+            <PropertyViewMeta
+              views={property.views}
+              color="inherit"
+              iconColor="currentColor"
+              fontSize="inherit"
+              fontWeight={500}
+            />
+          </div>
         </div>
         <div className="action">
           <ul className="list-action">
             <li>
-              <a href="#">
+              <Link href="/komparasi" aria-label="Bandingkan properti">
                 <svg
                   width={18}
                   height={18}
@@ -184,10 +225,15 @@ export default function PropertyOverview({ property }) {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </a>
+              </Link>
             </li>
             <li>
-              <a href="#">
+              <button
+                type="button"
+                className="btn-icon save hover-tooltip"
+                onClick={handleShareWhatsApp}
+                aria-label="Bagikan ke WhatsApp"
+              >
                 <svg
                   width={18}
                   height={18}
@@ -203,7 +249,8 @@ export default function PropertyOverview({ property }) {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </a>
+                <span className="tooltip">Bagikan</span>
+              </button>
             </li>
           </ul>
         </div>
@@ -213,27 +260,47 @@ export default function PropertyOverview({ property }) {
           <div className="wrap-box" key={`${item.key}-${index}`}>
             <div className="box-icon">
               <div className="icons">
-                <i
-                  className={
-                    index === 0
-                      ? "icon-HouseLine"
-                      : index === 1
-                        ? "icon-Garage-1"
-                        : "icon-SlidersHorizontal"
-                  }
-                />
+                <i className={item.icon} />
               </div>
               <div className="content">
                 <div className="text-4 text-color-default">{item.label}:</div>
                 <div className="text-1 text-color-heading">
                   {item.value}
-                  {item.suffix || ""}
+                  {item.value !== "-" ? item.suffix || "" : ""}
                 </div>
               </div>
             </div>
           </div>
         ))}
       </div>
+      <style jsx global>{`
+        .property-location-row {
+          flex-wrap: wrap;
+          column-gap: 28px;
+          row-gap: 8px;
+          margin-bottom: 0;
+        }
+
+        .property-location-row .property-view-meta svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        .property-overview-info {
+          align-items: center;
+        }
+
+        .property-overview-info .feature,
+        .property-overview-info .action,
+        .property-overview-info .list-action {
+          display: flex;
+          align-items: center;
+        }
+
+        .property-overview-info .list-action {
+          margin-bottom: 0;
+        }
+      `}</style>
     </>
   );
 }

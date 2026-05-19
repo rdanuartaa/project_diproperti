@@ -6,22 +6,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 
-export default function Nav() {
+export default function Nav({ variant = "desktop" }) {
   const pathname = usePathname();
   const { isAuthenticated, loading } = useAuth();
   const [attention, setAttention] = useState({ open: false, message: "" });
-  const isParentActive = (menus) =>
-    menus.some((menu) =>
-      menu.submenu
-        ? menu.submenu.some((item) =>
-            item.submenu
-              ? item.submenu.some(
-                  (item) => item.href.split("/")[1] === pathname.split("/")[1],
-                )
-              : item.href.split("/")[1] === pathname.split("/")[1],
-          )
-        : menu.href.split("/")[1] === pathname.split("/")[1],
-    );
+  const isMobile = variant === "mobile";
+  const isFiturActive = [
+    "/rekomendasi-properti",
+    "/komparasi",
+    "/simulasi-kpr",
+  ].includes(pathname);
+  const getTopLevelActiveClass = (path) =>
+    pathname === path
+      ? isMobile
+        ? "current-menu-item"
+        : "current-menu"
+      : "";
   return (
     <>
       <AttentionModal
@@ -30,22 +30,44 @@ export default function Nav() {
         title="Perhatian"
         message={attention.message}
       />
-      <li className={pathname === "/" ? "current-menu" : ""}>
+      <li className={getTopLevelActiveClass("/")}>
         <Link href="/">Home</Link>
       </li>
-      <li
-        className={pathname === "/list-properti" ? "current-menu" : ""}>
+      <li className={getTopLevelActiveClass("/list-properti")}>
         <Link href="/list-properti">Properti</Link>
       </li>
       <li
-        className={`has-child ${
-          ["/rekomendasi-properti", "/komparasi", "/simulasi-kpr"].includes(pathname)
-            ? "current-menu"
+        className={`${
+          isMobile ? "menu-item-has-children-mobile" : "has-child"
+        } ${
+          isFiturActive
+            ? isMobile
+              ? "current-menu-item"
+              : "current-menu"
             : ""
         }`}
       >
-        <a href="#">Fitur</a>
-        <ul className="submenu">
+        {isMobile ? (
+          <a
+            href="#mobile-fitur"
+            data-bs-toggle="collapse"
+            data-bs-target="#mobile-fitur"
+            aria-expanded={isFiturActive ? "true" : "false"}
+            className={isFiturActive ? "" : "collapsed"}
+          >
+            Fitur
+          </a>
+        ) : (
+          <a href="#">Fitur</a>
+        )}
+        <ul
+          id={isMobile ? "mobile-fitur" : undefined}
+          className={
+            isMobile
+              ? `sub-mobile collapse${isFiturActive ? " show" : ""}`
+              : "submenu"
+          }
+        >
           <li className={pathname === "/rekomendasi-properti" ? "current-item" : ""}>
             <Link href="/rekomendasi-properti">Rekomendasi</Link>
           </li>
@@ -57,10 +79,10 @@ export default function Nav() {
           </li>
         </ul>
       </li>
-      <li className={pathname === "/list-artikel" ? "current-menu" : ""}>
+      <li className={getTopLevelActiveClass("/list-artikel")}>
         <Link href="/list-artikel">Artikel</Link>
       </li>
-      <li className={pathname === "/jual-properti" ? "current-menu" : ""}>
+      <li className={getTopLevelActiveClass("/jual-properti")}>
         <Link
           href="/jual-properti"
           onClick={(event) => {

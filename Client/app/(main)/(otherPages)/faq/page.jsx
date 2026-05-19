@@ -11,7 +11,7 @@ export default function page() {
       <div id="wrapper" className="counter-scroll">
         <Header1 />
         <Breadcumb pageName="FAQS" />
-        <div className="main-content tf-spacing-6 header-fixed">
+        <div className="main-content">
           <Faqs />
         </div>
         <Footer1 />

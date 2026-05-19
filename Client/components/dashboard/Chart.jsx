@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef } from "react";
+import { formatViewCount } from "@/lib/property";
 import {
   Chart,
   LineController,
@@ -45,7 +46,7 @@ const LineChart = ({ chartData, height = 300 }) => {
       ctx.fillStyle = "#6b7280";
       ctx.textAlign = "center";
       ctx.fillText(
-        "Belum ada data views",
+        "Belum ada data kunjungan",
         ctx.canvas.width / 2,
         ctx.canvas.height / 2
       );
@@ -82,11 +83,18 @@ const LineChart = ({ chartData, height = 300 }) => {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: true,
+            labels: {
+              color: "#374151",
+              usePointStyle: true,
+              boxWidth: 8,
+            },
+          },
           tooltip: {
             backgroundColor: "#1f2937",
             callbacks: {
-              label: (ctx) => `Views: ${ctx.parsed.y}`,
+              label: (ctx) => `${ctx.dataset.label}: ${formatViewCount(ctx.parsed.y)}`,
             },
           },
         },
@@ -96,10 +104,7 @@ const LineChart = ({ chartData, height = 300 }) => {
             grid: { color: "rgba(0,0,0,0.05)" },
             ticks: {
               color: "#6b7280",
-              callback: (val) =>
-                val >= 1000
-                  ? (val / 1000).toFixed(1) + "K"
-                  : val,
+              callback: (val) => formatViewCount(val),
             },
           },
           x: {

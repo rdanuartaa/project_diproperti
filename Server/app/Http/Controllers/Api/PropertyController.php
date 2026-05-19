@@ -11,6 +11,7 @@ use App\Services\Property\PropertyFilterService;
 use App\Services\Property\PropertyMediaService;
 use App\Services\Property\PropertyRecommendationService;
 use App\Services\Property\PropertySubmissionService;
+use App\Services\ViewTrackingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -25,6 +26,7 @@ class PropertyController extends Controller
         private PropertyFilterService $filterService,
         private PropertyRecommendationService $recommendationService,
         private PropertySubmissionService $submissionService,
+        private ViewTrackingService $viewTrackingService,
     ) {}
 
     // =========================================================================
@@ -168,7 +170,7 @@ class PropertyController extends Controller
             $property->makeVisible(['latitude', 'longitude']);
         }
 
-        if (!$viewer?->isAdmin()) $property->increment('views');
+        $this->viewTrackingService->track(request(), 'property', $property->id, $property);
 
         return response()->json($property);
     }

@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Services\ViewTrackingService;
 
 class ArticleController extends Controller
 {
+    public function __construct(private ViewTrackingService $viewTrackingService) {}
+
     /**
      * Helper: Trigger accessor image_url (SAMA PERSIS seperti PropertyController)
      */
@@ -163,9 +166,7 @@ class ArticleController extends Controller
                 ->firstOrFail();
             $this->appendImageUrls($article);
 
-            if (!request()->user()?->isAdmin()) {
-                $article->increment('views');
-            }
+            $this->viewTrackingService->track(request(), 'article', $article->id, $article);
 
             return response()->json($article);
 

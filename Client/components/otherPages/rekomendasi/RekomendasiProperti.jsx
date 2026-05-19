@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import DropdownSelect from "@/components/common/DropdownSelect";
+import PropertyGridItems from "@/components/properties/PropertyGridItems";
 import PropertyListItems from "@/components/properties/PropertyListItems";
 
 const PROPERTY_TYPE_OPTIONS = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"];
@@ -17,13 +18,6 @@ const DEFAULT_WEIGHTS = {
   location: 30,
   area: 20,
   facilities: 15,
-};
-
-const RESET_WEIGHTS = {
-  price: 25,
-  location: 25,
-  area: 25,
-  facilities: 25,
 };
 
 const CRITERIA_LABELS = {
@@ -91,10 +85,6 @@ const getCriterionDisplay = (criterionKey, propertyType) => {
   };
 };
 
-const clampWeight = (value) => Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-
-const EMPTY_LOCKED_WEIGHTS = {};
-
 const normalizeWeightsToTotal = (rawWeights) => {
   const keys = CRITERIA.map((criterion) => criterion.key);
   const rounded = {};
@@ -155,82 +145,9 @@ const calculateAhpResult = (comparisons) => {
   };
 };
 
-const rebalanceWeights = (currentWeights, changedKey, nextValue, lockedWeights = EMPTY_LOCKED_WEIGHTS) => {
-  if (lockedWeights[changedKey]) return currentWeights;
-
-  const lockedKeys = CRITERIA.map((criterion) => criterion.key).filter((key) => lockedWeights[key]);
-  const lockedTotal = lockedKeys.reduce((sum, key) => sum + (Number(currentWeights[key]) || 0), 0);
-  const maxChangedValue = Math.max(0, 100 - lockedTotal);
-  const clampedValue = Math.min(clampWeight(nextValue), maxChangedValue);
-  const otherKeys = CRITERIA.map((criterion) => criterion.key).filter(
-    (key) => key !== changedKey && !lockedWeights[key],
-  );
-  const nextWeights = { ...currentWeights, [changedKey]: clampedValue };
-  const remaining = 100 - lockedTotal - clampedValue;
-  const otherTotal = otherKeys.reduce((sum, key) => sum + (Number(currentWeights[key]) || 0), 0);
-
-  if (otherKeys.length === 0) {
-    nextWeights[changedKey] = Math.max(0, 100 - lockedTotal);
-    return nextWeights;
-  }
-
-  let assigned = 0;
-  otherKeys.forEach((key, index) => {
-    if (index === otherKeys.length - 1) {
-      nextWeights[key] = Math.max(0, remaining - assigned);
-      return;
-    }
-
-    const base = otherTotal > 0
-      ? Math.round(((Number(currentWeights[key]) || 0) / otherTotal) * remaining)
-      : Math.floor(remaining / otherKeys.length);
-    const value = Math.max(0, base);
-    nextWeights[key] = value;
-    assigned += value;
-  });
-
-  const total = Object.values(nextWeights).reduce((sum, value) => sum + value, 0);
-  if (total !== 100) {
-    const firstKey = otherKeys[0] || changedKey;
-    nextWeights[firstKey] = Math.max(0, nextWeights[firstKey] + (100 - total));
-  }
-
-  return nextWeights;
-};
-
-function LockIcon({ locked }) {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      focusable="false"
-    >
-      <rect
-        x="5"
-        y="10"
-        width="14"
-        height="10"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d={locked ? "M8 10V7a4 4 0 0 1 8 0v3" : "M8 10V7a4 4 0 0 1 7.5-2"}
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 
 export default function RekomendasiProperti() {
   const [weights, setWeights] = useState(DEFAULT_WEIGHTS);
-  const [lockedWeights, setLockedWeights] = useState(EMPTY_LOCKED_WEIGHTS);
   const [showAhp, setShowAhp] = useState(true);
   const [hasAppliedAhp, setHasAppliedAhp] = useState(false);
   const [ahpComparisons, setAhpComparisons] = useState(DEFAULT_AHP_COMPARISONS);
@@ -246,6 +163,14 @@ export default function RekomendasiProperti() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+
+  useEffect(() => {
+    const updateLayout = () => setIsMobileLayout(window.innerWidth < 768);
+    updateLayout();
+    window.addEventListener("resize", updateLayout);
+    return () => window.removeEventListener("resize", updateLayout);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -325,9 +250,16 @@ export default function RekomendasiProperti() {
 
   const applyAhpWeights = () => {
     setWeights(ahpResult.weights);
-    setLockedWeights(EMPTY_LOCKED_WEIGHTS);
     setHasAppliedAhp(true);
     setShowAhp(false);
+  };
+
+  const resetRecommendationWeights = () => {
+    setWeights(DEFAULT_WEIGHTS);
+    setAhpComparisons(DEFAULT_AHP_COMPARISONS);
+    setHasAppliedAhp(false);
+    setShowAhp(true);
+    setProperties([]);
   };
 
   return (
@@ -350,10 +282,10 @@ export default function RekomendasiProperti() {
                 Sistem Rekomendasi Properti
               </div>
               <h2 style={{ marginTop: 10, marginBottom: 12, fontSize: "clamp(28px, 4vw, 48px)", color: "#fff" }}>
-                Atur bobot sesuai prioritas pembelian Anda.
+                Atur preferensi untuk rekomendasi yang lebih tepat.
               </h2>
               <p style={{ margin: 0, maxWidth: 760, color: "rgba(255,255,255,0.8)", fontSize: 16, lineHeight: 1.7 }}>
-                Geser bobot Harga, Lokasi, Luas, dan Fasilitas. Total selalu diseimbangkan otomatis menjadi 100%, lalu daftar properti di bawah akan berubah mengikuti preferensi Anda.
+                Bandingkan kriteria Harga, Lokasi, Luas, dan Fasilitas. Sistem akan membuat skor kecocokan dan mengurutkan properti sesuai preferensi Anda.
               </p>
               <div
                 style={{
@@ -397,13 +329,13 @@ export default function RekomendasiProperti() {
           </div>
         </div>
 
-        <div className="row">
+        <div className="row" style={{ marginTop: isMobileLayout ? 24 : undefined }}>
           <div className="col-12">
-            <div className="box-title">
+            <div className="box-title" style={{ marginBottom: isMobileLayout ? 16 : undefined }}>
               <div>
                 <h2>Rekomendasi Properti Terbaik</h2>
                 <p className="text-1" style={{ margin: "8px 0 0" }}>
-                  Hasil diurutkan dari yang paling sesuai dengan bobot dan filter Anda.
+                  Hasil diurutkan dari yang paling sesuai dengan bobot dan preferensi Anda.
                 </p>
               </div>
               <div className="right wrap-sort">
@@ -445,38 +377,44 @@ export default function RekomendasiProperti() {
           </div>
         </div>
 
-        <div className="row g-4">
-          <div className="col-lg-8">
+        <div className="row g-4" style={{ marginTop: isMobileLayout ? 0 : undefined }}>
+          <div className="col-lg-8" style={{ order: isMobileLayout ? 2 : 1 }}>
             <div className="text-1" style={{ marginBottom: 16, fontWeight: 600, textAlign: "right" }}>
               {pagination.total} properti tersedia
             </div>
 
             {!hasAppliedAhp ? (
               <div className="w-100 py-5 text-center text-1">
-                Isi dan terapkan AHP terlebih dahulu untuk melihat rekomendasi properti.
+                Atur dan terapkan preferensi terlebih dahulu untuk melihat rekomendasi properti.
               </div>
             ) : loading ? (
               <div className="w-100 py-5 text-center text-1">Memuat rekomendasi properti...</div>
             ) : error ? (
               <div className="w-100 py-5 text-center text-1">{error}</div>
             ) : properties.length > 0 ? (
-              <PropertyListItems properties={properties} showTopRankBadges />
+              isMobileLayout ? (
+                <div className="tf-grid-layout md-col-2">
+                  <PropertyGridItems properties={properties} />
+                </div>
+              ) : (
+                <PropertyListItems properties={properties} showTopRankBadges />
+              )
             ) : (
               <div className="w-100 py-5 text-center text-1">Tidak ada properti rekomendasi yang cocok.</div>
             )}
           </div>
 
-          <div className="col-lg-4">
-            <div className="tf-sidebar sticky-sidebar">
+          <div className="col-lg-4" style={{ order: isMobileLayout ? 1 : 2, marginTop: isMobileLayout ? 0 : undefined }}>
+            <div className="tf-sidebar sticky-sidebar" style={{ marginTop: isMobileLayout ? 0 : undefined }}>
               <form
                 className="form-advanced-search mb-0"
                 onSubmit={(event) => event.preventDefault()}
               >
                 <div className="d-flex align-items-center justify-content-between mb-24">
                   <div>
-                    <h4 className="heading-title mb-0">Bobot preferensi</h4>
+                    <h4 className="heading-title mb-0">Rekomendasi Pintar</h4>
                     <p className="text-1" style={{ margin: 0 }}>
-                      Total akan selalu kembali ke 100%.
+                      Sistem menilai properti berdasarkan preferensi yang paling Anda butuhkan.
                     </p>
                   </div>
                   <span
@@ -501,21 +439,23 @@ export default function RekomendasiProperti() {
                     marginBottom: 20,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                  <div style={{ display: "grid", gap: 12 }}>
                     <div>
-                      <div style={{ fontWeight: 700 }}>AHP + SAW</div>
+                      <div style={{ fontWeight: 700 }}>Preferensi Pintar</div>
                       <div className="text-1" style={{ fontSize: 13, lineHeight: 1.5 }}>
-                        Wajib isi AHP dulu. Setelah diterapkan, slider SAW akan aktif untuk penyesuaian.
+                        Atur perbandingan kriteria terlebih dahulu. Skor otomatis akan dipakai untuk menghitung rekomendasi.
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="tf-btn style-border"
-                      onClick={() => setShowAhp((current) => !current)}
-                      style={{ height: 38, padding: "0 14px", whiteSpace: "nowrap" }}
-                    >
-                      {showAhp ? "Tutup" : hasAppliedAhp ? "Ubah AHP" : "Isi AHP"}
-                    </button>
+                    {!hasAppliedAhp && (
+                      <button
+                        type="button"
+                        className="tf-btn style-border w-full"
+                        onClick={() => setShowAhp((current) => !current)}
+                        style={{ minHeight: 46, whiteSpace: "normal", lineHeight: 1.35 }}
+                      >
+                        {showAhp ? "Tutup" : "Atur Preferensi"}
+                      </button>
+                    )}
                   </div>
 
                   {showAhp && (
@@ -589,20 +529,22 @@ export default function RekomendasiProperti() {
                         </div>
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <div style={{ display: "grid", gap: 10 }}>
                         <button
                           type="button"
                           className="tf-btn style-border w-full"
                           onClick={applyAhpWeights}
+                          style={{ minHeight: 46, whiteSpace: "normal", lineHeight: 1.35 }}
                         >
-                          Terapkan AHP
+                          Terapkan Preferensi
                         </button>
                         <button
                           type="button"
                           className="tf-btn style-border w-full"
                           onClick={() => setAhpComparisons(DEFAULT_AHP_COMPARISONS)}
+                          style={{ minHeight: 46, whiteSpace: "normal", lineHeight: 1.35 }}
                         >
-                          Reset AHP
+                          Reset Preferensi
                         </button>
                       </div>
                     </div>
@@ -620,20 +562,21 @@ export default function RekomendasiProperti() {
                       lineHeight: 1.5,
                     }}
                   >
-                    Tahap SAW akan muncul setelah bobot AHP diterapkan.
+                    Skor kecocokan akan muncul setelah preferensi diterapkan.
                   </div>
                 ) : (
                   <>
                     <div style={{ marginBottom: 14 }}>
-                      <div style={{ fontWeight: 700 }}>SAW - Penyesuaian Bobot</div>
+                      <div style={{ fontWeight: 700 }}>Skor Kecocokan</div>
                       <div className="text-1" style={{ fontSize: 13, lineHeight: 1.5 }}>
-                        Bobot dari AHP sudah diterapkan. Anda masih bisa menggeser slider untuk fine-tuning.
+                        Skor ini dibuat otomatis dari preferensi Anda. Untuk mengubahnya, reset lalu atur preferensi kembali.
                       </div>
                     </div>
 
                     <div style={{ display: "grid", gap: 18 }}>
                       {CRITERIA.map((criterion) => {
                         const display = getCriterionDisplay(criterion.key, filters.type);
+                        const weightValue = Number(weights[criterion.key]) || 0;
 
                         return (
                           <div key={criterion.key}>
@@ -653,103 +596,41 @@ export default function RekomendasiProperti() {
                                   justifyContent: "flex-end",
                                 }}
                               >
-                                <strong style={{ textAlign: "right" }}>{weights[criterion.key]}%</strong>
-                                <button
-                                  type="button"
-                                  aria-label={
-                                    lockedWeights[criterion.key]
-                                      ? `Buka kunci bobot ${display.label}`
-                                      : `Kunci bobot ${display.label}`
-                                  }
-                                  title={
-                                    lockedWeights[criterion.key]
-                                      ? "Buka kunci bobot"
-                                      : "Kunci bobot"
-                                  }
-                                  onClick={() =>
-                                    setLockedWeights((currentLocks) => ({
-                                      ...currentLocks,
-                                      [criterion.key]: !currentLocks[criterion.key],
-                                    }))
-                                  }
-                                  style={{
-                                    width: 28,
-                                    height: 28,
-                                    borderRadius: 999,
-                                    border: lockedWeights[criterion.key]
-                                      ? "1px solid var(--Primary)"
-                                      : "1px solid var(--Line, #e5e7eb)",
-                                    background: lockedWeights[criterion.key]
-                                      ? "rgba(2, 70, 155, 0.08)"
-                                      : "#fff",
-                                    color: lockedWeights[criterion.key]
-                                      ? "var(--Primary)"
-                                      : "#98a2b3",
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    padding: 0,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  <LockIcon locked={Boolean(lockedWeights[criterion.key])} />
-                                </button>
+                                <strong style={{ textAlign: "right" }}>{weightValue}%</strong>
                               </div>
                             </div>
-                            <input
-                              type="range"
-                              min="0"
-                              max="100"
-                              step="1"
-                              value={weights[criterion.key]}
-                              disabled={Boolean(lockedWeights[criterion.key])}
-                              onChange={(event) =>
-                                setWeights((currentWeights) =>
-                                  rebalanceWeights(
-                                    currentWeights,
-                                    criterion.key,
-                                    event.target.value,
-                                    lockedWeights,
-                                  ),
-                                )
-                              }
+                            <div
+                              aria-label={`Bobot ${display.label} ${weightValue}%`}
                               style={{
                                 width: "100%",
-                                accentColor: "var(--Primary)",
-                                opacity: lockedWeights[criterion.key] ? 0.58 : 1,
-                                cursor: lockedWeights[criterion.key] ? "not-allowed" : "pointer",
+                                height: 10,
+                                borderRadius: 999,
+                                background: "#e5e7eb",
+                                overflow: "hidden",
                               }}
-                            />
+                            >
+                              <div
+                                style={{
+                                  width: `${weightValue}%`,
+                                  height: "100%",
+                                  borderRadius: 999,
+                                  background: "var(--Primary)",
+                                }}
+                              />
+                            </div>
                           </div>
                         );
                       })}
                     </div>
 
-                    <div style={{ display: "grid", gap: 20, marginTop: 24 }}>
+                    <div style={{ display: "grid", gap: 12, marginTop: 24 }}>
                       <button
                         type="button"
                         className="tf-btn style-border w-full"
-                        onClick={() => {
-                          setWeights(DEFAULT_WEIGHTS);
-                          setLockedWeights(EMPTY_LOCKED_WEIGHTS);
-                          setHasAppliedAhp(false);
-                          setShowAhp(true);
-                        }}
+                        onClick={resetRecommendationWeights}
+                        style={{ minHeight: 46, whiteSpace: "normal", lineHeight: 1.35 }}
                       >
-                        Gunakan default
-                      </button>
-                      <button
-                        type="button"
-                        className="tf-btn style-border w-full"
-                        onClick={() => {
-                          setWeights(RESET_WEIGHTS);
-                          setLockedWeights(EMPTY_LOCKED_WEIGHTS);
-                          setAhpComparisons(DEFAULT_AHP_COMPARISONS);
-                          setHasAppliedAhp(false);
-                          setShowAhp(true);
-                        }}
-                      >
-                        Reset
+                        Atur Ulang Preferensi
                       </button>
                     </div>
                   </>

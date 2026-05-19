@@ -6,7 +6,12 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useCompare } from "@/components/compare/CompareContext";
 import AttentionModal from "@/components/common/AttentionModal";
-import { getPropertyConfig } from "@/lib/property";
+import {
+  FIELD_WEIGHTS,
+  getBuildingTypeDisplay,
+  getBuildingTypeLabel,
+  getPropertyConfig,
+} from "@/lib/property";
 
 const formatRupiah = (value) => {
   if (!value && value !== 0) return "-";
@@ -84,9 +89,12 @@ const FIELD_UNITS = {
   electricity_capacity: "VA",
   panjang_ruangan: "m",
   lebar_ruangan: "m",
+  panjang_tanah: "m",
+  lebar_tanah: "m",
   room_size: "m²",
   warehouse_area: "m²",
-  shop_front_width: "m",
+  shop_front_width: "m²",
+  parking_capacity: "mobil",
 };
 
 const VALUE_LABELS = {
@@ -124,8 +132,11 @@ const RANK_VALUE_MAPS = {
   land_type: { datar: 1, miring: 0.75, bukit: 0.65 },
 };
 
+const PRESENCE_SCORE_KEYS = new Set(["gender_type", "land_contour", "zoning"]);
+
 const BASE_COMPARE_ROWS = [
   { key: "type", label: "Tipe Properti", source: "root" },
+  { key: "building_type_display", label: "Tipe Bangunan", source: "computed" },
   { key: "listing_type", label: "Status", source: "root", badge: true },
   { key: "price", label: "Harga", source: "root", format: "rupiah" },
   { key: "kecamatan", label: "Kecamatan", source: "root" },
@@ -133,6 +144,11 @@ const BASE_COMPARE_ROWS = [
 ];
 
 const cleanLabel = (label) => String(label || "").replace(/\s*\([^)]*\)/g, "");
+
+const getFieldUnit = (field) => {
+  const unitFromLabel = String(field?.label || "").match(/\(([^)]+)\)/)?.[1];
+  return FIELD_UNITS[field.name] || unitFromLabel || undefined;
+};
 
 const getRoomSize = (property) => {
   const length = Number(property?.detail?.panjang_ruangan ?? 0);
@@ -148,7 +164,16 @@ const buildCompareRows = (properties) => {
   const type = properties[0]?.type || "rumah";
   const listingType = properties[0]?.listing_type;
   const config = getPropertyConfig(type);
-  const rows = [...BASE_COMPARE_ROWS];
+  const rows = BASE_COMPARE_ROWS.map((row) =>
+    row.key === "building_type_display"
+      ? {
+          ...row,
+          label: getBuildingTypeLabel(type),
+          unit: ["kos", "tanah"].includes(type) ? "m²" : undefined,
+          compare: ["kos", "tanah"].includes(type) ? "max" : undefined,
+        }
+      : row,
+  );
 
   if (listingType === "sewa") {
     rows.splice(3, 0, {
@@ -162,22 +187,12 @@ const buildCompareRows = (properties) => {
     rows.push({ key: "certificate_type", label: "Sertifikat", source: "root" });
   }
 
-  if (type === "kos") {
-    rows.push({
-      key: "room_size",
-      label: "Luas Kamar",
-      source: "computed",
-      unit: FIELD_UNITS.room_size,
-      compare: "max",
-    });
-  }
-
   config.fields.forEach((field) => {
     rows.push({
       key: field.name,
       label: cleanLabel(field.label),
       source: "detail",
-      unit: FIELD_UNITS[field.name],
+      unit: getFieldUnit(field),
       boolean: field.type === "checkbox",
       compare:
         field.type === "checkbox"
@@ -196,7 +211,11 @@ const buildCompareRows = (properties) => {
 const getRawFieldValue = (property, row) => {
   if (row.key === "price_period") return property?.price_period || "bulan";
   if (row.source === "computed") {
+    if (row.key === "building_type_display") return getBuildingTypeDisplay(property);
     return row.key === "room_size" ? getRoomSize(property) : null;
+  }
+  if (property?.type === "tanah" && row.key === "luas_tanah") {
+    return property.detail?.luas_tanah || getBuildingTypeDisplay(property);
   }
   return row.source === "detail" ? property.detail?.[row.key] : property[row.key];
 };
@@ -367,26 +386,36 @@ const calculateScore = (properties) => {
   return scores.map((s) => Math.round(s * 100));
 };
 
-const calculateTypeScore = (properties, compareRows) => {
+const calculateTypeScore = (properties) => {
   if (!properties.length) return [];
 
-  const scoreRows = compareRows.filter(
-    (row) => row.key === "price" || row.compare || row.boolean,
-  );
-  if (!scoreRows.length) return properties.map(() => 0);
+  const propertyType = properties[0]?.type || "rumah";
+  const fieldWeights = FIELD_WEIGHTS[propertyType] || FIELD_WEIGHTS.rumah;
+  const scoreRows = Object.entries(fieldWeights)
+    .filter(([, weight]) => Number(weight) > 0)
+    .map(([key, weight]) => ({
+      key,
+      weight: Number(weight),
+      source: key === "price" ? "root" : key === "room_size" ? "computed" : "detail",
+      compare:
+        key === "price"
+          ? "min"
+          : RANK_VALUE_MAPS[key]
+            ? "rank"
+            : PRESENCE_SCORE_KEYS.has(key)
+              ? "presence"
+              : "max",
+    }));
 
-  const hasPrice = scoreRows.some((row) => row.key === "price");
-  const priceWeight = hasPrice ? 0.3 : 0;
-  const nonPriceRows = scoreRows.filter((row) => row.key !== "price");
-  const nonPriceWeight = nonPriceRows.length
-    ? (1 - priceWeight) / nonPriceRows.length
-    : 0;
+  const totalWeight = scoreRows.reduce((sum, row) => sum + row.weight, 0);
+  if (!totalWeight) return properties.map(() => 0);
 
   const getNumericValue = (property, row) => {
     const rawValue = getRawFieldValue(property, row);
     if (rawValue === null || rawValue === undefined || rawValue === "") return null;
     if (typeof rawValue === "boolean") return rawValue ? 1 : 0;
     if (row.compare === "rank") return RANK_VALUE_MAPS[row.key]?.[rawValue] ?? null;
+    if (row.compare === "presence") return String(rawValue).trim() ? 1 : null;
     const value = Number(rawValue);
     return Number.isFinite(value) ? value : null;
   };
@@ -402,7 +431,7 @@ const calculateTypeScore = (properties, compareRows) => {
 
     const min = Math.min(...column);
     const max = Math.max(...column);
-    const weight = row.key === "price" ? priceWeight : nonPriceWeight;
+    const weight = row.weight / totalWeight;
 
     matrix.forEach((item, index) => {
       const value = item[colIndex];
@@ -501,8 +530,8 @@ export default function Compare() {
   const [attention, setAttention] = useState({ open: false, message: "" });
   const compareRows = useMemo(() => buildCompareRows(properties), [properties]);
   const scores = useMemo(
-    () => calculateTypeScore(properties, compareRows),
-    [properties, compareRows],
+    () => calculateTypeScore(properties),
+    [properties],
   );
   const prosCons = useMemo(
     () => buildProsCons(properties, compareRows),

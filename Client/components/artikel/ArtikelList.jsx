@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import SidebarArtikel from "./SidebarArtikel";
+import ArticleViewMeta from "./ArticleViewMeta";
 
 export default function Blogs1() {
   const PAGE_SIZE = 5;
@@ -170,7 +171,10 @@ export default function Blogs1() {
           <div className="col-lg-8">
             <div className="left">
               {/* SEARCH MOBILE (muncul di atas artikel saat layar kecil) */}
-              <div className="sidebar-search sidebar-item search-mobile">
+              <div
+                className="sidebar-search sidebar-item search-mobile"
+                style={{ marginBottom: "32px" }}
+              >
                 <h4 className="sidebar-title" style={{ marginBottom: "16px" }}>
                   Cari Artikel
                 </h4>
@@ -285,7 +289,8 @@ export default function Blogs1() {
                       </div>
                       <div className="article-content">
                         <div className="time">
-                          <div className="icons">
+                          <ArticleViewMeta views={post.views} />
+                          <div className="icons" style={{ marginLeft: "8px" }}>
                             <svg
                               width={18}
                               height={18}
@@ -339,42 +344,7 @@ export default function Blogs1() {
                           className="tf-btn-link"
                         >
                           <span>Lanjut Baca</span>
-                          <svg
-                            width={20}
-                            height={20}
-                            viewBox="0 0 20 20"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <g clipPath="url(#clip0_2450_13860)">
-                              <path
-                                d="M10.0013 18.3334C14.6037 18.3334 18.3346 14.6024 18.3346 10C18.3346 5.39765 14.6037 1.66669 10.0013 1.66669C5.39893 1.66669 1.66797 5.39765 1.66797 10C1.66797 14.6024 5.39893 18.3334 10.0013 18.3334Z"
-                                stroke="var(--Primary)"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M6.66797 10H13.3346"
-                                stroke="var(--Primary)"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                              <path
-                                d="M10 13.3334L13.3333 10L10 6.66669"
-                                stroke="var(--Primary)"
-                                strokeWidth="1.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              />
-                            </g>
-                            <defs>
-                              <clipPath id="clip0_2450_13860">
-                                <rect width={20} height={20} fill="white" />
-                              </clipPath>
-                            </defs>
-                          </svg>
+                          <i className="icon-circle-arrow" />
                         </Link>
                       </div>
                     </div>
@@ -421,8 +391,22 @@ export default function Blogs1() {
             </div>
           </div>
 
-          {/* SIDEBAR */}
-          <div className="col-lg-4">
+          {/* SIDEBAR (desktop) */}
+          <div className="col-lg-4 d-none d-lg-block">
+            <SidebarArtikel
+              search={search}
+              onSearchChange={(event) => setSearch(event.target.value)}
+              onSearchSubmit={handleSearchSubmit}
+              allTags={allTags}
+              activeTag={tag}
+              onTagSelect={handleTagSelect}
+              popularArticles={popularArticles}
+              formatDate={formatDate}
+            />
+          </div>
+
+          {/* SIDEBAR (mobile: di bawah daftar artikel) */}
+          <div className="col-12 mt-5 d-lg-none">
             <SidebarArtikel
               search={search}
               onSearchChange={(event) => setSearch(event.target.value)}

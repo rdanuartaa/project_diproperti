@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\Article;
 use App\Models\User;
+use App\Models\ViewEvent;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -97,67 +98,109 @@ class DashboardController extends Controller
     public function analytics(Request $request)
     {
         try {
-            $period = $request->input('period', 'year'); // Default ke year agar data muncul
-            $user = $request->user();
+            $period = $request->input('period', 'year');
+            $now = Carbon::now();
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
 
-            // Format grouping berdasarkan period
-            $groupByFormat = match($period) {
-                'year' => '%Y',           // Group per tahun → label: 2024
-                'month' => '%Y-%m',       // Group per bulan → label: 2024-01
-                'week', 'day' => '%Y-%m-%d', // Group per hari → label: 2024-01-15
-                default => '%Y-%m-%d',
-            };
+            if ($startDate || $endDate) {
+                $start = $startDate
+                    ? Carbon::parse($startDate)->startOfDay()
+                    : Carbon::parse($endDate)->startOfDay();
+                $end = $endDate
+                    ? Carbon::parse($endDate)->endOfDay()
+                    : Carbon::parse($startDate)->endOfDay();
 
-            // ✅ FIX: Gunakan string langsung, JANGAN DB::raw() untuk variabel
-            $groupByExpression = "DATE_FORMAT(created_at, '$groupByFormat')";
+                if ($start->greaterThan($end)) {
+                    [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+                }
 
-            // Query Properties
-            $propertyQuery = Property::query();
-            if ($user && !$user->isAdmin()) {
-                $propertyQuery->where('user_id', $user->id);
-            }
-            
-            $propertyStats = $propertyQuery
-                ->selectRaw("$groupByExpression as period, SUM(views) as total")
-                ->groupByRaw($groupByExpression)
-                ->orderBy('period')
-                ->get()
-                ->pluck('total', 'period');
-
-            // Query Articles
-            $articleQuery = Article::query();
-            if ($user && !$user->isAdmin()) {
-                $articleQuery->where('user_id', $user->id);
-            }
-            
-            $articleStats = $articleQuery
-                ->selectRaw("$groupByExpression as period, SUM(views) as total")
-                ->groupByRaw($groupByExpression)
-                ->orderBy('period')
-                ->get()
-                ->pluck('total', 'period');
-
-            // Merge & build chart data
-            $allPeriods = array_unique(array_merge(
-                array_keys($propertyStats->toArray()),
-                array_keys($articleStats->toArray())
-            ));
-            sort($allPeriods);
-
-            $labels = [];
-            $dataValues = [];
-
-            foreach ($allPeriods as $periodKey) {
-                // Format label untuk display
-                $displayLabel = match(true) {
-                    strlen($periodKey) === 4 => $periodKey, // Year: 2024
-                    strlen($periodKey) === 7 => Carbon::parse($periodKey . '-01')->format('M Y'), // Month: Jan 2024
-                    default => Carbon::parse($periodKey)->format('d M'), // Day: 15 Jan
+                $days = $start->diffInDays($end) + 1;
+                $unit = $days <= 31 ? 'day' : ($days > 366 ? 'year' : 'month');
+                $range = [
+                    'start' => $unit === 'month'
+                        ? $start->copy()->startOfMonth()
+                        : ($unit === 'year' ? $start->copy()->startOfYear() : $start),
+                    'end' => $end,
+                    'format' => $days <= 1 ? '%Y-%m-%d %H:00:00' : ($unit === 'year' ? '%Y' : ($unit === 'month' ? '%Y-%m' : '%Y-%m-%d')),
+                    'unit' => $days <= 1 ? 'hour' : $unit,
+                ];
+            } else {
+                $range = match ($period) {
+                'day' => [
+                    'start' => $now->copy()->startOfDay(),
+                    'end' => $now->copy()->endOfDay(),
+                    'format' => '%Y-%m-%d %H:00:00',
+                    'unit' => 'hour',
+                ],
+                'week' => [
+                    'start' => $now->copy()->subDays(6)->startOfDay(),
+                    'end' => $now->copy()->endOfDay(),
+                    'format' => '%Y-%m-%d',
+                    'unit' => 'day',
+                ],
+                'month' => [
+                    'start' => $now->copy()->startOfMonth(),
+                    'end' => $now->copy()->endOfMonth(),
+                    'format' => '%Y-%m-%d',
+                    'unit' => 'day',
+                ],
+                default => [
+                    'start' => $now->copy()->startOfYear(),
+                    'end' => $now->copy()->endOfYear(),
+                    'format' => '%Y-%m',
+                    'unit' => 'month',
+                ],
                 };
-                
-                $labels[] = $displayLabel;
-                $dataValues[] = ($propertyStats->get($periodKey, 0) ?? 0) + ($articleStats->get($periodKey, 0) ?? 0);
             }
+
+            $groupByExpression = "DATE_FORMAT(viewed_at, '{$range['format']}')";
+            $viewStats = ViewEvent::query()
+                ->whereIn('viewable_type', ['property', 'article'])
+                ->whereBetween('viewed_at', [$range['start'], $range['end']])
+                ->selectRaw("$groupByExpression as period, viewable_type, COUNT(*) as total")
+                ->groupByRaw("$groupByExpression, viewable_type")
+                ->orderBy('period')
+                ->get();
+
+            $propertyStats = [];
+            $articleStats = [];
+            foreach ($viewStats as $row) {
+                if ($row->viewable_type === 'property') {
+                    $propertyStats[$row->period] = (int) $row->total;
+                }
+                if ($row->viewable_type === 'article') {
+                    $articleStats[$row->period] = (int) $row->total;
+                }
+            }
+
+            $periods = [];
+            $cursor = $range['start']->copy();
+            while ($cursor <= $range['end']) {
+                $key = match ($range['unit']) {
+                    'hour' => $cursor->format('Y-m-d H:00:00'),
+                    'year' => $cursor->format('Y'),
+                    'month' => $cursor->format('Y-m'),
+                    default => $cursor->format('Y-m-d'),
+                };
+                $label = match ($range['unit']) {
+                    'hour' => $cursor->format('H:00'),
+                    'year' => $cursor->format('Y'),
+                    'month' => $cursor->format('M'),
+                    default => $cursor->format('d M'),
+                };
+                $periods[] = ['key' => $key, 'label' => $label];
+                $range['unit'] === 'hour'
+                    ? $cursor->addHour()
+                    : ($range['unit'] === 'year'
+                        ? $cursor->addYear()
+                        : ($range['unit'] === 'month' ? $cursor->addMonth() : $cursor->addDay()));
+            }
+
+            $labels = array_column($periods, 'label');
+            $propertyValues = array_map(fn($item) => $propertyStats[$item['key']] ?? 0, $periods);
+            $articleValues = array_map(fn($item) => $articleStats[$item['key']] ?? 0, $periods);
+            $totalValues = array_map(fn($property, $article) => $property + $article, $propertyValues, $articleValues);
 
             return response()->json([
                 'success' => true,
@@ -165,13 +208,29 @@ class DashboardController extends Controller
                     'labels' => $labels,
                     'datasets' => [
                         [
-                            'label' => 'Total Views',
-                            'data' => $dataValues,
-                            'borderColor' => '#F1913D',
-                            'backgroundColor' => 'rgba(241, 145, 61, 0.1)',
+                            'label' => 'Total Kunjungan',
+                            'data' => $totalValues,
+                            'borderColor' => '#02469B',
+                            'backgroundColor' => 'rgba(2, 70, 155, 0.1)',
                             'tension' => 0.4,
                             'fill' => true,
-                        ]
+                        ],
+                        [
+                            'label' => 'Kunjungan Properti',
+                            'data' => $propertyValues,
+                            'borderColor' => '#3B82F6',
+                            'backgroundColor' => 'rgba(59, 130, 246, 0.08)',
+                            'tension' => 0.4,
+                            'fill' => false,
+                        ],
+                        [
+                            'label' => 'Kunjungan Artikel',
+                            'data' => $articleValues,
+                            'borderColor' => '#10B981',
+                            'backgroundColor' => 'rgba(16, 185, 129, 0.08)',
+                            'tension' => 0.4,
+                            'fill' => false,
+                        ],
                     ],
                 ],
             ]);

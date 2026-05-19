@@ -107,6 +107,7 @@ export default function Properties3({ defaultGrid = false }) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { compareMeta } = useCompare();
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
   const compareLock =
     compareMeta?.type && compareMeta?.listingType
       ? {
@@ -161,6 +162,13 @@ export default function Properties3({ defaultGrid = false }) {
   const [pagination, setPagination] = useState({
     current_page: 1, last_page: 1, total: 0, per_page: PAGE_SIZE, from: 0, to: 0,
   });
+
+  useEffect(() => {
+    const updateLayout = () => setIsMobileLayout(window.innerWidth < 768);
+    updateLayout();
+    window.addEventListener("resize", updateLayout);
+    return () => window.removeEventListener("resize", updateLayout);
+  }, []);
 
   useEffect(() => {
     const newFilters = getFiltersFromUrl();
@@ -311,6 +319,7 @@ export default function Properties3({ defaultGrid = false }) {
   const startItem = pagination.total === 0 ? 0 : pagination.from || (page - 1) * pagination.per_page + 1;
   const endItem = pagination.to || Math.min(startItem + properties.length - 1, pagination.total);
   const hasResults = properties.length > 0;
+  const showGridLayout = isMobileLayout || defaultGrid;
 
   // ✅ Hitung active filter count untuk display
   const activeFilterCount = useMemo(() => {
@@ -326,17 +335,25 @@ export default function Properties3({ defaultGrid = false }) {
   }, [appliedFilters]);
 
   return (
-    <section className="flat-title style-2">
+    <section
+      className="flat-title style-2 property-list-page"
+      style={isMobileLayout ? { paddingTop: 16 } : undefined}
+    >
       <div className="tf-container">
         <div className="row">
-          <div className="col-12">
-            <div className="box-title">
+          <div className="col-12" style={{ order: isMobileLayout ? 1 : undefined }}>
+            <div
+              className="box-title"
+              style={isMobileLayout ? { marginBottom: 4 } : undefined}
+            >
               <div><h2>List Daftar Properti</h2></div>
-              <div className="right wrap-sort">
-                <ul className="nav-tab-filter group-layout" role="tablist">
-                  <LayoutHandler defaultGrid={defaultGrid} />
-                </ul>
-              </div>
+              {!isMobileLayout && (
+                <div className="right wrap-sort">
+                  <ul className="nav-tab-filter group-layout" role="tablist">
+                    <LayoutHandler defaultGrid={showGridLayout} />
+                  </ul>
+                </div>
+              )}
             </div>
             {compareLock && (
               <div
@@ -356,10 +373,16 @@ export default function Properties3({ defaultGrid = false }) {
             )}
           </div>
 
-          <div className="col-lg-8">
+          <div
+            className="col-lg-8"
+            style={{
+              order: isMobileLayout ? 3 : undefined,
+              marginTop: isMobileLayout ? 14 : undefined,
+            }}
+          >
             <div className="flat-animate-tab">
               <div className="tab-content">
-                <div className={`tab-pane ${defaultGrid ? " active show" : ""}`} id="gridLayout" role="tabpanel">
+                <div className={`tab-pane ${showGridLayout ? " active show" : ""}`} id="gridLayout" role="tabpanel">
                   <div className="tf-grid-layout md-col-2">
                     {loading ? (
                       <div className="w-100 py-5 text-center text-1">Memuat data properti...</div>
@@ -370,7 +393,7 @@ export default function Properties3({ defaultGrid = false }) {
                     )}
                   </div>
                 </div>
-                <div className={`tab-pane ${!defaultGrid ? " active show" : ""}`} id="listLayout" role="tabpanel">
+                <div className={`tab-pane ${!showGridLayout ? " active show" : ""}`} id="listLayout" role="tabpanel">
                   <div className="wrap-list">
                     {loading ? (
                       <div className="w-100 py-5 text-center text-1">Memuat data properti...</div>
@@ -408,7 +431,13 @@ export default function Properties3({ defaultGrid = false }) {
             )}
           </div>
 
-          <div className="col-lg-4">
+          <div
+            className="col-lg-4"
+            style={{
+              order: isMobileLayout ? 2 : undefined,
+              marginTop: isMobileLayout ? 0 : undefined,
+            }}
+          >
             <ListingSidebar
               filters={filters}
               onChange={handleFilterChange}
@@ -423,8 +452,30 @@ export default function Properties3({ defaultGrid = false }) {
               featuredProperties={featuredProperties}
               activeFilterCount={activeFilterCount}
               priceFormatter={formatPrice}
+              showFeatured={!isMobileLayout}
             />
           </div>
+
+          {isMobileLayout && featuredProperties.length > 0 && (
+            <div className="col-12" style={{ order: 4, marginTop: 18 }}>
+              <ListingSidebar
+                filters={filters}
+                onChange={handleFilterChange}
+                onReset={handleResetFilters}
+                sortOrder={sortOrder}
+                onSortChange={handleSortChange}
+                propertyTypeOptions={PROPERTY_TYPE_OPTIONS}
+                listingTypeOptions={LISTING_TYPE_OPTIONS}
+                sortOptions={SORT_OPTIONS}
+                mainFilterLocked={Boolean(compareLock)}
+                loading={loading}
+                featuredProperties={featuredProperties}
+                activeFilterCount={activeFilterCount}
+                priceFormatter={formatPrice}
+                showFilter={false}
+              />
+            </div>
+          )}
         </div>
       </div>
     </section>

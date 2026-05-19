@@ -374,9 +374,8 @@ export default function Faq() {
         <div className="footer-dashboard">
           <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
           <ul className="list">
-            <li><a href="#">Privasi</a></li>
-            <li><a href="#">Syarat</a></li>
-            <li><a href="#">Bantuan</a></li>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/contact">Bantuan</a></li>
           </ul>
         </div>
       </div>

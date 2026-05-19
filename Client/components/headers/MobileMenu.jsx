@@ -30,7 +30,7 @@ export default function MobileMenu() {
       <div className="offcanvas-body inner-mobile-nav">
         <div className="mb-body">
           <ul id="menu-mobile-menu">
-            <Nav />
+            <Nav variant="mobile" />
           </ul>
           <div className="mobile-footer-block">
             <h5 className="title mb-19">Hubungi Admin</h5>

@@ -11,6 +11,7 @@ import LocationPicker from "@/components/common/LocationPicker";
 import {
   PROPERTY_TYPE_CONFIG,
   CERTIFICATE_REQUIRED_TYPES,
+  formatPropertyValue,
   formatThousands,
   formatCompact,
   formatFullRupiah,
@@ -63,6 +64,8 @@ const EMPTY_FORM = {
     total_rooms: 0,
     panjang_ruangan: "",
     lebar_ruangan: "",
+    panjang_tanah: "",
+    lebar_tanah: "",
     gender_type: "laki-laki",
     wifi_included: false,
     electricity_included: false,
@@ -383,6 +386,11 @@ export default function SubmitPropertyForm() {
   const showCertificate =
     CERTIFICATE_REQUIRED_TYPES.includes(formData.type) &&
     formData.listing_type !== "sewa";
+  const buildingTypeDisplay = getAutoBuildingType(formData);
+  const buildingTypeDisplayValue =
+    formData.type === "tanah" && buildingTypeDisplay
+      ? `${buildingTypeDisplay} m²`
+      : buildingTypeDisplay;
   const isProfileComplete =
     !!String(userProfile?.full_name || "").trim() &&
     !!String(userProfile?.phone || "").trim() &&
@@ -405,6 +413,33 @@ export default function SubmitPropertyForm() {
     formData.detail.luas_bangunan,
     formData.detail.panjang_ruangan,
     formData.detail.lebar_ruangan,
+    formData.detail.panjang_tanah,
+    formData.detail.lebar_tanah,
+  ]);
+
+  useEffect(() => {
+    if (formData.type !== "tanah") return;
+    const panjang = Number(formData.detail.panjang_tanah ?? 0);
+    const lebar = Number(formData.detail.lebar_tanah ?? 0);
+    const luasTanah = panjang > 0 && lebar > 0 ? panjang * lebar : "";
+    const nextLuasTanah = luasTanah ? String(Math.round(luasTanah)) : "";
+
+    setFormData((prev) =>
+      String(prev.detail.luas_tanah ?? "") === nextLuasTanah
+        ? prev
+        : {
+            ...prev,
+            detail: {
+              ...prev.detail,
+              luas_tanah: nextLuasTanah,
+            },
+          },
+    );
+  }, [
+    formData.type,
+    formData.detail.panjang_tanah,
+    formData.detail.lebar_tanah,
+    formData.detail.luas_tanah,
   ]);
 
   useEffect(() => {
@@ -463,7 +498,7 @@ export default function SubmitPropertyForm() {
       ? { bathroom_position: "dalam", gender_type: "laki-laki" }
       : {}),
     ...(type === "tanah"
-      ? { road_access: "aspal", land_type: "datar" }
+      ? { road_access: "aspal", land_type: "datar", panjang_tanah: "", lebar_tanah: "" }
       : {}),
   });
 
@@ -599,12 +634,19 @@ export default function SubmitPropertyForm() {
         if (!String(formData.detail.lebar_ruangan ?? "").trim()) {
           throw new Error("Lebar ruangan wajib diisi. ");
         }
+      } else if (formData.type === "tanah") {
+        if (!String(formData.detail.panjang_tanah ?? "").trim()) {
+          throw new Error("Panjang tanah wajib diisi. ");
+        }
+        if (!String(formData.detail.lebar_tanah ?? "").trim()) {
+          throw new Error("Lebar tanah wajib diisi. ");
+        }
       } else if (!String(formData.detail.luas_tanah ?? "").trim()) {
         throw new Error("Luas tanah wajib diisi. ");
       }
 
       if ((formData.newImages?.length || 0) < 1) {
-        throw new Error("Minimal upload 1 gambar. ");
+        throw new Error("Minimal unggah 1 gambar. ");
       }
     } catch (validationError) {
       setAttention({
@@ -740,6 +782,9 @@ export default function SubmitPropertyForm() {
                       options={field.options}
                       selectedValue={formData.detail[field.name] || ""}
                       onChange={(val) => updateDetail(field.name, val)}
+                      getOptionLabel={(option) =>
+                        formatPropertyValue(field.name, option)
+                      }
                     />
                   ) : (
                     <input
@@ -750,6 +795,7 @@ export default function SubmitPropertyForm() {
                       value={formData.detail[field.name] ?? ""}
                       onChange={handleChange}
                       required={field.required}
+                      readOnly={field.readOnly}
                     />
                   )}
 
@@ -828,11 +874,11 @@ export default function SubmitPropertyForm() {
                   <h6 className="fw-bold mb-2">1. Kebijakan Biaya Platform</h6>
                   <ul className="mb-4">
                     <li>
-                      <strong>GRATIS 100%</strong> untuk mengupload/mendaftarkan
+                      <strong>GRATIS 100%</strong> untuk mengunggah/mendaftarkan
                       properti di platform kami.
                     </li>
                     <li>
-                      Tidak ada biaya admin, biaya listing, atau biaya
+                      Tidak ada biaya admin, biaya iklan, atau biaya
                       tersembunyi saat pendaftaran.
                     </li>
                     <li>
@@ -860,7 +906,7 @@ export default function SubmitPropertyForm() {
                   <ul className="mb-4">
                     <li>
                       Semua pengajuan properti akan diverifikasi oleh tim admin
-                      sebelum ditampilkan di listing publik.
+                      sebelum ditampilkan di iklan publik.
                     </li>
                     <li>
                       Admin berhak menolak pengajuan jika data tidak lengkap,
@@ -874,7 +920,7 @@ export default function SubmitPropertyForm() {
                   <ul className="mb-4">
                     <li>
                       Penjual bertanggung jawab penuh atas keakuratan dan
-                      keabsahan semua data yang diupload.
+                      keabsahan semua data yang diunggah.
                     </li>
                     <li>
                       Platform tidak bertanggung jawab atas kerugian akibat data
@@ -947,7 +993,7 @@ export default function SubmitPropertyForm() {
             </h2>
             <p className="text-muted mt-4" style={{ marginBottom: "16px" }}>
               Lengkapi data properti, detail, dan gambar. Admin akan
-              memverifikasi sebelum tampil di listing.
+              memverifikasi sebelum tampil sebagai iklan.
             </p>
             <div
               style={{
@@ -963,7 +1009,7 @@ export default function SubmitPropertyForm() {
             >
               <span style={{ fontSize: "14px" }}></span>
               <span className="text-1">
-                Listing properti <strong>GRATIS</strong>. Komisi{" "}
+                Iklan properti <strong>GRATIS</strong>. Komisi{" "}
                 <strong>2.5%</strong> hanya dikenakan jika properti{" "}
                 <u>berhasil terjual atau disewa</u>.
               </span>
@@ -1265,7 +1311,7 @@ export default function SubmitPropertyForm() {
                         ? "Foto KTP Baru"
                         : userProfile?.id_card_file_url
                           ? "Ganti Foto KTP"
-                          : "Upload Foto KTP"
+                          : "Unggah Foto KTP"
                     }
                     icon="ID"
                     file={profileForm.idCardFile}
@@ -1524,6 +1570,9 @@ export default function SubmitPropertyForm() {
                       options={["rumah", "villa", "ruko", "kos", "tanah"]}
                       selectedValue={formData.type}
                       onChange={(value) => updateField("type", value)}
+                      getOptionLabel={(option) =>
+                        PROPERTY_TYPE_CONFIG[option]?.label || option
+                      }
                     />
                   </fieldset>
                 </div>
@@ -1535,7 +1584,7 @@ export default function SubmitPropertyForm() {
                       type="text"
                       className="form-control"
                       style={{ background: "#f9fafb", color: "#6b7280" }}
-                      value={formData.building_type}
+                      value={buildingTypeDisplayValue}
                       readOnly
                       placeholder={getBuildingTypePlaceholder(formData.type)}
                     />
@@ -1545,7 +1594,7 @@ export default function SubmitPropertyForm() {
                 <div className="col-md-6">
                   <fieldset className="box-fieldset">
                     <label>
-                      Tipe Listing <span className="text-danger">*</span>
+                      Penawaran <span className="text-danger">*</span>
                     </label>
                     <DropdownSelect
                       options={
@@ -1555,6 +1604,9 @@ export default function SubmitPropertyForm() {
                       }
                       selectedValue={formData.listing_type}
                       onChange={(value) => handleListingTypeChange(value)}
+                      getOptionLabel={(option) =>
+                        formatPropertyValue("listing_type", option)
+                      }
                     />
                   </fieldset>
                 </div>
@@ -1658,6 +1710,9 @@ export default function SubmitPropertyForm() {
                           onChange={(value) =>
                             updateField("certificate_status", value)
                           }
+                          getOptionLabel={(option) =>
+                            formatPropertyValue("certificate_status", option)
+                          }
                         />
                       </fieldset>
                     </div>
@@ -1722,7 +1777,7 @@ export default function SubmitPropertyForm() {
             {/* ✅ SECTION: GAMBAR */}
             <SectionCard
               title="Gambar Properti"
-              subtitle="Upload minimal 1 foto. Klik bintang untuk jadikan foto utama."
+              subtitle="Unggah minimal 1 foto. Klik bintang untuk jadikan foto utama."
             >
               <div className="box-uploadfile text-center mb-3">
                 <div className="uploadfile">
@@ -2016,7 +2071,7 @@ export default function SubmitPropertyForm() {
                 ? "⚠️ Simpan profil Anda terlebih dahulu untuk mengaktifkan form"
                 : !hasAgreedToTerms
                   ? "*Centang persetujuan di atas untuk mengaktifkan tombol kirim"
-                  : "*Pengajuan Anda akan ditinjau admin sebelum tampil di listing"}
+                  : "*Pengajuan Anda akan ditinjau admin sebelum tampil sebagai iklan"}
             </p>
           </div>
         </form>

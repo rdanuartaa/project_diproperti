@@ -2,6 +2,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import ArticleViewMeta from "./ArticleViewMeta";
 
 export default function SidebarArtikel({
   search,
@@ -16,7 +17,7 @@ export default function SidebarArtikel({
   return (
     <div className="tf-sidebar sticky-sidebar">
       {/* SEARCH - Desktop only (responsive via CSS) */}
-      <div className="sidebar-search sidebar-item">
+      <div className="sidebar-search sidebar-item search-desktop">
         <h4 className="sidebar-title">Cari Artikel</h4>
         <form onSubmit={onSearchSubmit} className="form-search">
           <fieldset>
@@ -84,6 +85,7 @@ export default function SidebarArtikel({
                   <div className="text-1 title fw-5">
                     <Link href={`/artikel/${item.slug}`}>{item.title}</Link>
                   </div>
+                  <ArticleViewMeta views={item.views} compact mutedText />
                   <p>
                     <span className="icon">
                       <svg

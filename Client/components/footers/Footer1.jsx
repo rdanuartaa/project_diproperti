@@ -189,7 +189,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                           isActiveLink("/rekomendasi-properti") ? "page" : undefined
                         }
                       >
-                        Rekomendasi Properti
+                        Rekomendasi 
                       </Link>
                     </li>
                     <li>
@@ -202,7 +202,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                           isActiveLink("/komparasi") ? "page" : undefined
                         }
                       >
-                        Bandingkan Properti
+                        Komparasi
                       </Link>
                     </li>
                     <li>

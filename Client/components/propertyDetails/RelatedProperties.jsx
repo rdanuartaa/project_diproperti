@@ -5,6 +5,9 @@ import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation } from "swiper/modules";
 import { api } from "@/lib/api";
+import { useCompare } from "@/components/compare/CompareContext";
+import { getPropertyCardMetaItems } from "@/lib/property";
+import PropertyViewMeta from "@/components/properties/PropertyViewMeta";
 import "swiper/css";
 import "swiper/css/pagination";
 import "swiper/css/navigation";
@@ -71,9 +74,132 @@ function formatPriceDisplay(property) {
   return `${base}/${getRentPeriodLabel(property)}`;
 }
 
+function getListingTypeLabel(type) {
+  if (type === "jual") return "Dijual";
+  if (type === "sewa") return "Disewa";
+  return type || "-";
+}
+
 export default function RelatedProperties({ slug }) {
   const [relatedProperties, setRelatedProperties] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
+
+  const renderPropertyCard = (property) => {
+    const added = isInCompare(property.id);
+    const disabled = !added && isFull;
+    const metaItems = getPropertyCardMetaItems(property);
+
+    return (
+      <div className="box-house hover-img">
+        <div className="image-wrap property-card-image-wrap">
+          <Link href={`/properti/${property.slug}`}>
+            <div className="image" style={{ position: "relative", height: "250px" }}>
+              <Image
+                src={getImageSrc(property)}
+                alt={property.title}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+          </Link>
+
+          <ul className="box-tag flex gap-8">
+            {property.listing_type && (
+              <li className="flat-tag text-4 bg-main fw-6 text_white">
+                {getListingTypeLabel(property.listing_type)}
+              </li>
+            )}
+            {property.type && (
+              <li className="flat-tag text-4 bg-3 fw-6 text_white">
+                {property.type}
+              </li>
+            )}
+          </ul>
+
+          <div className="list-btn flex gap-8">
+            <button
+              type="button"
+              className={`btn-icon save hover-tooltip ${added ? "active" : ""}`}
+              onClick={() =>
+                added ? removeFromCompare(property.id) : addToCompare(property)
+              }
+              disabled={disabled}
+              aria-pressed={added}
+            >
+              <i className="icon-compare" />
+              <span className="tooltip">
+                {added
+                  ? "Hapus Komparasi"
+                  : disabled
+                    ? "Maks 3 properti"
+                    : "Komparasi"}
+              </span>
+            </button>
+
+            <Link
+              href={`/properti/${property.slug}`}
+              className="btn-icon find hover-tooltip"
+              aria-label={`Lihat detail ${property.title}`}
+            >
+              <i className="icon-find-plus" />
+              <span className="tooltip">Lihat Detail</span>
+            </Link>
+          </div>
+        </div>
+
+        <div className="content">
+          <h5 className="title">
+            <Link href={`/properti/${property.slug}`}>{property.title}</Link>
+          </h5>
+          <p className="location text-1 flex items-center gap-6">
+            <i className="icon-location" /> {getLocation(property)}
+          </p>
+          <div className="property-card-views mb-12">
+            <PropertyViewMeta views={property.views} />
+          </div>
+          <ul className="meta-list flex">
+            {metaItems.map((item) => (
+              <li className="text-1 flex" key={item.key}>
+                <span>
+                  {item.value}
+                  {item.suffix || ""}
+                </span>
+                {item.label}
+              </li>
+            ))}
+          </ul>
+          <div className="bot flex justify-between items-center">
+            <h6 className="price">{formatPriceDisplay(property)}</h6>
+            <div className="wrap-btn flex">
+              <button
+                type="button"
+                className="compare flex gap-8 items-center text-1"
+                onClick={() =>
+                  added
+                    ? removeFromCompare(property.id)
+                    : addToCompare(property)
+                }
+                disabled={disabled}
+                aria-pressed={added}
+              >
+                <i className="icon-compare" />
+                {added ? "Dibandingkan ✓" : "Compare"}
+              </button>
+
+              <Link
+                href={`/properti/${property.slug}`}
+                className="tf-btn style-border pd-4"
+              >
+                Details
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   useEffect(() => {
     if (!slug) {
@@ -167,85 +293,7 @@ export default function RelatedProperties({ slug }) {
               >
                 {relatedProperties.map((property) => (
                   <SwiperSlide key={property.id}>
-                    {/* ✅ Property Card - sama persis seperti PropertyGridItems */}
-                    <div className="box-house hover-img">
-                      <div className="image-wrap property-card-image-wrap">
-                        <Link href={`/properti/${property.slug}`}>
-                          <div className="image" style={{ position: "relative", height: "250px" }}>
-                            <Image
-                              src={getImageSrc(property)}
-                              alt={property.title}
-                              fill
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              style={{ objectFit: "cover" }}
-                            />
-                          </div>
-                        </Link>
-                        
-                        {/* Tags */}
-                        <ul className="box-tag flex gap-8">
-                          {property.listing_type && (
-                            <li className="flat-tag text-4 bg-main fw-6 text_white">
-                              {property.listing_type === "jual" ? "Dijual" : "Disewa"}
-                            </li>
-                          )}
-                          {property.type && (
-                            <li className="flat-tag text-4 bg-3 fw-6 text_white">
-                              {property.type}
-                            </li>
-                          )}
-                        </ul>
-                        
-                        {/* Action Buttons */}
-                        <div className="list-btn flex gap-8">
-                          <a href="#" className="btn-icon save hover-tooltip">
-                            <i className="icon-compare" />
-                            <span className="tooltip">Komparasi</span>
-                          </a>
-                          <a href="#" className="btn-icon find hover-tooltip">
-                            <i className="icon-find-plus" />
-                            <span className="tooltip">Quick View</span>
-                          </a>
-                        </div>
-                      </div>
-                      
-                      <div className="content">
-                        <h5 className="title">
-                          <Link href={`/properti/${property.slug}`}>
-                            {property.title}
-                          </Link>
-                        </h5>
-                        <p className="location text-1 flex items-center gap-6">
-                          <i className="icon-location" /> {getLocation(property)}
-                        </p>
-                        <ul className="meta-list flex">
-                          <li className="text-1 flex">
-                            <span>{getBedrooms(property)}</span>Beds
-                          </li>
-                          <li className="text-1 flex">
-                            <span>{getBathrooms(property)}</span>Baths
-                          </li>
-                          <li className="text-1 flex">
-                            <span>{getArea(property)}</span>m2
-                          </li>
-                        </ul>
-                        <div className="bot flex justify-between items-center">
-                          <h6 className="price">{formatPriceDisplay(property)}</h6>
-                          <div className="wrap-btn flex">
-                            <a href="#" className="compare flex gap-8 items-center text-1">
-                              <i className="icon-compare" />
-                              Compare
-                            </a>
-                            <Link
-                              href={`/properti/${property.slug}`}
-                              className="tf-btn style-border pd-4"
-                            >
-                              Details
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    {renderPropertyCard(property)}
                   </SwiperSlide>
                 ))}
               </Swiper>
@@ -258,91 +306,39 @@ export default function RelatedProperties({ slug }) {
               <div className="related-pagination text-center mt-3" />
             </div>
 
-            {/* Mobile: Simple Grid (tanpa swiper) */}
+            {/* Mobile: Swiper seperti artikel home */}
             <div className="d-lg-none">
-              <div className="row g-3">
-                {relatedProperties.slice(0, 4).map((property) => (
-                  <div key={property.id} className="col-12">
-                    {/* ✅ Property Card - sama untuk mobile */}
-                    <div className="box-house hover-img">
-                      <div className="image-wrap property-card-image-wrap">
-                        <Link href={`/properti/${property.slug}`}>
-                          <div className="image" style={{ position: "relative", height: "250px" }}>
-                            <Image
-                              src={getImageSrc(property)}
-                              alt={property.title}
-                              fill
-                              sizes="100vw"
-                              style={{ objectFit: "cover" }}
-                            />
-                          </div>
-                        </Link>
-                        
-                        <ul className="box-tag flex gap-8">
-                          {property.listing_type && (
-                            <li className="flat-tag text-4 bg-main fw-6 text_white">
-                              {property.listing_type === "jual" ? "Dijual" : "Disewa"}
-                            </li>
-                          )}
-                          {property.type && (
-                            <li className="flat-tag text-4 bg-3 fw-6 text_white">
-                              {property.type}
-                            </li>
-                          )}
-                        </ul>
-                        
-                        <div className="list-btn flex gap-8">
-                          <a href="#" className="btn-icon save hover-tooltip">
-                            <i className="icon-compare" />
-                            <span className="tooltip">Komparasi</span>
-                          </a>
-                          <a href="#" className="btn-icon find hover-tooltip">
-                            <i className="icon-find-plus" />
-                            <span className="tooltip">Quick View</span>
-                          </a>
-                        </div>
-                      </div>
-                      
-                      <div className="content">
-                        <h5 className="title">
-                          <Link href={`/properti/${property.slug}`}>
-                            {property.title}
-                          </Link>
-                        </h5>
-                        <p className="location text-1 flex items-center gap-6">
-                          <i className="icon-location" /> {getLocation(property)}
-                        </p>
-                        <ul className="meta-list flex">
-                          <li className="text-1 flex">
-                            <span>{getBedrooms(property)}</span>Beds
-                          </li>
-                          <li className="text-1 flex">
-                            <span>{getBathrooms(property)}</span>Baths
-                          </li>
-                          <li className="text-1 flex">
-                            <span>{getArea(property)}</span>m2
-                          </li>
-                        </ul>
-                        <div className="bot flex justify-between items-center">
-                          <h6 className="price">{formatPriceDisplay(property)}</h6>
-                          <div className="wrap-btn flex">
-                            <a href="#" className="compare flex gap-8 items-center text-1">
-                              <i className="icon-compare" />
-                              Compare
-                            </a>
-                            <Link
-                              href={`/properti/${property.slug}`}
-                              className="tf-btn style-border pd-4"
-                            >
-                              Details
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+              <Swiper
+                dir="ltr"
+                className="swiper style-pagination sw-layout"
+                breakpoints={{
+                  0: { slidesPerView: 1 },
+                  575: { slidesPerView: 1.1, spaceBetween: 16 },
+                  768: { slidesPerView: 2, spaceBetween: 20 },
+                }}
+                modules={[Pagination, Navigation]}
+                pagination={{ el: ".related-mobile-pagination", clickable: true }}
+                navigation={{
+                  prevEl: ".related-mobile-prev",
+                  nextEl: ".related-mobile-next",
+                }}
+              >
+                {relatedProperties.map((property) => (
+                  <SwiperSlide className="swiper-slide" key={property.id}>
+                    {renderPropertyCard(property)}
+                  </SwiperSlide>
                 ))}
-              </div>
+
+                <div className="sw-wrap-btn home-carousel-nav mt-48">
+                  <div className="swiper-button-prev sw-button nav-prev-layout related-mobile-prev">
+                    <i className="icon-arrow-left-3" />
+                  </div>
+                  <div className="sw-pagination sw-pagination-layout text-center related-mobile-pagination" />
+                  <div className="swiper-button-next sw-button nav-next-layout related-mobile-next">
+                    <i className="icon-arrow-right-3" />
+                  </div>
+                </div>
+              </Swiper>
             </div>
 
           </div>

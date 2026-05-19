@@ -498,6 +498,25 @@
   }
 }
 .wd-chart {
+  .dashboard-chart-title {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+
+    .title {
+      margin-bottom: 0;
+    }
+
+    span {
+      color: var(--Text-3);
+      font-size: 14px;
+      line-height: 20px;
+      font-weight: 500;
+    }
+  }
   .wd-filter-date {
     display: flex;
     align-items: center;

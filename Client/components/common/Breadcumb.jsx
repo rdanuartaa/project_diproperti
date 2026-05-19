@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-export default function Breadcumb({ pageName = "Property Listing" }) {
+export default function Breadcumb({ pageName = "Detail Properti" }) {
   return (
     <section className="flat-title">
       <div className="tf-container">

@@ -5,7 +5,7 @@ import Header1 from "@/components/headers/Header1";
 import React from "react";
 
 export const metadata = {
-  title: "Blog List || Diproperti - Real Estate",
+  title: "Daftar Artikel || Diproperti - Real Estate",
   description: "Diproperti || Real Estate",
 };
 export default function page() {
@@ -14,7 +14,7 @@ export default function page() {
       <div id="wrapper">
         <Header1 />
         <div className="main-content">
-          <Breadcumb pageName="Blog List" />
+          <Breadcumb pageName="Daftar Artikel" />
           <ArtikelList />
         </div>
         <Footer1 />

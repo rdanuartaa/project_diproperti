@@ -4,6 +4,7 @@ import Link from "next/link";
 import React from "react";
 import { useCompare } from "@/components/compare/CompareContext";
 import { getPropertyCardMetaItems } from "@/lib/property";
+import PropertyViewMeta from "./PropertyViewMeta";
 
 const fallbackImage = "/images/section/location-23.jpg";
 
@@ -194,10 +195,14 @@ export default function PropertyGridItems({ properties, showItems }) {
                   </span>
                 </button>
 
-                <a href="#" className="btn-icon find hover-tooltip">
+                <Link
+                  href={`/properti/${property.slug}`}
+                  className="btn-icon find hover-tooltip"
+                  aria-label={`Lihat detail ${property.title}`}
+                >
                   <i className="icon-find-plus" />
-                  <span className="tooltip">Quick View</span>
-                </a>
+                  <span className="tooltip">Lihat Detail</span>
+                </Link>
               </div>
             </div>
 
@@ -210,6 +215,9 @@ export default function PropertyGridItems({ properties, showItems }) {
               <p className="location text-1 flex items-center gap-6">
                 <i className="icon-location" /> {getLocation(property)}
               </p>
+              <div className="property-card-views mb-12">
+                <PropertyViewMeta views={property.views} />
+              </div>
               <ul className="meta-list flex">
                 {metaItems.map((item) => (
                   <li className="text-1 flex" key={item.key}>

@@ -4,11 +4,12 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
 import Image from "next/image";
 import SplitTextAnimation from "@/components/common/SplitTextAnimation";
-import { Pagination } from "swiper/modules";
+import { Navigation, Pagination } from "swiper/modules";
 import { useEffect, useState } from "react";
 import { useCompare } from "@/components/compare/CompareContext";
 import { api } from "@/lib/api";
 import { getPropertyCardMetaItems } from "@/lib/property";
+import PropertyViewMeta from "@/components/properties/PropertyViewMeta";
 import "swiper/css";
 import "swiper/css/pagination";
 
@@ -251,7 +252,7 @@ export default function Properties() {
           <div className="col-12">
             <div className="heading-section text-center mb-48">
               <h2 className="title split-text effect-right">
-                <SplitTextAnimation text="Popular Searches" />
+                <SplitTextAnimation text="Properti Terpopuler" />
               </h2>
               <p className="text-1 split-text split-lines-transform">
                 Ribuan pencari properti mewah seperti Anda mengunjungi website kami.
@@ -312,8 +313,12 @@ export default function Properties() {
                         992: { slidesPerView: 3, spaceBetween: 40 },
                         1200: { slidesPerView: 4, spaceBetween: 40 },
                       }}
-                      modules={[Pagination]}
-                      pagination={{ el: ".spd7" }}
+                      modules={[Pagination, Navigation]}
+                      pagination={{ el: ".spd7", clickable: true }}
+                      navigation={{
+                        prevEl: ".home-property-prev",
+                        nextEl: ".home-property-next",
+                      }}
                     >
                       {properties.map((property) => {
                         const added = isInCompare(property.id);
@@ -379,10 +384,14 @@ export default function Properties() {
                                       : "Komparasi"}
                                   </span>
                                 </button>
-                                <a href="#" className="btn-icon find hover-tooltip">
+                                <Link
+                                  href={`/properti/${property.slug}`}
+                                  className="btn-icon find hover-tooltip"
+                                  aria-label={`Lihat detail ${property.title}`}
+                                >
                                   <i className="icon-find-plus" />
-                                  <span className="tooltip">Quick View</span>
-                                </a>
+                                  <span className="tooltip">Lihat Detail</span>
+                                </Link>
                               </div>
                             </div>
                             
@@ -395,6 +404,9 @@ export default function Properties() {
                               <p className="location text-1 flex items-center gap-6">
                                 <i className="icon-location" /> {getLocation(property)}
                               </p>
+                              <div className="property-card-views mb-12">
+                                <PropertyViewMeta views={property.views} />
+                              </div>
                               <ul className="meta-list flex">
                                 {metaItems.map((item) => (
                                   <li className="text-1 flex" key={item.key}>
@@ -438,8 +450,15 @@ export default function Properties() {
                         );
                       })}
                       
-                      <div className="mb-44"></div>
-                      <div className="sw-pagination sw-pagination-layout text-center spd7" />
+                      <div className="sw-wrap-btn home-carousel-nav mt-48">
+                        <div className="swiper-button-prev sw-button nav-prev-layout home-property-prev">
+                          <i className="icon-arrow-left-3" />
+                        </div>
+                        <div className="sw-pagination sw-pagination-layout text-center spd7" />
+                        <div className="swiper-button-next sw-button nav-next-layout home-property-next">
+                          <i className="icon-arrow-right-3" />
+                        </div>
+                      </div>
                     </Swiper>
                   )}
                   

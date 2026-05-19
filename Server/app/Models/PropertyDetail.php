@@ -56,6 +56,8 @@ class PropertyDetail extends Model
         'warehouse_area',
         'shop_front_width',
         // 🌾 Tanah Specific
+        'panjang_tanah',
+        'lebar_tanah',
         'land_type',
         'land_contour',
         'zoning', // ✅ Ditambahkan
@@ -76,6 +78,8 @@ class PropertyDetail extends Model
         'total_rooms'          => 'integer',
         'panjang_ruangan'      => 'float',
         'lebar_ruangan'        => 'float',
+        'panjang_tanah'        => 'float',
+        'lebar_tanah'          => 'float',
         'parking_capacity'     => 'integer',
         'warehouse_area'       => 'integer',
         // Float/Decimal Field

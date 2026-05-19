@@ -1,14 +1,14 @@
 import React from "react";
-import { getPropertyConfig } from "@/lib/property";
+import { formatPropertyValue, getPropertyConfig } from "@/lib/property";
 
 const FIELD_LABELS = {
-  carport: "Carport",
+  carport: "Garasi Terbuka",
   garden: "Taman Pribadi",
-  one_gate_system: "One Gate System",
+  one_gate_system: "Sistem Satu Gerbang",
   security_24jam: "Keamanan 24 Jam",
   swimming_pool: "Kolam Renang",
-  private_pool: "Private Pool",
-  furnished: "Fully Furnished",
+  private_pool: "Kolam Pribadi",
+  furnished: "Furnitur Lengkap",
   near_tourism: "Dekat Wisata",
   wifi_included: "Termasuk WiFi",
   electricity_included: "Termasuk Listrik",
@@ -19,9 +19,7 @@ const FIELD_LABELS = {
 };
 
 function formatWater(value) {
-  if (value === "pdam") return "Air PDAM";
-  if (value === "sumur") return "Air Sumur";
-  return value ? `Air ${value}` : null;
+  return value ? `Air ${formatPropertyValue("water", value)}` : null;
 }
 
 function formatElectricity(value) {
@@ -44,7 +42,6 @@ function buildFeatureItems(property) {
       }
 
       if (field.name === "water") return formatWater(value);
-      if (field.name === "listrik_type") return formatElectricity(value);
       if (field.name === "wifi_provider") return value ? `WiFi ${value}` : null;
 
       return null;

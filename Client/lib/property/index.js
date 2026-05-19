@@ -19,11 +19,13 @@ export {
 export {
   formatThousands,
   formatCompact,
+  formatViewCount,
   formatFullRupiah,
   formatDateTime,
 } from './formatters';
 
 export { getPropertyCardMetaItems } from './cardMeta';
+export { FIELD_WEIGHTS, getFieldWeight } from './fieldWeights';
 
 // Export dari transformers.js
 export {

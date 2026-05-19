@@ -23,7 +23,7 @@ export default function Sidebar({ property }) {
       return text.replace(".", ",");
     };
     if (num >= 1_000_000_000)
-      return `Rp ${formatUnit(num / 1_000_000_000)} milyar`;
+      return `Rp ${formatUnit(num / 1_000_000_000)} milyar`;  
     if (num >= 1_000_000) return `Rp ${formatUnit(num / 1_000_000)} juta`;
     if (num >= 1_000) return `Rp ${formatUnit(num / 1_000)} ribu`;
     return `Rp ${num}`;
@@ -136,7 +136,6 @@ export default function Sidebar({ property }) {
               width={200}
               height={200}
               className="rounded-circle"
-              style={{ transform: "scale(1.12)" }}
             />
           </div>
           <div className="content">

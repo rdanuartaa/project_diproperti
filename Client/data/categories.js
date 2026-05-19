@@ -10,9 +10,9 @@ export const categories2 = [
     listings: "Strategis untuk usaha & bisnis",
   },
   {
-    icon: "icon-apartment1",
-    title: "Rumah Kos",
-    listings: "Investasi jangka panjang",
+    icon: "icon-villa-line",
+    title: "Villa",
+    listings: "Hunian nyaman untuk liburan",
   },
   {
     icon: "icon-land",

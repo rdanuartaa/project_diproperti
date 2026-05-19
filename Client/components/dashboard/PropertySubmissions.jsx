@@ -6,7 +6,11 @@ import SuccessModal from "@/components/common/SuccesModal";
 import AttentionModal from "@/components/common/AttentionModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
 import DropdownSelect from "../common/DropdownSelect";
-import { PROPERTY_TYPE_CONFIG, getBuildingTypeDisplay } from "@/lib/property";
+import {
+  PROPERTY_TYPE_CONFIG,
+  formatPropertyValue,
+  getBuildingTypeDisplay,
+} from "@/lib/property";
 
 const ALL_TYPE_OPTION = "Semua Tipe";
 const ALL_LISTING_TYPE_OPTION = "Semua Penawaran";
@@ -249,6 +253,17 @@ export default function PropertySubmissions() {
     field !== null && field !== undefined && field !== " "
       ? String(field)
       : fallback;
+
+  const formatParkingCapacity = (value) => {
+    if (value === null || value === undefined || value === "") return "-";
+    return `${value} mobil`;
+  };
+
+  const formatBuildingTypeDisplay = (submission) => {
+    const value = getBuildingTypeDisplay(submission);
+    if (!value) return "-";
+    return submission?.type === "tanah" ? `${value} m²` : value;
+  };
 
   const formatSellerPhone = (phone) => {
     if (!phone) return "-";
@@ -665,13 +680,10 @@ export default function PropertySubmissions() {
           </p>
           <ul className="list">
             <li>
-              <a href="#">Privasi</a>
+              <a href="/faq">FAQ</a>
             </li>
             <li>
-              <a href="#">Syarat</a>
-            </li>
-            <li>
-              <a href="#">Bantuan</a>
+              <a href="/contact">Bantuan</a>
             </li>
           </ul>
         </div>
@@ -884,7 +896,7 @@ export default function PropertySubmissions() {
                           type="text"
                           name="building_type"
                           className="form-control bg-gray-100"
-                          value={getBuildingTypeDisplay(activeSubmission)}
+                          value={formatBuildingTypeDisplay(activeSubmission)}
                           readOnly
                           placeholder={
                             activeSubmission.type === "tanah"
@@ -914,7 +926,7 @@ export default function PropertySubmissions() {
                     </div>
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Tipe Listing</label>
+                        <label>Penawaran</label>
                         <div
                           style={{ pointerEvents: "none", userSelect: "none" }}
                         >
@@ -922,6 +934,9 @@ export default function PropertySubmissions() {
                             options={[val(activeSubmission.listing_type)]}
                             selectedValue={val(activeSubmission.listing_type)}
                             onChange={() => {}}
+                            getOptionLabel={(option) =>
+                              formatPropertyValue("listing_type", option)
+                            }
                           />
                         </div>
                       </fieldset>
@@ -968,6 +983,12 @@ export default function PropertySubmissions() {
                                   activeSubmission.certificate_status,
                                 )}
                                 onChange={() => {}}
+                                getOptionLabel={(option) =>
+                                  formatPropertyValue(
+                                    "certificate_status",
+                                    option,
+                                  )
+                                }
                               />
                             </div>
                           </fieldset>
@@ -1084,7 +1105,7 @@ export default function PropertySubmissions() {
                         </div>
                         {!getLocationInfo(activeSubmission).hasCoordinates && (
                           <p className="text-muted mt-2 mb-0">
-                            Preview maps memakai alamat karena koordinat belum tersedia.
+                            Pratinjau peta memakai alamat karena koordinat belum tersedia.
                           </p>
                         )}
                       </div>
@@ -1098,7 +1119,7 @@ export default function PropertySubmissions() {
                     </div>
                     <div className="col-md-3">
                       <fieldset className="box-fieldset detail-fieldset">
-                        <label>Carport</label>
+                        <label>Garasi Terbuka</label>
                         <ReadOnlyDetailCheckbox
                           checked={activeSubmission.detail?.carport}
                         />
@@ -1114,7 +1135,7 @@ export default function PropertySubmissions() {
                     </div>
                     <div className="col-md-3">
                       <fieldset className="box-fieldset detail-fieldset">
-                        <label>One Gate System</label>
+                        <label>Sistem Satu Gerbang</label>
                         <ReadOnlyDetailCheckbox
                           checked={activeSubmission.detail?.one_gate_system}
                         />
@@ -1140,6 +1161,32 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
+                    {activeSubmission.type === "tanah" && (
+                      <>
+                        <div className="col-md-4">
+                          <fieldset className="box-fieldset detail-fieldset">
+                            <label>Panjang Tanah (m)</label>
+                            <input
+                              type="text"
+                              className="form-control bg-gray-100"
+                              value={val(activeSubmission.detail?.panjang_tanah)}
+                              readOnly
+                            />
+                          </fieldset>
+                        </div>
+                        <div className="col-md-4">
+                          <fieldset className="box-fieldset detail-fieldset">
+                            <label>Lebar Tanah (m)</label>
+                            <input
+                              type="text"
+                              className="form-control bg-gray-100"
+                              value={val(activeSubmission.detail?.lebar_tanah)}
+                              readOnly
+                            />
+                          </fieldset>
+                        </div>
+                      </>
+                    )}
                     <div className="col-md-4">
                       <fieldset className="box-fieldset detail-fieldset">
                         <label>Luas Bangunan (m²)</label>
@@ -1184,6 +1231,21 @@ export default function PropertySubmissions() {
                         />
                       </fieldset>
                     </div>
+                    {activeSubmission.type === "ruko" && (
+                      <div className="col-md-3">
+                        <fieldset className="box-fieldset detail-fieldset">
+                          <label>Kapasitas Parkir (mobil)</label>
+                          <input
+                            type="text"
+                            className="form-control bg-gray-100"
+                            value={formatParkingCapacity(
+                              activeSubmission.detail?.parking_capacity,
+                            )}
+                            readOnly
+                          />
+                        </fieldset>
+                      </div>
+                    )}
                     <div className="col-md-3">
                       <fieldset className="box-fieldset detail-fieldset">
                         <label>Dapur</label>
@@ -1240,6 +1302,9 @@ export default function PropertySubmissions() {
                             options={[val(activeSubmission.detail?.water)]}
                             selectedValue={val(activeSubmission.detail?.water)}
                             onChange={() => {}}
+                            getOptionLabel={(option) =>
+                              formatPropertyValue("water", option)
+                            }
                           />
                         </div>
                       </fieldset>
@@ -1258,6 +1323,9 @@ export default function PropertySubmissions() {
                               activeSubmission.detail?.listrik_type,
                             )}
                             onChange={() => {}}
+                            getOptionLabel={(option) =>
+                              formatPropertyValue("listrik_type", option)
+                            }
                           />
                         </div>
                       </fieldset>

@@ -23,7 +23,7 @@ const META_CONFIG_BY_TYPE = {
     { key: "gender_type", label: "Gender" },
   ],
   ruko: [
-    { key: "parking_area", label: "PA" },
+    { key: "parking_capacity", label: "Parkir", suffix: " mobil" },
     { key: "warehouse_area", label: "WA", suffix: "m²" },
     { key: "building_type", label: "m²" },
   ],
@@ -79,7 +79,7 @@ const ADVANCED_FILTER_CONFIG = {
     { key: "amenities", amenity: "cctv", label: "CCTV", options: ["Ya"] },
   ],
   ruko: [
-    { key: "parking_capacity", label: "Kapasitas Parkir", options: ["1", "2", "3", "4", "5+"], numeric: true },
+    { key: "parking_capacity", label: "Kapasitas Parkir (mobil)", options: ["1", "2", "3", "4", "5+"], numeric: true },
     { key: "warehouse_area", label: "Luas Gudang", options: ["10", "25", "50", "100+"], numeric: true },
     { key: "shop_front_width", label: "Lebar Depan Toko", options: ["3", "5", "8", "10+"], numeric: true },
     { key: "certificate_type", label: "Jenis Sertifikat", options: ["SHM", "SHGB"] },
@@ -160,6 +160,8 @@ export default function ListingSidebar({
   featuredProperties = [],
   activeFilterCount = 0,
   priceFormatter,
+  showFilter = true,
+  showFeatured = true,
 }) {
   const getRentPeriodLabel = (item) => {
     const period = String(item?.price_period || "bulan");
@@ -237,6 +239,7 @@ export default function ListingSidebar({
 
   return (
     <div className="tf-sidebar sticky-sidebar">
+      {showFilter && (
       <form
         className="form-advanced-search mb-30"
         onSubmit={(e) => {
@@ -382,8 +385,10 @@ export default function ListingSidebar({
           Reset Filter
         </button>
       </form>
+      )}
 
       {/* FEATURED PROPERTIES */}
+      {showFeatured && (
       <div className="sidebar-item sidebar-featured style-2 pb-36 mb-28">
         <h4 className="sidebar-title mb-28">Properti Terpopuler</h4>
         <ul>
@@ -428,6 +433,7 @@ export default function ListingSidebar({
           )}
         </ul>
       </div>
+      )}
     </div>
   );
 }//2

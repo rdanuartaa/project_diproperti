@@ -14,6 +14,9 @@ if (formData.type === "kos" && formData.listing_type !== "sewa") {
   if (formData.type === "kos") {
     if (!String(formData.detail.panjang_ruangan ?? "").trim()) return "Panjang ruangan wajib diisi.";
     if (!String(formData.detail.lebar_ruangan ?? "").trim()) return "Lebar ruangan wajib diisi.";
+  } else if (formData.type === "tanah") {
+    if (!String(formData.detail.panjang_tanah ?? "").trim()) return "Panjang tanah wajib diisi.";
+    if (!String(formData.detail.lebar_tanah ?? "").trim()) return "Lebar tanah wajib diisi.";
   } else if (!String(formData.detail.luas_tanah ?? "").trim()) {
     return "Luas tanah wajib diisi.";
   }
@@ -21,7 +24,7 @@ if (formData.type === "kos" && formData.listing_type !== "sewa") {
     return "Luas bangunan ruko wajib diisi.";
   }
   const totalImages = (formData.existingImages?.length || 0) + (formData.newImages?.length || 0);
-  if (totalImages < 1) return "Minimal upload 1 gambar.";
+  if (totalImages < 1) return "Minimal unggah 1 gambar.";
   return null;
 };
 

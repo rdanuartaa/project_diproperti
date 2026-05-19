@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { api } from "@/lib/api";
+import ArticleViewMeta from "./ArticleViewMeta";
 
 export default function DetailArtikel({ slug }) {
   const [article, setArticle] = useState(null);
@@ -55,10 +56,10 @@ export default function DetailArtikel({ slug }) {
             ? res.data.data
             : [];
 
-        // ✅ Filter: Exclude artikel yang sedang dibuka + ambil max 5
-        if (article?.id) {
-          articlesData = articlesData.filter((item) => item.id !== article.id);
-        }
+        articlesData = articlesData.filter((item) => {
+          if (article?.id) return item.id !== article.id;
+          return item.slug !== slug;
+        });
         setPopularArticles(articlesData.slice(0, 5));
       } catch (error) {
         console.error("Gagal ambil popular articles:", error);
@@ -89,9 +90,10 @@ export default function DetailArtikel({ slug }) {
           ? res.data.data
           : [];
 
-      if (article?.id) {
-        articlesData = articlesData.filter((item) => item.id !== article.id);
-      }
+    articlesData = articlesData.filter((item) => {
+      if (article?.id) return item.id !== article.id;
+      return item.slug !== slug;
+    });
       setPopularArticles(articlesData.slice(0, 5));
     } catch (error) {
       console.error("Gagal ambil popular articles:", error);
@@ -194,7 +196,32 @@ export default function DetailArtikel({ slug }) {
                   </div>
                 )}
                 <div className="meta-item flex align-center">
-                  <p>{formatDate(article.created_at)}</p>
+                  <ArticleViewMeta views={article.views} primaryText />
+                </div>
+                <div className="meta-item flex align-center">
+                  <svg
+                    width={18}
+                    height={18}
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9 16.5C13.1421 16.5 16.5 13.1421 16.5 9C16.5 4.85786 13.1421 1.5 9 1.5C4.85786 1.5 1.5 4.85786 1.5 9C1.5 13.1421 4.85786 16.5 9 16.5Z"
+                      stroke="#A8ABAE"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M9 4.5V9L12 10.5"
+                      stroke="#A8ABAE"
+                      strokeWidth={1.8}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <p className="text-color-primary">{formatDate(article.created_at)}</p>
                 </div>
               </div>
             </div>
@@ -358,6 +385,7 @@ export default function DetailArtikel({ slug }) {
                               {item.title}
                             </Link>
                           </div>
+                          <ArticleViewMeta views={item.views} compact />
                           <p>
                             <span className="icon">
                               <svg

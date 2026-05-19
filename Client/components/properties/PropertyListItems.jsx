@@ -4,6 +4,7 @@ import Link from "next/link";
 import React from "react";
 import { useCompare } from "@/components/compare/CompareContext";
 import { getPropertyCardMetaItems } from "@/lib/property";
+import PropertyViewMeta from "./PropertyViewMeta";
 
 const fallbackImage = "/images/section/location-24.jpg";
 
@@ -171,15 +172,16 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
         return (
           <div
             key={property.id ?? index}
-            className="box-house style-list hover-img mb-20"
+            className="box-house style-list property-list-card hover-img mb-20"
             style={
               rankStyle
                 ? {
                     position: "relative",
                     border: rankStyle.border,
                     background: rankStyle.background,
+                    alignItems: "stretch",
                   }
-                : undefined
+                : { alignItems: "stretch" }
             }
           >
             {rankStyle && (
@@ -207,14 +209,21 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
                 {rankStyle.label}
               </span>
             )}
-            <div className="image-wrap">
-              <Link href={`/properti/${property.slug}`}>
+            <div
+              className="image-wrap"
+              style={{ alignSelf: "stretch", display: "flex" }}
+            >
+              <Link
+                href={`/properti/${property.slug}`}
+                style={{ display: "block", width: "100%", height: "100%" }}
+              >
                 <div
                   className="image"
                   style={{
                     position: "relative",
                     width: "320px",
-                    height: "250px",
+                    height: "100%",
+                    minHeight: "250px",
                     overflow: "hidden",
                   }}
                 >
@@ -263,10 +272,15 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
                   </span>
                 </button>
 
-                <a href="#" className="btn-icon find hover-tooltip">
+                <Link
+                  href={`/properti/${property.slug}`}
+                  className="btn-icon find hover-tooltip"
+                  aria-label={`Lihat detail ${property.title}`}
+                  prefetch={false}
+                >
                   <i className="icon-find-plus" />
-                  <span className="tooltip">Quick View</span>
-                </a>
+                  <span className="tooltip">Lihat Detail</span>
+                </Link>
               </div>
             </div>
 
@@ -280,6 +294,9 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
               <p className="location text-1 flex items-center gap-6">
                 <i className="icon-location" /> {getLocation(property)}
               </p>
+              <div className="property-card-views mb-12">
+                <PropertyViewMeta views={property.views} />
+              </div>
 
               <ul className="meta-list flex">
                 {metaItems.map((item) => (

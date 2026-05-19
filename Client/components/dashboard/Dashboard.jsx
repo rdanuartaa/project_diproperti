@@ -17,6 +17,37 @@ export default function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [chartPeriod, setChartPeriod] = useState("day");
+  const [dateRange, setDateRange] = useState({
+    startDate: "",
+    endDate: "",
+  });
+
+  const formatDisplayDate = (dateString) => {
+    if (!dateString) return "";
+    return new Date(`${dateString}T00:00:00`).toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getAnalyticsRangeLabel = () => {
+    if (dateRange.startDate || dateRange.endDate) {
+      const start = dateRange.startDate || dateRange.endDate;
+      const end = dateRange.endDate || dateRange.startDate;
+      if (start === end) return `Tanggal ${formatDisplayDate(start)}`;
+      return `Rentang tanggal ${formatDisplayDate(start)} hingga ${formatDisplayDate(end)}`;
+    }
+
+    const periodLabels = {
+      day: "Hari ini",
+      week: "Minggu ini",
+      month: "Bulan ini",
+      year: "Tahun ini",
+    };
+
+    return periodLabels[chartPeriod] || "Kunjungan Platform";
+  };
 
   // 🔹 Fetch dashboard stats
   const fetchStats = async () => {
@@ -31,10 +62,14 @@ export default function Dashboard() {
   };
 
   // 🔹 Fetch analytics chart data
-  const fetchAnalytics = async (period = "day") => {
+  const fetchAnalytics = async (period = "day", range = dateRange) => {
     try {
+      const params = { period };
+      if (range.startDate) params.start_date = range.startDate;
+      if (range.endDate) params.end_date = range.endDate;
+
       const { data } = await api.get("/admin/dashboard/analytics", {
-        params: { period },
+        params,
       });
       if (data.success) {
         setAnalytics({
@@ -51,15 +86,32 @@ export default function Dashboard() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchStats(), fetchAnalytics(chartPeriod)]);
+      await Promise.all([fetchStats(), fetchAnalytics(chartPeriod, dateRange)]);
       setLoading(false);
     };
     loadData();
-  }, [chartPeriod]);
+  }, [chartPeriod, dateRange]);
 
   // 🔹 Handle period change
   const handlePeriodChange = (period) => {
     setChartPeriod(period);
+    setDateRange({ startDate: "", endDate: "" });
+  };
+
+  const handleDateRangeChange = (name, value) => {
+    setDateRange((prev) => {
+      const nextRange = { ...prev, [name]: value };
+      if (
+        nextRange.startDate &&
+        nextRange.endDate &&
+        nextRange.startDate > nextRange.endDate
+      ) {
+        return name === "startDate"
+          ? { ...nextRange, endDate: value }
+          : { ...nextRange, startDate: value };
+      }
+      return nextRange;
+    });
   };
 
   return (
@@ -288,7 +340,10 @@ export default function Dashboard() {
         <div className="row">
           <div className="col-xl-12">
             <div className="widget-box-2 wd-chart">
-              <h5 className="title">Page Inside</h5>
+              <div className="dashboard-chart-title">
+                <h5 className="title">Analisis Kunjungan</h5>
+                <span>{getAnalyticsRangeLabel()}</span>
+              </div>
 
               {/* Filter Period */}
               <div className="wd-filter-date">
@@ -296,7 +351,7 @@ export default function Dashboard() {
                   {["day", "week", "month", "year"].map((p) => (
                     <div
                       key={p}
-                      className={`dates ${chartPeriod === p ? "active" : ""}`}
+                      className={`dates ${chartPeriod === p && !dateRange.startDate && !dateRange.endDate ? "active" : ""}`}
                       onClick={() => handlePeriodChange(p)}
                       style={{ cursor: "pointer" }}
                     >
@@ -311,9 +366,10 @@ export default function Dashboard() {
                         type="date"
                         className="ip-datepicker icon"
                         placeholder="From Date"
-                        onChange={(e) => {
-                          // Optional: handle custom date range
-                        }}
+                        value={dateRange.startDate}
+                        onChange={(e) =>
+                          handleDateRangeChange("startDate", e.target.value)
+                        }
                       />
                     </fieldset>
                   </form>
@@ -323,9 +379,11 @@ export default function Dashboard() {
                         type="date"
                         className="ip-datepicker icon"
                         placeholder="To Date"
-                        onChange={(e) => {
-                          // Optional: handle custom date range
-                        }}
+                        value={dateRange.endDate}
+                        min={dateRange.startDate || undefined}
+                        onChange={(e) =>
+                          handleDateRangeChange("endDate", e.target.value)
+                        }
                       />
                     </fieldset>
                   </form>
@@ -355,18 +413,15 @@ export default function Dashboard() {
 
         {/* Footer */}
         <div className="row">
-          <div className="col-xl-9">
+          <div className="col-xl-12">
             <div className="footer-dashboard">
               <p>© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights reserved.</p>
               <ul className="list">
                 <li>
-                  <a href="#">Privasi</a>
+                  <a href="/faq">FAQ</a>
                 </li>
                 <li>
-                  <a href="#">Syarat</a>
-                </li>
-                <li>
-                  <a href="#">Bantuan</a>
+                  <a href="/contact">Bantuan</a>
                 </li>
               </ul>
             </div>

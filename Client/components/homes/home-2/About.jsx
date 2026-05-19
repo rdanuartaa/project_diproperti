@@ -39,15 +39,15 @@ export default function About() {
                       </svg>
                     </div>
                     <h5 className="title">
-                      <a href="#">Jelajahi Properti di Sekitar Anda</a>
+                      <a href="/list-properti">Jelajahi Properti di Sekitar Anda</a>
                     </h5>
                   </div>
                   <p className="text-1">
                     Rumah, ruko, kos, hingga tanah — filter lokasi dan harga
                     sesuai kebutuhan Anda.
                   </p>
-                  <a href="#" className="tf-btn-link color-1">
-                    <span> Learn More </span>
+                  <a href="/list-properti" className="tf-btn-link color-1">
+                    <span> Pelajari Selengkapnya </span>
                   </a>
                 </div>
                 <div className="icons-box style-1 effec-icon">
@@ -67,15 +67,15 @@ export default function About() {
                       </svg>
                     </div>
                     <h5 className="title">
-                      <a href="#">Bandingkan Propertimu</a>
+                      <a href="/komparasi">Bandingkan Propertimu</a>
                     </h5>
                   </div>
                   <p className="text-1">
                     Pilih beberapa properti dan bandingkan harga, luas, kamar,
                     serta fasilitasnya.
                   </p>
-                  <a href="#" className="tf-btn-link color-1">
-                    <span> Learn More </span>
+                  <a href="/komparasi" className="tf-btn-link color-1">
+                    <span> Pelajari Selengkapnya </span>
                   </a>
                 </div>
                 <div className="icons-box style-1 effec-icon">
@@ -278,15 +278,15 @@ export default function About() {
                       </svg>
                     </div>
                     <h5 className="title">
-                      <a href="#">Hitung Cicilan KPR Anda</a>
+                      <a href="/simulasi-kpr">Hitung Cicilan KPR Anda</a>
                     </h5>
                   </div>
                   <p className="text-1">
                     Masukkan harga, DP, suku bunga, dan tenor — langsung dapat
                     estimasi cicilan.{" "}
                   </p>
-                  <a href="#" className="tf-btn-link color-1">
-                    <span> Learn More </span>
+                  <a href="/simulasi-kpr" className="tf-btn-link color-1">
+                    <span> Pelajari Selengkapnya </span>
                   </a>
                 </div>
                 <div className="icons-box style-1 effec-icon">
@@ -314,15 +314,15 @@ export default function About() {
                       </svg>
                     </div>
                     <h5 className="title">
-                      <a href="#">Hubungi Kami via WhatsApp</a>
+                      <a href="/rekomendasi-properti">Rekomendasi Properti</a>
                     </h5>
                   </div>
                   <p className="text-1">
-                    Ada pertanyaan soal properti? Admin kami siap membantu kapan
-                    saja.
+                    Dapatkan pilihan properti yang disesuaikan dengan kebutuhan
+                    dan preferensi Anda.
                   </p>
-                  <a href="#" className="tf-btn-link color-1">
-                    <span> Learn More </span>
+                  <a href="/rekomendasi-properti" className="tf-btn-link color-1">
+                    <span> Pelajari Selengkapnya </span>
                   </a>
                 </div>
               </div>

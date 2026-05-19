@@ -14,6 +14,8 @@ import {
   PROPERTY_TYPE_CONFIG,
   CERTIFICATE_REQUIRED_TYPES,
   formatThousands,
+  formatPropertyValue,
+  formatViewCount,
   formatDateTime,
   getAutoBuildingType,
   getBuildingTypeLabel,
@@ -129,15 +131,17 @@ export default function Properti() {
       total_rooms: 0,
       panjang_ruangan: "",
       lebar_ruangan: "",
+      panjang_tanah: "",
+      lebar_tanah: "",
       gender_type: "laki-laki",
       wifi_included: false,
       electricity_included: false,
       water_included: false,
       shared_kitchen: false,
-      parking_area: false,
-      cctv: false,
-      parking_capacity: 0,
-      warehouse_area: 0,
+    parking_area: false,
+    cctv: false,
+    parking_capacity: 0,
+    warehouse_area: 0,
       shop_front_width: "",
       land_type: "datar",
       land_contour: "",
@@ -159,7 +163,14 @@ export default function Properti() {
     formData.detail?.luas_bangunan,
     formData.detail?.panjang_ruangan,
     formData.detail?.lebar_ruangan,
+    formData.detail?.panjang_tanah,
+    formData.detail?.lebar_tanah,
   ]);
+
+  const buildingTypeDisplayValue =
+    formData.type === "tanah" && buildingTypeDisplay
+      ? `${buildingTypeDisplay} m²`
+      : buildingTypeDisplay;
 
   const buildingTypePlaceholder = useMemo(
     () => getBuildingTypePlaceholder(formData.type),
@@ -187,6 +198,33 @@ export default function Properti() {
     formData.detail.luas_bangunan,
     formData.detail.panjang_ruangan,
     formData.detail.lebar_ruangan,
+    formData.detail.panjang_tanah,
+    formData.detail.lebar_tanah,
+  ]);
+
+  useEffect(() => {
+    if (formData.type !== "tanah") return;
+    const panjang = Number(formData.detail.panjang_tanah ?? 0);
+    const lebar = Number(formData.detail.lebar_tanah ?? 0);
+    const luasTanah = panjang > 0 && lebar > 0 ? panjang * lebar : "";
+    const nextLuasTanah = luasTanah ? String(Math.round(luasTanah)) : "";
+
+    setFormData((prev) =>
+      String(prev.detail.luas_tanah ?? "") === nextLuasTanah
+        ? prev
+        : {
+            ...prev,
+            detail: {
+              ...prev.detail,
+              luas_tanah: nextLuasTanah,
+            },
+          },
+    );
+  }, [
+    formData.type,
+    formData.detail.panjang_tanah,
+    formData.detail.lebar_tanah,
+    formData.detail.luas_tanah,
   ]);
 
   const filteredProperties = useMemo(() => {
@@ -368,15 +406,17 @@ export default function Properti() {
         total_rooms: 0,
         panjang_ruangan: "",
         lebar_ruangan: "",
+        panjang_tanah: "",
+        lebar_tanah: "",
         gender_type: "laki-laki",
         wifi_included: false,
         electricity_included: false,
         water_included: false,
         shared_kitchen: false,
-        parking_area: false,
-        cctv: false,
-        parking_capacity: 0,
-        warehouse_area: 0,
+    parking_area: false,
+    cctv: false,
+    parking_capacity: 0,
+    warehouse_area: 0,
         shop_front_width: "",
         land_type: "datar",
         land_contour: "",
@@ -433,18 +473,20 @@ export default function Properti() {
       view_type: property.detail?.view_type ?? "",
       furnished: property.detail?.furnished ?? false,
       near_tourism: property.detail?.near_tourism ?? false,
-      total_rooms: property.detail?.total_rooms ?? 0,
-      panjang_ruangan: property.detail?.panjang_ruangan ?? "",
-      lebar_ruangan: property.detail?.lebar_ruangan ?? "",
-      gender_type: property.detail?.gender_type ?? "laki-laki",
+  total_rooms: property.detail?.total_rooms ?? 0,
+  panjang_ruangan: property.detail?.panjang_ruangan ?? "",
+  lebar_ruangan: property.detail?.lebar_ruangan ?? "",
+  panjang_tanah: property.detail?.panjang_tanah ?? "",
+  lebar_tanah: property.detail?.lebar_tanah ?? "",
+  gender_type: property.detail?.gender_type ?? "laki-laki",
       wifi_included: property.detail?.wifi_included ?? false,
       electricity_included: property.detail?.electricity_included ?? false,
       water_included: property.detail?.water_included ?? false,
       shared_kitchen: property.detail?.shared_kitchen ?? false,
-      parking_area: property.detail?.parking_area ?? false,
-      cctv: property.detail?.cctv ?? false,
-      parking_capacity: property.detail?.parking_capacity ?? 0,
-      warehouse_area: property.detail?.warehouse_area ?? 0,
+  parking_area: property.detail?.parking_area ?? false,
+  cctv: property.detail?.cctv ?? false,
+  parking_capacity: property.detail?.parking_capacity ?? 0,
+  warehouse_area: property.detail?.warehouse_area ?? 0,
       shop_front_width: property.detail?.shop_front_width ?? "",
       land_type: property.detail?.land_type ?? "datar",
       land_contour: property.detail?.land_contour ?? "",
@@ -523,18 +565,20 @@ export default function Properti() {
       view_type: data.detail?.view_type ?? "",
       furnished: !!data.detail?.furnished,
       near_tourism: !!data.detail?.near_tourism,
-      total_rooms: data.detail?.total_rooms ?? 0,
-      panjang_ruangan: data.detail?.panjang_ruangan ?? "",
-      lebar_ruangan: data.detail?.lebar_ruangan ?? "",
-      gender_type: data.detail?.gender_type ?? "laki-laki",
+  total_rooms: data.detail?.total_rooms ?? 0,
+  panjang_ruangan: data.detail?.panjang_ruangan ?? "",
+  lebar_ruangan: data.detail?.lebar_ruangan ?? "",
+  panjang_tanah: data.detail?.panjang_tanah ?? "",
+  lebar_tanah: data.detail?.lebar_tanah ?? "",
+  gender_type: data.detail?.gender_type ?? "laki-laki",
       wifi_included: !!data.detail?.wifi_included,
       electricity_included: !!data.detail?.electricity_included,
       water_included: !!data.detail?.water_included,
       shared_kitchen: !!data.detail?.shared_kitchen,
-      parking_area: !!data.detail?.parking_area,
-      cctv: !!data.detail?.cctv,
-      parking_capacity: data.detail?.parking_capacity ?? 0,
-      warehouse_area: data.detail?.warehouse_area ?? 0,
+  parking_area: !!data.detail?.parking_area,
+  cctv: !!data.detail?.cctv,
+  parking_capacity: data.detail?.parking_capacity ?? 0,
+  warehouse_area: data.detail?.warehouse_area ?? 0,
       shop_front_width: data.detail?.shop_front_width ?? "",
       land_type: data.detail?.land_type ?? "datar",
       land_contour: data.detail?.land_contour ?? "",
@@ -564,7 +608,7 @@ export default function Properti() {
       ? { bathroom_position: "dalam", gender_type: "laki-laki" }
       : {}),
     ...(type === "tanah"
-      ? { road_access: "aspal", land_type: "datar" }
+      ? { road_access: "aspal", land_type: "datar", panjang_tanah: "", lebar_tanah: "" }
       : {}),
   });
 
@@ -630,13 +674,18 @@ export default function Properti() {
           throw new Error("Panjang ruangan wajib diisi.");
         if (!String(formData.detail.lebar_ruangan ?? "").trim())
           throw new Error("Lebar ruangan wajib diisi.");
+      } else if (formData.type === "tanah") {
+        if (!String(formData.detail.panjang_tanah ?? "").trim())
+          throw new Error("Panjang tanah wajib diisi.");
+        if (!String(formData.detail.lebar_tanah ?? "").trim())
+          throw new Error("Lebar tanah wajib diisi.");
       } else if (!String(formData.detail.luas_tanah ?? "").trim()) {
         throw new Error("Luas tanah wajib diisi.");
       }
       const totalImages =
         (formData.existingImages?.length || 0) +
         (formData.newImages?.length || 0);
-      if (totalImages < 1) throw new Error("Minimal upload 1 gambar.");
+      if (totalImages < 1) throw new Error("Minimal unggah 1 gambar.");
 
       // ✅ BUILD PAYLOAD MENGGUNAKAN LIBRARY
       const jsonPayload = buildJsonPayload(formData);
@@ -967,6 +1016,7 @@ export default function Properti() {
                       <th>Tipe</th>
                       <th>Penawaran</th>
                       <th>Harga</th>
+                      <th>Kunjungan</th>
                       <th>Status</th>
                       <th>Diperbarui</th>
                       <th>Aksi</th>
@@ -1020,6 +1070,11 @@ export default function Properti() {
                         <td>
                           <span className="font-semibold text-blue-600">
                             {formatPriceDisplay(property)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="text-sm text-gray-600">
+                            {formatViewCount(property.views)}
                           </span>
                         </td>
                         <td>{getStatusBadge(property)}</td>
@@ -1123,13 +1178,10 @@ export default function Properti() {
           </p>
           <ul className="list">
             <li>
-              <a href="#">Privasi</a>
+              <a href="/faq">FAQ</a>
             </li>
             <li>
-              <a href="#">Syarat</a>
-            </li>
-            <li>
-              <a href="#">Bantuan</a>
+              <a href="/contact">Bantuan</a>
             </li>
           </ul>
         </div>
@@ -1161,7 +1213,7 @@ export default function Properti() {
                 style={{ maxHeight: "70vh", overflowY: "auto" }}
               >
                 <div className="alert alert-warning" role="alert">
-                  Semua data wajib diisi dan tidak boleh kosong. Minimal upload
+                  Semua data wajib diisi dan tidak boleh kosong. Minimal unggah
                   1 gambar.
                 </div>
                 <form
@@ -1221,6 +1273,7 @@ export default function Properti() {
                           options={["rumah", "villa", "ruko", "kos", "tanah"]}
                           selectedValue={formData.type}
                           onChange={(value) => updateField("type", value)}
+                          getOptionLabel={getPropertyTypeLabel}
                         />
                       </fieldset>
                     </div>
@@ -1231,7 +1284,7 @@ export default function Properti() {
                           type="text"
                           name="building_type"
                           className="form-control bg-gray-100"
-                          value={buildingTypeDisplay}
+                          value={buildingTypeDisplayValue}
                           readOnly
                           placeholder={buildingTypePlaceholder}
                         />
@@ -1244,12 +1297,15 @@ export default function Properti() {
                           options={["draft", "published", "sold"]}
                           selectedValue={formData.status}
                           onChange={(value) => updateField("status", value)}
+                          getOptionLabel={(option) =>
+                            formatPropertyValue("status", option)
+                          }
                         />
                       </fieldset>
                     </div>
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Tipe Listing</label>
+                        <label>Penawaran</label>
                         <DropdownSelect
                           options={
                             formData.type === "kos"
@@ -1258,6 +1314,9 @@ export default function Properti() {
                           }
                           selectedValue={formData.listing_type}
                           onChange={(value) => handleListingTypeChange(value)}
+                          getOptionLabel={(option) =>
+                            formatPropertyValue("listing_type", option)
+                          }
                         />
                       </fieldset>
                     </div>
@@ -1350,6 +1409,9 @@ export default function Properti() {
                               selectedValue={formData.certificate_status}
                               onChange={(value) =>
                                 updateField("certificate_status", value)
+                              }
+                              getOptionLabel={(option) =>
+                                formatPropertyValue("certificate_status", option)
                               }
                             />
                           </fieldset>
@@ -1462,11 +1524,14 @@ export default function Properti() {
                                 <span>Ya</span>
                               </div>
                             ) : field.type === "select" ? (
-                              <DropdownSelect
-                                options={field.options}
-                                selectedValue={formData.detail[field.name] || ""}
-                                onChange={(val) => updateDetail(field.name, val)}
-                              />
+                          <DropdownSelect
+                            options={field.options}
+                            selectedValue={formData.detail[field.name] || ""}
+                            onChange={(val) => updateDetail(field.name, val)}
+                            getOptionLabel={(option) =>
+                              formatPropertyValue(field.name, option)
+                            }
+                          />
                             ) : (
                               <input
                                 type={field.type}
@@ -1476,6 +1541,7 @@ export default function Properti() {
                                 value={formData.detail[field.name] ?? ""}
                                 onChange={handleChange}
                                 required={field.required}
+                                readOnly={field.readOnly}
                               />
                             )}
                             {errors?.[errorKey] && (

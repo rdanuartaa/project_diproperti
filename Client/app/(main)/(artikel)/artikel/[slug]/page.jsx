@@ -25,7 +25,7 @@ export default async function page({ params }) {
         <div className="main-content">
           <Breadcumb pageName="Detail Artikel" />
           <DetailArtikel slug={slug} />
-          <RelatedArtikel/>
+          <RelatedArtikel currentSlug={slug} />
         </div>
         <Footer1 />
       </div>

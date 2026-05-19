@@ -18,6 +18,20 @@ export const formatCompact = (amount) => {
   return String(value);
 };
 
+export const formatViewCount = (amount) => {
+  const value = Number(amount);
+  if (!value) return "0";
+  const formatUnit = (num) => {
+    const rounded = Math.round(num * 10) / 10;
+    const text = rounded % 1 === 0 ? String(rounded).replace(/\.0$/, "") : String(rounded);
+    return text.replace(".", ",");
+  };
+  if (value >= 1_000_000_000) return `${formatUnit(value / 1_000_000_000)} m`;
+  if (value >= 1_000_000) return `${formatUnit(value / 1_000_000)}jt`;
+  if (value >= 1_000) return `${formatUnit(value / 1_000)}k`;
+  return String(value);
+};
+
 export const formatFullRupiah = (amount) => `Rp ${formatThousands(amount)}`;
 
 export const formatDateTime = (dateString) => {

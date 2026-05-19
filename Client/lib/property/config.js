@@ -15,11 +15,11 @@ export const PROPERTY_TYPE_CONFIG = {
       { name: "living_rooms", label: "Ruang Tamu", type: "number", col: 3 },
       { name: "electricity_capacity", label: "Daya Listrik (VA)", type: "number", col: 6 },
       { name: "listrik_type", label: "Tipe Listrik", type: "select", options: OPTIONS.listrik, col: 6 },
-      { name: "wifi_provider", label: "Provider WiFi", type: "text", col: 6 },
+      { name: "wifi_provider", label: "Penyedia WiFi", type: "text", col: 6 },
       { name: "water", label: "Sumber Air", type: "select", options: OPTIONS.water, col: 6 },
-      { name: "carport", label: "Carport", type: "checkbox", col: 3 },
+      { name: "carport", label: "Garasi Terbuka", type: "checkbox", col: 3 },
       { name: "garden", label: "Taman", type: "checkbox", col: 3 },
-      { name: "one_gate_system", label: "One Gate System", type: "checkbox", col: 3 },
+      { name: "one_gate_system", label: "Sistem Satu Gerbang", type: "checkbox", col: 3 },
       { name: "security_24jam", label: "Keamanan 24 Jam", type: "checkbox", col: 3 },
     ],
   },
@@ -35,16 +35,16 @@ export const PROPERTY_TYPE_CONFIG = {
       { name: "living_rooms", label: "Ruang Tamu", type: "number", col: 3 },
       { name: "electricity_capacity", label: "Daya Listrik (VA)", type: "number", col: 6 },
       { name: "listrik_type", label: "Tipe Listrik", type: "select", options: OPTIONS.listrik, col: 6 },
-      { name: "wifi_provider", label: "Provider WiFi", type: "text", col: 6 },
+      { name: "wifi_provider", label: "Penyedia WiFi", type: "text", col: 6 },
       { name: "water", label: "Sumber Air", type: "select", options: OPTIONS.water, col: 6 },
-      { name: "view_type", label: "Tipe Pemandangan", type: "text", col: 6 },
-      { name: "carport", label: "Carport", type: "checkbox", col: 3 },
+      { name: "view_type", label: "Pemandangan", type: "text", col: 6 },
+      { name: "carport", label: "Garasi Terbuka", type: "checkbox", col: 3 },
       { name: "garden", label: "Taman", type: "checkbox", col: 3 },
-      { name: "one_gate_system", label: "One Gate System", type: "checkbox", col: 3 },
+      { name: "one_gate_system", label: "Sistem Satu Gerbang", type: "checkbox", col: 3 },
       { name: "security_24jam", label: "Keamanan 24 Jam", type: "checkbox", col: 3 },
       { name: "swimming_pool", label: "Kolam Renang", type: "checkbox", col: 3 },
-      { name: "private_pool", label: "Private Pool", type: "checkbox", col: 3 },
-      { name: "furnished", label: "Fully Furnished", type: "checkbox", col: 3 },
+      { name: "private_pool", label: "Kolam Pribadi", type: "checkbox", col: 3 },
+      { name: "furnished", label: "Furnitur Lengkap", type: "checkbox", col: 3 },
       { name: "near_tourism", label: "Dekat Wisata", type: "checkbox", col: 3 },
     ],
   },
@@ -58,7 +58,7 @@ export const PROPERTY_TYPE_CONFIG = {
       { name: "bathroom_position", label: "Kamar Mandi (Dalam/Luar)", type: "select", options: ["dalam", "luar"], col: 6 },
       { name: "gender_type", label: "Tipe Gender", type: "select", options: OPTIONS.gender, col: 6 },
       { name: "water", label: "Sumber Air", type: "select", options: OPTIONS.water, col: 6 },
-      { name: "wifi_provider", label: "Provider WiFi", type: "text", col: 6 },
+      { name: "wifi_provider", label: "Penyedia WiFi", type: "text", col: 6 },
       { name: "wifi_included", label: "Termasuk WiFi", type: "checkbox", col: 6 },
       { name: "electricity_included", label: "Termasuk Listrik", type: "checkbox", col: 6 },
       { name: "water_included", label: "Termasuk Air", type: "checkbox", col: 6 },
@@ -72,19 +72,22 @@ export const PROPERTY_TYPE_CONFIG = {
     fields: [
       { name: "luas_tanah", label: "Luas Tanah (m²)", type: "number", required: true, col: 6 },
       { name: "luas_bangunan", label: "Luas Bangunan (m²)", type: "number", required: true, col: 6 },
-      { name: "parking_capacity", label: "Kapasitas Parkir", type: "number", col: 6 },
+      { name: "bedrooms", label: "Kamar Tidur", type: "number", col: 6 },
+      { name: "bathrooms", label: "Kamar Mandi", type: "number", col: 6 },
+      { name: "parking_capacity", label: "Kapasitas Parkir (mobil)", type: "number", col: 6 },
       { name: "warehouse_area", label: "Luas Gudang (m²)", type: "number", col: 6 },
-      { name: "shop_front_width", label: "Lebar Depan (m)", type: "number", col: 6 },
+      { name: "shop_front_width", label: "Lebar Depan (m²)", type: "number", col: 6 },
       { name: "water", label: "Sumber Air", type: "select", options: OPTIONS.water, col: 6 },
       { name: "electricity_capacity", label: "Daya Listrik (VA)", type: "number", col: 6 },
       { name: "listrik_type", label: "Tipe Listrik", type: "select", options: OPTIONS.listrik, col: 6 },
-      { name: "wifi_provider", label: "Provider WiFi", type: "text", col: 6 },
+      { name: "wifi_provider", label: "Penyedia WiFi", type: "text", col: 6 },
     ],
   },
   tanah: {
     label: "Tanah",
     fields: [
-      { name: "luas_tanah", label: "Luas Tanah (m²)", type: "number", required: true, col: 6 },
+      { name: "panjang_tanah", label: "Panjang Tanah (m)", type: "number", required: true, col: 6 },
+      { name: "lebar_tanah", label: "Lebar Tanah (m)", type: "number", required: true, col: 6 },
       { name: "road_access", label: "Akses Jalan", type: "select", required: true, col: 6, options: OPTIONS.jalan },
       { name: "land_type", label: "Kondisi Tanah", type: "select", col: 6, options: OPTIONS.tanah },
       { name: "land_contour", label: "Kontur Tanah", type: "text", col: 6 },
@@ -104,7 +107,15 @@ export const getAutoBuildingType = (property) => {
   const luasTanah = String(detail.luas_tanah ?? "").trim();
   const luasBangunan = String(detail.luas_bangunan ?? "").trim();
 
-  if (type === "tanah") return luasTanah;
+  if (type === "tanah") {
+    const panjang = Number(detail.panjang_tanah ?? 0);
+    const lebar = Number(detail.lebar_tanah ?? 0);
+    const luasTanahOtomatis = panjang * lebar;
+    if (luasTanahOtomatis > 0) {
+      return String(Math.round(luasTanahOtomatis));
+    }
+    return luasTanah;
+  }
   if (type === "kos") {
     const panjang = Number(detail.panjang_ruangan ?? 0);
     const lebar = Number(detail.lebar_ruangan ?? 0);
@@ -122,7 +133,7 @@ export const getBuildingTypeDisplay = (property) =>
   getAutoBuildingType(property) || property?.building_type || "";
 
 export const getBuildingTypePlaceholder = (type) => {
-  if (type === "tanah") return "Otomatis: Luas Tanah";
+  if (type === "tanah") return "Otomatis: Panjang x Lebar Tanah";
   if (type === "kos") return "Otomatis: Panjang x Lebar Ruangan";
   return "Otomatis: Luas Bangunan / Luas Tanah";
 };
@@ -140,6 +151,8 @@ const DETAIL_DEFAULTS = {
   bathroom_position: "dalam",
   gender_type: "laki-laki",
   land_type: "datar",
+  panjang_tanah: null,
+  lebar_tanah: null,
 };
 
 // ✅ Filter field sesuai tipe
@@ -151,6 +164,10 @@ export const getRelevantDetailFields = (type, detail) => {
   fields.forEach((key) => {
     filtered[key] = detail[key] ?? DETAIL_DEFAULTS[key] ?? null;
   });
+
+  if (type === "tanah") {
+    filtered.luas_tanah = getAutoBuildingType({ type, detail }) || detail.luas_tanah || null;
+  }
 
   return filtered;
 };

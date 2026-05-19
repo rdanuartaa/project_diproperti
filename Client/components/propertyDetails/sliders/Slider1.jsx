@@ -157,7 +157,7 @@ export default function Slider1({ slug }) {
         <Gallery>
           <div className="row g-3">
             {/* KOLOM KIRI - Gambar Utama (Persegi Panjang) */}
-            <div className="col-lg-8">
+            <div className="col-12 col-lg-8">
               <div 
                 className="position-relative" 
                 style={{ 
@@ -234,7 +234,7 @@ export default function Slider1({ slug }) {
             </div>
 
             {/* KOLOM KANAN - 2 Thumbnail Persegi */}
-            <div className="col-lg-4">
+            <div className="col-lg-4 d-none d-lg-block">
               <div className="d-flex flex-column h-100 " style={{ gap: "30px" }}>
                 {thumbnailImages.map((img, index) => (
                   <div 

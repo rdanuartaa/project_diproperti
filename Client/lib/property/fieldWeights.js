@@ -1,0 +1,76 @@
+export const FIELD_WEIGHTS = {
+  rumah: {
+    price: 30,
+    luas_bangunan: 18,
+    luas_tanah: 12,
+    bedrooms: 12,
+    bathrooms: 8,
+    floors: 5,
+    electricity_capacity: 6,
+    water: 4,
+    kitchens: 3,
+    living_rooms: 3,
+    listrik_type: 2,
+    security_24jam: 5,
+    one_gate_system: 5,
+    garden: 4,
+    carport: 3,
+  },
+
+  villa: {
+    price: 30,
+    luas_bangunan: 15,
+    luas_tanah: 10,
+    bedrooms: 12,
+    bathrooms: 7,
+    floors: 3,
+    electricity_capacity: 4,
+    water: 3,
+    kitchens: 2,
+    living_rooms: 2,
+    listrik_type: 2,
+    swimming_pool: 5,
+    private_pool: 4,
+    furnished: 4,
+    near_tourism: 3,
+    garden: 2,
+    security_24jam: 2,
+  },
+
+  kos: {
+    price: 30,
+    room_size: 20,
+    total_rooms: 8,
+    bathroom_position: 10,
+    gender_type: 5,
+    wifi_included: 8,
+    electricity_included: 7,
+    water_included: 4,
+    parking_area: 4,
+    shared_kitchen: 3,
+    cctv: 1,
+  },
+
+  ruko: {
+    price: 30,
+    luas_bangunan: 18,
+    luas_tanah: 12,
+    shop_front_width: 10,
+    warehouse_area: 12,
+    parking_capacity: 6,
+    electricity_capacity: 8,
+    water: 4,
+  },
+
+  tanah: {
+    price: 30,
+    luas_tanah: 30,
+    road_access: 25,
+    land_type: 10,
+    land_contour: 3,
+    zoning: 2,
+  },
+};
+
+export const getFieldWeight = (type, fieldKey) =>
+  FIELD_WEIGHTS[type]?.[fieldKey] ?? 0;

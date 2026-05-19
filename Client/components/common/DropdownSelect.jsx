@@ -9,6 +9,7 @@ export default function DropdownSelect({
   selectedValue,
   addtionalParentClass = "",
   disabled = false,
+  getOptionLabel = (option) => option,
 }) {
   const selectRef = useRef();
   const optionsRef = useRef();
@@ -75,7 +76,7 @@ export default function DropdownSelect({
         }
       >
         <span className="current">
-          {selectedValue || selected || defaultOption || options[0]}
+          {getOptionLabel(selectedValue || selected || defaultOption || options[0])}
         </span>
         <ul
           className="list"
@@ -101,7 +102,7 @@ export default function DropdownSelect({
                   : ""
               }  text text-1`}
             >
-              {elm}
+              {getOptionLabel(elm)}
             </li>
           ))}
         </ul>
