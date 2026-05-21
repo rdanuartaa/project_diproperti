@@ -3,11 +3,14 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import RekomendasiProperti from "@/components/otherPages/rekomendasi/RekomendasiProperti";
 import React from "react";
+import { createPageMetadata } from "@/app/seo";
 
-export const metadata = {
-  title: "Rekomendasi Properti || Diproperti - Properti",
-  description: "Diproperti || Properti",
-};
+export const metadata = createPageMetadata({
+  title: "Rekomendasi Properti",
+  description:
+    "Dapatkan rekomendasi properti berdasarkan preferensi harga, lokasi, luas bangunan, luas tanah, dan fasilitas.",
+  path: "/rekomendasi-properti",
+});
 
 export default function Page() {
   return (

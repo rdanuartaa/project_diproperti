@@ -3,8 +3,12 @@ import Header1 from "@/components/headers/Header1";
 import React from "react";
 
 export const metadata = {
-  title: "Dasboard || Diproperti - Properti",
-  description: "Diproperti || Properti",
+  title: "Dasboard Admin",
+  description: "Area pengelolaan internal Diproperti.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 export default function page({ children }) {
   return (

@@ -4,17 +4,28 @@ import Breadcumb from "@/components/common/Breadcumb";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import React from "react";
+import { absoluteUrl } from "@/app/seo";
 
-// ðŸ”¹ Dynamic Metadata SEO
 export async function generateMetadata({ params }) {
   const { slug } = await params;
+  const formattedTitle = slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+  const path = `/artikel/${slug}`;
+
   return {
-    title: `${slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} | Diproperti || Properti`,
-    description: "Detail Artikel Diproperti || Properti",
+    title: `${formattedTitle} - Artikel Properti`,
+    description: `Baca artikel ${formattedTitle} di Diproperti untuk mendapatkan informasi dan panduan seputar properti.`,
+    alternates: {
+      canonical: path,
+    },
+    openGraph: {
+      title: `${formattedTitle} - Artikel Properti | Diproperti`,
+      description: `Informasi properti terbaru dari Diproperti: ${formattedTitle}.`,
+      url: absoluteUrl(path),
+      type: "article",
+    },
   };
 }
 
-// ðŸ”¹ Server Component
 export default async function page({ params }) {
   const { slug } = await params;
 

@@ -5,11 +5,14 @@ import LoanCalculator from "@/components/otherPages/BungaFlat/LoanCalculator";
 import PageTitle from "@/components/otherPages/BungaFlat/PageTitle";
 import Process from "@/components/otherPages/BungaFlat/Process";
 import React from "react";
+import { createPageMetadata } from "@/app/seo";
 
-export const metadata = {
-  title: "Simulasi KPR || Diproperti - Properti",
-  description: "Simulasi KPR page.",
-};
+export const metadata = createPageMetadata({
+  title: "Simulasi KPR",
+  description:
+    "Hitung estimasi cicilan KPR dengan memasukkan harga properti, uang muka, bunga flat, dan tenor pembayaran.",
+  path: "/simulasi-kpr",
+});
 
 export default function page() {
   return (

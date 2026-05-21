@@ -5,28 +5,31 @@ import Details1 from "@/components/propertyDetails/Details1";
 import RelatedProperties from "@/components/propertyDetails/RelatedProperties";
 import Slider1 from "@/components/propertyDetails/sliders/Slider1";
 import React from "react";
+import { absoluteUrl } from "@/app/seo";
 
-// ðŸ”¹ Dynamic Metadata SEO (Sama seperti detail artikel)
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   
-  // Format judul: "rumah-mewah-jakarta" -> "Rumah Mewah Jakarta"
   const formattedTitle = slug
     ?.replace(/-/g, " ")
     .replace(/\b\w/g, (char) => char.toUpperCase());
+  const path = `/properti/${slug}`;
 
   return {
-    title: `${formattedTitle} | Diproperti || Properti`,
-    description: `Detail Properti ${formattedTitle} - Diproperti || Properti`,
+    title: `${formattedTitle} - Detail Properti`,
+    description: `Lihat detail lengkap properti ${formattedTitle}, termasuk lokasi, harga, luas, fasilitas, dan informasi penting lainnya di Diproperti.`,
+    alternates: {
+      canonical: path,
+    },
     openGraph: {
-      title: `${formattedTitle} | Diproperti || Properti`,
-      description: `Temukan detail lengkap properti ${formattedTitle}.`,
+      title: `${formattedTitle} - Detail Properti | Diproperti`,
+      description: `Temukan detail lengkap properti ${formattedTitle} di Diproperti.`,
+      url: absoluteUrl(path),
       type: "website",
     },
   };
 }
 
-// ðŸ”¹ Server Component (Tanpa "use client")
 export default async function page({ params }) {
   const { slug } = await params;
 

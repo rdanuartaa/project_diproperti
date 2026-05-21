@@ -3,11 +3,14 @@ import Breadcumb from "@/components/common/Breadcumb";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import React from "react";
+import { createPageMetadata } from "@/app/seo";
 
-export const metadata = {
-  title: "Daftar Artikel || Diproperti - Properti",
-  description: "Diproperti || Properti",
-};
+export const metadata = createPageMetadata({
+  title: "Artikel Properti",
+  description:
+    "Baca artikel terbaru Diproperti tentang jual beli properti, rekomendasi rumah, simulasi KPR, dan tips memilih properti.",
+  path: "/list-artikel",
+});
 export default function page() {
   return (
     <>

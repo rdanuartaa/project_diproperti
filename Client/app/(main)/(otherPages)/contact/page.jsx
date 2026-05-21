@@ -4,11 +4,14 @@ import Contact from "@/components/contact/Contact";
 import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import React from "react";
+import { createPageMetadata } from "@/app/seo";
 
-export const metadata = {
-  title: "Kontak || Diproperti - Properti",
-  description: "Diproperti || Properti",
-};
+export const metadata = createPageMetadata({
+  title: "Kontak Admin",
+  description:
+    "Hubungi admin Diproperti untuk bantuan pencarian properti, pengajuan jual properti, atau informasi layanan.",
+  path: "/contact",
+});
 export default function page() {
   return (
     <>
