@@ -7,6 +7,10 @@ import DropdownSelect from "../common/DropdownSelect";
 import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
+import DashboardPagination, {
+  DASHBOARD_PAGE_SIZE,
+  paginateDashboardItems,
+} from "../common/DashboardPagination";
 
 const emptyForm = { role: "user" };
 
@@ -25,6 +29,13 @@ export default function User() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAttentionModal, setShowAttentionModal] = useState(false);
   const [attentionMessage, setAttentionMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: DASHBOARD_PAGE_SIZE,
+  });
 
   // ✅ Fetch users from API - FIX: Hapus manual token & gunakan relative URL
   const fetchUsers = async () => {
@@ -34,6 +45,8 @@ export default function User() {
 
       if (filters.role !== "All") params.append("role", filters.role);
       if (filters.search) params.append("search", filters.search);
+      params.append("page", currentPage);
+      params.append("per_page", DASHBOARD_PAGE_SIZE);
 
       // ✅ FIX 1: Gunakan relative URL (api instance sudah punya baseURL)
       // ✅ FIX 2: Hapus manual token (interceptor auto-attach 'auth_token')
@@ -41,6 +54,12 @@ export default function User() {
 
       if (data.success) {
         setUsers(data.data);
+        setPagination(data.meta || {
+          current_page: currentPage,
+          last_page: 1,
+          total: data.data?.length || 0,
+          per_page: DASHBOARD_PAGE_SIZE,
+        });
       }
     } catch (error) {
       console.error("Failed to fetch users:", error);
@@ -51,7 +70,19 @@ export default function User() {
 
   useEffect(() => {
     fetchUsers();
+  }, [filters, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [filters]);
+
+  const paginatedUsers = useMemo(
+    () =>
+      pagination?.total
+        ? users
+        : paginateDashboardItems(users, currentPage),
+    [users, currentPage, pagination?.total],
+  );
 
   const activeTitle = useMemo(
     () => activeUser?.name || "Selected User",
@@ -172,7 +203,7 @@ export default function User() {
     });
   };
 
-  // ⚠️ HTML/JSX DI BAWAH INI TIDAK DIUBAH SAMA SEKALI ⚠️
+  // âš ï¸ HTML/JSX DI BAWAH INI TIDAK DIUBAH SAMA SEKALI âš ï¸
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
@@ -225,7 +256,7 @@ export default function User() {
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
-                  Search:<span>*</span>
+                  Cari:<span>*</span>
                 </label>
                 {/* ✅ FIX: Gunakan handler khusus untuk search */}
                 <input
@@ -244,17 +275,17 @@ export default function User() {
         {/* Table */}
         {/* Table Section - Updated Style */}
         <div className="widget-box-2 wd-listing mt-20">
-          <h3 className="title">User</h3>
+          <h3 className="title">Pengguna</h3>
 
           <div className="tf-new-listing w-100">
             <div className="new-listing wrap-table">
               <div className="table-content">
                 <div className="wrap-listing table-responsive">
                   {loading ? (
-                    <div className="text-center py-8">Loading...</div>
+                    <div className="text-center py-8">Memuat...</div>
                   ) : users.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
-                      No users found.
+                      Tidak ada pengguna ditemukan.
                     </div>
                   ) : (
                     <table className="table-save-search">
@@ -263,13 +294,13 @@ export default function User() {
                           <th className="fw-6">Avatar</th>
                           <th className="fw-6">Nama</th>
                           <th className="fw-6">Email</th>
-                          <th className="fw-6">Role</th>
+                          <th className="fw-6">Peran</th>
                           <th className="fw-6">Diperbarui</th>
                           <th className="fw-6">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {users.map((user) => (
+                        {paginatedUsers.map((user) => (
                           <tr key={user.id} className="file-delete">
                             {/* Avatar */}
                             <td>
@@ -378,6 +409,14 @@ export default function User() {
               </div>
             </div>
           </div>
+
+          <DashboardPagination
+            currentPage={currentPage}
+            totalItems={pagination.total || users.length}
+            totalPages={pagination.last_page}
+            pageSize={pagination.per_page || DASHBOARD_PAGE_SIZE}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         {/* Footer */}
@@ -427,7 +466,7 @@ export default function User() {
                     </div>
                     <div className="col-md-6">
                       <fieldset className="box-fieldset">
-                        <label>Username</label>
+                        <label>Nama Pengguna</label>
                         <input
                           type="text"
                           className="form-control bg-gray-100"
@@ -476,7 +515,7 @@ export default function User() {
                     </div>
                     <div className="col-md-12">
                       <fieldset className="box-fieldset">
-                        <label>Role</label>
+                        <label>Peran</label>
                         <DropdownSelect
                           options={["admin", "user"]}
                           selectedValue={formData.role}

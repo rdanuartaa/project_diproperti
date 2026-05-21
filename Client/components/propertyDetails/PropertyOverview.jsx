@@ -1,5 +1,9 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCompare } from "@/components/compare/CompareContext";
 import PropertyViewMeta from "@/components/properties/PropertyViewMeta";
 
 const DETAIL_FIELDS_BY_TYPE = {
@@ -77,6 +81,9 @@ const DETAIL_FIELD_ICONS = {
 };
 
 export default function PropertyOverview({ property }) {
+  const router = useRouter();
+  const { addToCompare, isInCompare } = useCompare();
+
   // ✅ Fallback jika property belum ada
   if (!property) {
     return (
@@ -166,6 +173,17 @@ export default function PropertyOverview({ property }) {
     window.open(whatsappUrl, "_blank", "noopener,noreferrer");
   };
 
+  const handleCompareProperty = () => {
+    const added = addToCompare(property);
+    if (!added) return;
+
+    const params = new URLSearchParams();
+    if (property?.type) params.set("type", property.type);
+    if (property?.listing_type) params.set("listing_type", property.listing_type);
+
+    router.push(`/list-properti${params.toString() ? `?${params.toString()}` : ""}`);
+  };
+
   const detailFields = DETAIL_FIELDS_BY_TYPE[property.type] || DETAIL_FIELDS_BY_TYPE.rumah;
   const detailInfoItems = detailFields.map((key) => ({
     key,
@@ -209,7 +227,13 @@ export default function PropertyOverview({ property }) {
         <div className="action">
           <ul className="list-action">
             <li>
-              <Link href="/komparasi" aria-label="Bandingkan properti">
+              <button
+                type="button"
+                className={`btn-icon save hover-tooltip ${isInCompare(property.id) ? "active" : ""}`}
+                onClick={handleCompareProperty}
+                aria-label="Bandingkan properti"
+                aria-pressed={isInCompare(property.id)}
+              >
                 <svg
                   width={18}
                   height={18}
@@ -225,7 +249,10 @@ export default function PropertyOverview({ property }) {
                     strokeLinejoin="round"
                   />
                 </svg>
-              </Link>
+                <span className="tooltip">
+                  {isInCompare(property.id) ? "Sudah di Komparasi" : "Bandingkan"}
+                </span>
+              </button>
             </li>
             <li>
               <button

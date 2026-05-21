@@ -15,15 +15,14 @@ export default function Cta() {
               />
               <div className="content">
                 <h4 className="text_white mb-8">
-                  Find a Local Real Estate Agent Today
+                  Temukan Agen Properti Lokal Hari Ini
                 </h4>
                 <p className="text_white text-1">
-                  If you’re looking to buy or sell a home. We’ll help you make
-                  the most money possible.
+                  Jika Anda ingin membeli atau menjual rumah, kami siap membantu Anda mendapatkan hasil terbaik.
                 </p>
               </div>
               <a href="#" className="tf-btn style-2 fw-6">
-                Find your location agent
+                Temukan agen di lokasi Anda
                 <i className="icon-MagnifyingGlass fw-6" />
               </a>
             </div>

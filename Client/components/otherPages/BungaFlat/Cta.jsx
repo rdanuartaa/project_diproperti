@@ -19,15 +19,15 @@ export default function Cta() {
                 </div>
                 <div className="heading-section mb-30">
                   <h2 className="title text_white split-text effect-right">
-                    Find a Local Real Estate <br />
-                    Agent Today
+                    Temukan Agen Properti Lokal <br />
+                    Hari Ini
                   </h2>
                   <p
                     className="text-1 text_white wow animate__fadeInUp animate__animated"
                     data-wow-duration="1s"
                     data-wow-delay="0s"
                   >
-                    If you're looking to buy or sell a home. We'll help you make
+                    Jika Anda ingin membeli atau menjual rumah, kami siap membantu
                     the <br />
                     most money possible.
                   </p>
@@ -38,7 +38,7 @@ export default function Cta() {
                   data-wow-duration="1s"
                   data-wow-delay="0s"
                 >
-                  Find your location agent
+                  Temukan agen di lokasi Anda
                   <i className="icon-MagnifyingGlass fw-6" />
                 </a>
               </div>

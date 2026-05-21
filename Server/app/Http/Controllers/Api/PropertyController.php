@@ -357,7 +357,9 @@ class PropertyController extends Controller
                 }
             }
 
-            $primaryNewIndex = $request->input('primary_new_index');
+            $primaryNewIndex = $request->filled('primary_image_id')
+                ? null
+                : $request->input('primary_new_index');
             if ($primaryNewIndex !== null) $property->images()->update(['is_primary' => false]);
             $uploadedCount = $this->mediaService->handleImageUpload($property, $request, $property->images()->count(), $primaryNewIndex, $primaryNewIndex !== null);
 

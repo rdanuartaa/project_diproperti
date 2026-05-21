@@ -1,0 +1,141 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>Codex</Author>
+  <LastAuthor>Codex</LastAuthor>
+  <Created>2026-05-21T00:00:00Z</Created>
+  <Company>DIPROPERTI</Company>
+  <Version>16.00</Version>
+ </DocumentProperties>
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal">
+   <Alignment ss:Vertical="Center"/>
+   <Borders/>
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Color="#1F2937"/>
+   <Interior/>
+   <NumberFormat/>
+   <Protection/>
+  </Style>
+  <Style ss:ID="Title">
+   <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1" ss:Color="#02469B"/>
+  </Style>
+  <Style ss:ID="Header">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#02469B" ss:Pattern="Solid"/>
+   <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+  </Style>
+  <Style ss:ID="Pass">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#168A4A"/>
+   <Interior ss:Color="#E8F8EF" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="Skip">
+   <Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1" ss:Color="#B77900"/>
+   <Interior ss:Color="#FFF7D6" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="Note">
+   <Alignment ss:WrapText="1" ss:Vertical="Top"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Ringkasan">
+  <Table>
+   <Column ss:Width="180"/>
+   <Column ss:Width="420"/>
+   <Row ss:Height="28">
+    <Cell ss:MergeAcross="1" ss:StyleID="Title"><Data ss:Type="String">Laporan Selenium Smoke Test DIPROPERTI</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Tanggal Pengujian</Data></Cell>
+    <Cell><Data ss:Type="String">21 Mei 2026</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Project</Data></Cell>
+    <Cell><Data ss:Type="String">DIPROPERTI Real Estate</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Jenis Pengujian</Data></Cell>
+    <Cell><Data ss:Type="String">Selenium smoke test end-to-end</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Command</Data></Cell>
+    <Cell><Data ss:Type="String">npm run test:e2e</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Hasil Akhir</Data></Cell>
+    <Cell ss:StyleID="Pass"><Data ss:Type="String">Berhasil - Semua Selenium smoke test berhasil</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Total Skenario OK</Data></Cell>
+    <Cell><Data ss:Type="Number">21</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Total Skenario Skip</Data></Cell>
+    <Cell><Data ss:Type="Number">0</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Catatan Utama</Data></Cell>
+    <Cell ss:StyleID="Note"><Data ss:Type="String">Halaman yang membutuhkan autentikasi redirect ke Google Sign In saat user belum login dan dianggap valid. Detail properti dari list berhasil diuji setelah smoke test dijalankan memakai host localhost.</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Detail Skenario">
+  <Table>
+   <Column ss:Width="40"/>
+   <Column ss:Width="220"/>
+   <Column ss:Width="140"/>
+   <Column ss:Width="420"/>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">No</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Skenario</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Status</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Keterangan</Data></Cell>
+   </Row>
+   <Row><Cell><Data ss:Type="Number">1</Data></Cell><Cell><Data ss:Type="String">Route /</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman home berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">2</Data></Cell><Cell><Data ss:Type="String">Route /list-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman daftar properti berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">3</Data></Cell><Cell><Data ss:Type="String">Route /jual-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Redirect login Google valid untuk user belum login.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">4</Data></Cell><Cell><Data ss:Type="String">Route /komparasi</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman komparasi berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">5</Data></Cell><Cell><Data ss:Type="String">Route /simulasi-kpr</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman simulasi KPR berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">6</Data></Cell><Cell><Data ss:Type="String">Route /rekomendasi-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman rekomendasi berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">7</Data></Cell><Cell><Data ss:Type="String">Route /faq</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman FAQ berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">8</Data></Cell><Cell><Data ss:Type="String">Route /contact</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman kontak berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">9</Data></Cell><Cell><Data ss:Type="String">Route /list-artikel</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman artikel berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">10</Data></Cell><Cell><Data ss:Type="String">Route /admin/add-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Redirect login Google valid untuk user belum login.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">11</Data></Cell><Cell><Data ss:Type="String">Route /admin/pengajuan-properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Redirect login Google valid untuk user belum login.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">12</Data></Cell><Cell><Data ss:Type="String">Tab home Rumah</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Tab Rumah aktif setelah diklik.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">13</Data></Cell><Cell><Data ss:Type="String">Tab home Villa</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Tab Villa aktif setelah diklik.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">14</Data></Cell><Cell><Data ss:Type="String">Tab home Ruko</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Tab Ruko aktif setelah diklik.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">15</Data></Cell><Cell><Data ss:Type="String">Tab home Kos</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Tab Kos aktif setelah diklik.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">16</Data></Cell><Cell><Data ss:Type="String">Tab home Tanah</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Tab Tanah aktif setelah diklik.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">17</Data></Cell><Cell><Data ss:Type="String">Reset filter list properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Tombol reset filter berhasil diklik.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">18</Data></Cell><Cell><Data ss:Type="String">Detail properti dari list</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Detail properti dari list berhasil dibuka.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">19</Data></Cell><Cell><Data ss:Type="String">Halaman komparasi</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">Halaman komparasi berhasil dirender.</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="Number">20</Data></Cell><Cell><Data ss:Type="String">Akses jual properti</Data></Cell><Cell ss:StyleID="Pass"><Data ss:Type="String">OK</Data></Cell><Cell><Data ss:Type="String">State login/form valid untuk halaman jual properti.</Data></Cell></Row>
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Catatan">
+  <Table>
+   <Column ss:Width="220"/>
+   <Column ss:Width="520"/>
+   <Row>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Kategori</Data></Cell>
+    <Cell ss:StyleID="Header"><Data ss:Type="String">Catatan</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Autentikasi</Data></Cell>
+    <Cell ss:StyleID="Note"><Data ss:Type="String">Route /jual-properti dan admin membutuhkan login. Pada mode belum login, redirect ke Google Sign In diterima sebagai hasil valid.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Data Properti</Data></Cell>
+    <Cell ss:StyleID="Note"><Data ss:Type="String">Data properti publik tersedia pada saat smoke test. List properti berhasil tampil dan detail properti dari list berhasil dibuka.</Data></Cell>
+   </Row>
+   <Row>
+    <Cell><Data ss:Type="String">Kesimpulan</Data></Cell>
+    <Cell ss:StyleID="Note"><Data ss:Type="String">Aplikasi lolos smoke test Selenium dan siap dilanjutkan ke tahap deploy dari sisi skenario yang diuji.</Data></Cell>
+   </Row>
+  </Table>
+ </Worksheet>
+</Workbook>

@@ -59,9 +59,7 @@ export default function Sidebar() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
-                </svg>
-                Dashboard
-              </Link>
+                </svg>Dasboard</Link>
             </li>
             <li
               className={`nav-menu-item ${

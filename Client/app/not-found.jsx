@@ -5,8 +5,8 @@ import Link from "next/link";
 import React from "react";
 
 export const metadata = {
-  title: "Page Not Found || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+  title: "Halaman Tidak Ditemukan || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 export default function page() {
   return (
@@ -14,20 +14,19 @@ export default function page() {
       <div id="wrapper">
         <Header1 />
         <div className="main-content ">
-          <Breadcumb pageName="Page Not found" />
+          <Breadcumb pageName="Halaman Tidak Ditemukan" />
           <div className="page-content">
             <div className="tf-container tf-spacing-1 pt-0">
               <div className="error-404 text-center">
-                <h1 className="mb-20 title">Oh no... We lost this page</h1>
+                <h1 className="mb-20 title">Maaf, halaman ini tidak ditemukan</h1>
                 <p className="mb-40">
-                  We searched everywhere but couldn’t find what you’re looking
-                  for. Let’s find <br />a better place for you to go.
+                  Kami sudah mencari, tetapi tidak menemukan halaman yang Anda cari. Mari kembali ke halaman yang tepat untuk Anda.
                 </p>
                 <Link
                   href={"/"}
                   className="tf-btn bg-color-primary rounded-4 pd-3 fw-6 mx-auto"
                 >
-                  Back to home
+                  Kembali ke Beranda
                 </Link>
               </div>
             </div>
@@ -39,4 +38,3 @@ export default function page() {
     </>
   );
 }
-

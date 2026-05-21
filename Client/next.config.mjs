@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   ...(process.env.NODE_ENV === 'production' ? { output: 'standalone' } : {}),
+  devIndicators: {
+    appIsrStatus: false,
+  },
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
       config.devtool = false;

@@ -13,18 +13,16 @@ export default function FilterTop() {
             <div className="title-inner">
               <ul className="breadcrumb">
                 <li>
-                  <Link className="home fw-6 text-color-3" href={`/`}>
-                    Home
-                  </Link>
+                  <Link className="home fw-6 text-color-3" href={`/`}>Beranda</Link>
                 </li>
-                <li>Property Listing</li>
+                <li>Daftar Properti</li>
               </ul>
             </div>
             <div className="wg-filter style-2 relative">
               <div className="form-title style-2">
                 <form>
                   <fieldset>
-                    <input type="text" placeholder="Address, City, ZIP..." />
+                    <input type="text" placeholder="Alamat, Kota, Kode Pos..." />
                   </fieldset>
                 </form>
 
@@ -32,40 +30,40 @@ export default function FilterTop() {
                   options={[
                     "Status",
                     "Bungalow",
-                    "Apartment",
-                    "House",
-                    "Smart Home",
-                    "Office",
+                    "Apartemen",
+                    "Rumah",
+                    "Rumah Pintar",
+                    "Kantor",
                   ]}
                 />
                 <DropdownSelect
                   options={[
-                    "Type",
+                    "Tipe",
                     "Bungalow",
-                    "Apartment",
-                    "House",
-                    "Smart Home",
-                    "Office",
+                    "Apartemen",
+                    "Rumah",
+                    "Rumah Pintar",
+                    "Kantor",
                   ]}
                 />
 
                 <DropdownSelect
                   options={[
-                    "Baths",
-                    "Floating baths",
-                    "Massage baths",
-                    "Floor-standing bath",
-                    "Built-in baths",
+                    "Kamar Mandi",
+                    "Bathtub Lepas",
+                    "Bathtub Pijat",
+                    "Bathtub Berdiri",
+                    "Bathtub Tanam",
                   ]}
                 />
 
                 <DropdownSelect
                   options={[
-                    "Beds",
-                    "Twin beds",
-                    "Bunk beds",
-                    "Kids beds",
-                    "Single bed",
+                    "Kamar Tidur",
+                    "Tempat Tidur Twin",
+                    "Tempat Tidur Tingkat",
+                    "Tempat Tidur Anak",
+                    "Tempat Tidur Single",
                   ]}
                 />
                 <div className="wrap-btn searchFormToggler">
@@ -145,7 +143,7 @@ export default function FilterTop() {
                     </div>
                   </div>
                   <a href="#" className="tf-btn bg-color-primary pd-3 fw-6">
-                    Search <i className="icon-MagnifyingGlass fw-6" />
+                    Cari <i className="icon-MagnifyingGlass fw-6" />
                   </a>
                 </div>
               </div>

@@ -55,7 +55,11 @@ export const buildJsonPayload = (formData) => {
   return payload;
 };
 
-export const buildFormDataPayload = (formData, primaryIndex = null) => {
+export const buildFormDataPayload = (
+  formData,
+  primaryIndex = null,
+  { autoPrimaryNewImage = true } = {},
+) => {
   const fd = new FormData();
   const { type } = formData;
   const buildingType = formData.building_type || getAutoBuildingType(formData);
@@ -86,7 +90,9 @@ export const buildFormDataPayload = (formData, primaryIndex = null) => {
   // Images
   formData.newImages?.forEach((file) => fd.append("images[]", file));
   if (primaryIndex !== null) fd.append("primary_new_index", primaryIndex);
-  else if (formData.newImages?.length > 0) fd.append("primary_new_index", 0);
+  else if (autoPrimaryNewImage && formData.newImages?.length > 0) {
+    fd.append("primary_new_index", 0);
+  }
   formData.imagesToDelete?.forEach((id) => fd.append("images_to_delete[]", id));
 
   // Dokumen (khusus user form)

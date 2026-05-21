@@ -167,10 +167,14 @@ export default function CompareBar() {
           </div>
 
           {/* Slot properti yang dipilih */}
-          <div style={{ display: "flex", gap: "12px", flex: 1, flexWrap: "wrap" }}>
+          <div
+            className="compare-bar-slots"
+            style={{ display: "flex", gap: "12px", flex: 1, flexWrap: "wrap" }}
+          >
             {compareList.map((prop) => (
               <div
                 key={prop.id}
+                className="compare-bar-card"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -243,6 +247,7 @@ export default function CompareBar() {
               <button
                 key={`empty-${i}`}
                 onClick={handleAddProperty}
+                className="compare-bar-empty-slot"
                 style={{
                   display: "flex",
                   alignItems: "center",

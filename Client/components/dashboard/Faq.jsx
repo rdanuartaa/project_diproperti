@@ -5,6 +5,10 @@ import DropdownSelect from "../common/DropdownSelect";
 import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
+import DashboardPagination, {
+  DASHBOARD_PAGE_SIZE,
+  paginateDashboardItems,
+} from "../common/DashboardPagination";
 
 const emptyForm = {
   question: "",
@@ -30,6 +34,13 @@ export default function Faq() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAttentionModal, setShowAttentionModal] = useState(false);
   const [attentionMessage, setAttentionMessage] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: DASHBOARD_PAGE_SIZE,
+  });
 
   // Fetch FAQs from API
   const fetchFaqs = async () => {
@@ -39,11 +50,19 @@ export default function Faq() {
       
       if (filters.status !== "All") params.append("status", filters.status);
       if (filters.search) params.append("search", filters.search);
+      params.append("page", currentPage);
+      params.append("per_page", DASHBOARD_PAGE_SIZE);
 
       const { data } = await api.get(`/admin/faqs?${params}`);
 
       if (data.success) {
         setFaqs(data.data);
+        setPagination(data.meta || {
+          current_page: currentPage,
+          last_page: 1,
+          total: data.data?.length || 0,
+          per_page: DASHBOARD_PAGE_SIZE,
+        });
       }
     } catch (error) {
       console.error("Failed to fetch FAQs:", error);
@@ -54,9 +73,21 @@ export default function Faq() {
 
   useEffect(() => {
     fetchFaqs();
+  }, [filters, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
   }, [filters]);
 
-  const activeTitle = useMemo(() => activeFaq?.question || "Selected FAQ", [activeFaq]);
+  const paginatedFaqs = useMemo(
+    () =>
+      pagination?.total
+        ? faqs
+        : paginateDashboardItems(faqs, currentPage),
+    [faqs, currentPage, pagination?.total],
+  );
+
+  const activeTitle = useMemo(() => activeFaq?.question || "FAQ Terpilih", [activeFaq]);
 
   const openCreate = () => {
     setFormData(emptyForm);
@@ -244,7 +275,7 @@ export default function Faq() {
           <div className="col-md-9">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>Search:<span>*</span></label>
+                <label>Cari:<span>*</span></label>
                 <input
                   type="text"
                   name="search"
@@ -301,7 +332,7 @@ export default function Faq() {
                         </tr>
                       </thead>
                       <tbody>
-                        {faqs.map((faq) => (
+                        {paginatedFaqs.map((faq) => (
                           <tr key={faq.id} className="file-delete">
                             <td>
                               <div className="listing-box">
@@ -368,6 +399,14 @@ export default function Faq() {
               </div>
             </div>
           </div>
+
+          <DashboardPagination
+            currentPage={currentPage}
+            totalItems={pagination.total || faqs.length}
+            totalPages={pagination.last_page}
+            pageSize={pagination.per_page || DASHBOARD_PAGE_SIZE}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         {/* Footer */}

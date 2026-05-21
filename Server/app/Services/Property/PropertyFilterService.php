@@ -15,6 +15,14 @@ class PropertyFilterService
             return $query->orderByDesc('views')->latest();
         }
 
+        if (in_array($sortOrder, ['price_asc', 'termurah'], true)) {
+            return $query->orderBy('price', 'asc')->latest();
+        }
+
+        if (in_array($sortOrder, ['price_desc', 'termahal'], true)) {
+            return $query->orderBy('price', 'desc')->latest();
+        }
+
         return in_array($sortOrder, ['asc', 'oldest', 'terlama'], true)
             ? $query->orderBy('created_at', 'asc')
             : $query->latest();

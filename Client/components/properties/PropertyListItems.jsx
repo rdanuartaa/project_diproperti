@@ -89,7 +89,7 @@ function getListingTypeLabel(type) {
   return type || "-";
 }
 
-function getRentPeriodLabel(property) {
+function getSewaPeriodLabel(property) {
   const period = String(property?.price_period || "bulan");
   if (period === "3bulan") return "3 bulan";
   if (period === "6bulan") return "6 bulan";
@@ -101,7 +101,7 @@ function formatPriceDisplay(property) {
   const base = formatHarga(property?.price);
   if (property?.listing_type !== "sewa") return base;
   if (!property?.price) return base;
-  return `${base}/${getRentPeriodLabel(property)}`;
+  return `${base}/${getSewaPeriodLabel(property)}`;
 }
 
 function getRoomSize(property) {
@@ -314,7 +314,6 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
                 <h6 className="price">{formatPriceDisplay(property)}</h6>
 
                 <div className="wrap-btn flex">
-                  {false && (
                   <button
                     type="button"
                     className="compare flex gap-8 items-center text-1"
@@ -335,15 +334,14 @@ export default function PropertyListItems({ properties, showItems, showTopRankBa
                     }}
                   >
                     <i className="icon-compare" />
-                    {added ? "Dibandingkan ✓" : "Compare"}
+                    {added ? "Dibandingkan ✓" : "Bandingkan"}
                   </button>
-                  )}
 
                   <Link
                     href={`/properti/${property.slug}`}
                     className="tf-btn style-border pd-4"
                   >
-                    Details
+                    Detail
                   </Link>
                 </div>
               </div>

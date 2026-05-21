@@ -2,25 +2,25 @@ export const services = [
   {
     icon: "icon-house-2",
     imageSrc: "/images/section/service-1.jpg",
-    title: "Residential Sales and Leasing",
+    title: "Penjualan dan Sewa Hunian",
     description:
-      "Assisting clients in buying, selling, and leasing residential properties such as houses, apartments, and condominiums",
+      "Membantu klien membeli, menjual, dan menyewa properti hunian seperti rumah, apartemen, dan kondominium",
     delay: "0.1s",
   },
   {
     icon: "icon-house-3",
     imageSrc: "/images/section/service-2.jpg",
-    title: "Commercial Real Estate Services",
+    title: "Layanan Properti Komersial",
     description:
-      "Facilitating transactions related to commercial properties such as office buildings, retail spaces, industrial warehouses, land for development",
+      "Memfasilitasi transaksi properti komersial seperti gedung kantor, ruang ritel, gudang industri, dan lahan pengembangan",
     delay: "0.2s",
   },
   {
     icon: "icon-house-4",
     imageSrc: "/images/section/service-3.jpg",
-    title: "Property Management",
+    title: "Manajemen Properti",
     description:
-      "Managing properties on behalf of owners, including tenant screening, rent collection, maintenance, and financial reporting",
+      "Mengelola properti atas nama pemilik, termasuk seleksi penyewa, penagihan sewa, perawatan, dan laporan keuangan",
     delay: "0.3s",
   },
 ];
@@ -29,7 +29,7 @@ export const serviceData = [
   {
     id: 1,
     icon: "icon-hand-1",
-    title: "Residential sales & leasing",
+    title: "Penjualan dan sewa hunian",
     imageSrc: "/images/section/service-5.jpg",
     description:
       "Assisting clients in buying, selling, and leasing residential properties such as houses, apartments, condominiums",
@@ -38,7 +38,7 @@ export const serviceData = [
   {
     id: 2,
     icon: "icon-hand-2",
-    title: "Commercial Real Estate Services",
+    title: "Layanan Properti Komersial",
     imageSrc: "/images/section/service-6.jpg",
     description:
       "Assisting clients in buying, selling, and leasing residential properties such as houses, apartments, condominiums",
@@ -47,7 +47,7 @@ export const serviceData = [
   {
     id: 3,
     icon: "icon-hand-3",
-    title: "Property Management",
+    title: "Manajemen Properti",
     imageSrc: "/images/section/service-4.jpg",
     description:
       "Assisting clients in buying, selling, and leasing residential properties such as houses, apartments, condominiums",

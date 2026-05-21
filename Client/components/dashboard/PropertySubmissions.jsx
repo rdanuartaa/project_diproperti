@@ -5,6 +5,10 @@ import { api, downloadFile } from "@/lib/api";
 import SuccessModal from "@/components/common/SuccesModal";
 import AttentionModal from "@/components/common/AttentionModal";
 import ConfirmModal from "@/components/common/ConfirmModal";
+import DashboardPagination, {
+  DASHBOARD_PAGE_SIZE,
+  paginateDashboardItems,
+} from "@/components/common/DashboardPagination";
 import DropdownSelect from "../common/DropdownSelect";
 import {
   PROPERTY_TYPE_CONFIG,
@@ -68,12 +72,31 @@ export default function PropertySubmissions() {
   const [attention, setAttention] = useState({ open: false, message: "" });
   const [showConfirm, setShowConfirm] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: DASHBOARD_PAGE_SIZE,
+  });
 
   const fetchSubmissions = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/admin/property-submissions");
-      setSubmissions(response.data.data || response.data || []);
+      const response = await api.get("/admin/property-submissions", {
+        params: {
+          page: currentPage,
+          per_page: DASHBOARD_PAGE_SIZE,
+        },
+      });
+      const payload = response.data || {};
+      setSubmissions(payload.data || payload || []);
+      setPagination({
+        current_page: payload.current_page || currentPage,
+        last_page: payload.last_page || 1,
+        total: payload.total || payload.data?.length || 0,
+        per_page: payload.per_page || DASHBOARD_PAGE_SIZE,
+      });
     } catch (error) {
       setAttention({ open: true, message: "Gagal memuat data pengajuan." });
     } finally {
@@ -83,7 +106,7 @@ export default function PropertySubmissions() {
 
   useEffect(() => {
     fetchSubmissions();
-  }, []);
+  }, [currentPage]);
 
   const filteredSubmissions = useMemo(() => {
     let result = [...submissions];
@@ -118,6 +141,18 @@ export default function PropertySubmissions() {
     });
     return result;
   }, [submissions, filters]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const paginatedSubmissions = useMemo(
+    () =>
+      pagination?.total
+        ? filteredSubmissions
+        : paginateDashboardItems(filteredSubmissions, currentPage),
+    [filteredSubmissions, currentPage, pagination?.total],
+  );
 
   const openDetail = (submission) => {
     setActiveSubmission(submission);
@@ -583,7 +618,7 @@ export default function PropertySubmissions() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSubmissions.map((item) => (
+                    {paginatedSubmissions.map((item) => (
                       <tr key={item.id}>
                         <td>
                           <div className="listing-box">
@@ -670,6 +705,13 @@ export default function PropertySubmissions() {
                 </table>
               )}
             </div>
+            <DashboardPagination
+              currentPage={currentPage}
+              totalItems={pagination.total || filteredSubmissions.length}
+              totalPages={pagination.last_page}
+              pageSize={pagination.per_page || DASHBOARD_PAGE_SIZE}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
 

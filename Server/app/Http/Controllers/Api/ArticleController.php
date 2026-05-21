@@ -44,6 +44,10 @@ class ArticleController extends Controller
                 $query->where('title', 'like', "%{$request->search}%");
             }
 
+            if ($request->filled('status') && $request->status !== 'All') {
+                $query->where('status', $request->status);
+            }
+
             if ($request->tag) {
                 $query->whereHas('tags', fn($q) => $q->where('slug', $request->tag));
             }

@@ -6,8 +6,8 @@ import React, { Suspense } from "react";
 
 export const metadata = {
   title:
-    "Property List Left Sidebar || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+    "Daftar Properti || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 export default function page() {
   return (
@@ -25,4 +25,3 @@ export default function page() {
     </>
   );
 }
-

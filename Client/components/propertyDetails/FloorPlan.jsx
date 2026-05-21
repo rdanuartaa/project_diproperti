@@ -18,7 +18,7 @@ export default function FloorPlan() {
           >
             <div className="inner-left">
               <i className="icon icon-CaretDown" />
-              <span className="text-btn">First Floor</span>
+              <span className="text-btn">Lantai Pertama</span>
             </div>
             <ul className="inner-right">
               <li className="flex items-center gap-8">
@@ -57,7 +57,7 @@ export default function FloorPlan() {
           >
             <div className="inner-left">
               <i className="icon icon-CaretDown" />
-              <span className="text-btn">Second Floor</span>
+              <span className="text-btn">Lantai Kedua</span>
             </div>
             <ul className="inner-right">
               <li className="flex items-center gap-8">

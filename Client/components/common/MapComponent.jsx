@@ -228,7 +228,7 @@ export default function MapComponent({ zoom = 16 }) {
   return (
     <>
       {!isLoaded ? (
-        <p>Loading...</p>
+        <p>Memuat...</p>
       ) : (
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -270,7 +270,7 @@ export default function MapComponent({ zoom = 16 }) {
                     </a>
                     <ul className="box-tag flex gap-8">
                       <li className="flat-tag text-4 bg-main fw-6 text-white">
-                        For Sale
+                        Dijual
                       </li>
                     </ul>
                     <div className="list-btn flex gap-8">
@@ -307,7 +307,7 @@ export default function MapComponent({ zoom = 16 }) {
                       <h5 className="price">$8.600</h5>{" "}
                       <div className="wrap-btn flex" style={{ width: "auto" }}>
                         <a href="#" className="tf-btn style-border pd-4">
-                          Details
+                          Detail
                         </a>
                       </div>
                     </div>

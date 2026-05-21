@@ -100,9 +100,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                         href="/"
                         className={isActiveLink("/") ? "is-active" : undefined}
                         aria-current={isActiveLink("/") ? "page" : undefined}
-                      >
-                        Home
-                      </Link>
+                      >Beranda</Link>
                     </li>
                     <li>
                       <Link
@@ -321,7 +319,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
             </p>
 
             <div className="wrap-social">
-              <div className="text-3 fw-6 text_white">Follow us</div>
+              <div className="text-3 fw-6 text_white">Ikuti kami</div>
               <ul className="tf-social">
                 {/* WhatsApp */}
                 <li>
@@ -350,7 +348,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="social-btn instagram"
-                    title="Visit Instagram"
+                    title="Kunjungi Instagram"
                   >
                     <svg
                       width="18"
@@ -370,7 +368,7 @@ export default function Footer1({ logo = "/images/logo/logo-2@2x.png" }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="social-btn tiktok"
-                    title="Share via TikTok"
+                    title="Bagikan via TikTok"
                   >
                     <svg
                       width="18"

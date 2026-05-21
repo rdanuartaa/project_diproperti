@@ -59,7 +59,7 @@ function formatHarga(value) {
   return `Rp ${num}`;
 }
 
-function getRentPeriodLabel(property) {
+function getSewaPeriodLabel(property) {
   const period = String(property?.price_period || "bulan");
   if (period === "3bulan") return "3 bulan";
   if (period === "6bulan") return "6 bulan";
@@ -71,7 +71,7 @@ function formatPriceDisplay(property) {
   const base = formatHarga(property?.price);
   if (property?.listing_type !== "sewa") return base;
   if (!property?.price) return base;
-  return `${base}/${getRentPeriodLabel(property)}`;
+  return `${base}/${getSewaPeriodLabel(property)}`;
 }
 
 function getListingTypeLabel(type) {
@@ -185,14 +185,14 @@ export default function RelatedProperties({ slug }) {
                 aria-pressed={added}
               >
                 <i className="icon-compare" />
-                {added ? "Dibandingkan ✓" : "Compare"}
+                {added ? "Dibandingkan ✓" : "Bandingkan"}
               </button>
 
               <Link
                 href={`/properti/${property.slug}`}
                 className="tf-btn style-border pd-4"
               >
-                Details
+                Detail
               </Link>
             </div>
           </div>

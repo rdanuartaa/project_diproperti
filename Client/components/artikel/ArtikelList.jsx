@@ -17,6 +17,9 @@ export default function Blogs1() {
     current_page: 1,
     last_page: 1,
     total: 0,
+    per_page: PAGE_SIZE,
+    from: 0,
+    to: 0,
   });
   const [search, setSearch] = useState("");
   const [tag, setTag] = useState("");
@@ -28,16 +31,14 @@ export default function Blogs1() {
   const [retryCount, setRetryCount] = useState(0);
 
   const getPageItems = (currentPage, lastPage) => {
-    if (lastPage <= 1) return [1];
-    const pages = new Set([1, lastPage, currentPage - 1, currentPage, currentPage + 1]);
-    return Array.from(pages)
-      .filter((pageNumber) => pageNumber >= 1 && pageNumber <= lastPage)
-      .sort((a, b) => a - b)
-      .flatMap((pageNumber, index, array) => {
-        const previous = array[index - 1];
-        if (previous && pageNumber - previous > 1) return ["...", pageNumber];
-        return [pageNumber];
-      });
+    if (lastPage <= 4) {
+      return Array.from({ length: lastPage }, (_, index) => index + 1);
+    }
+
+    if (currentPage <= 2) return [1, 2, "...", lastPage];
+    if (currentPage >= lastPage - 1) return [1, "...", lastPage - 1, lastPage];
+
+    return [1, currentPage, "...", lastPage];
   };
 
   const pageItems = useMemo(
@@ -63,6 +64,9 @@ export default function Blogs1() {
         current_page: res.data.current_page || 1,
         last_page: res.data.last_page || 1,
         total: res.data.total || 0,
+        per_page: res.data.per_page || PAGE_SIZE,
+        from: res.data.from || 0,
+        to: res.data.to || 0,
       });
       setRetryCount(0);
     } catch (error) {
@@ -87,6 +91,9 @@ export default function Blogs1() {
         current_page: 1,
         last_page: 1,
         total: 0,
+        per_page: PAGE_SIZE,
+        from: 0,
+        to: 0,
       });
     } finally {
       setLoading(false);
@@ -147,6 +154,12 @@ export default function Blogs1() {
     setPage(1);
   };
 
+  const handlePageChange = (nextPage) => {
+    const normalizedPage = Math.min(Math.max(1, nextPage), meta.last_page || 1);
+    if (normalizedPage === meta.current_page || loading) return;
+    setPage(normalizedPage);
+  };
+
   useEffect(() => {
     if (!authLoading) {
       fetchArticles();
@@ -163,6 +176,13 @@ export default function Blogs1() {
       year: "numeric",
     });
   };
+
+  const startItem =
+    meta.total === 0
+      ? 0
+      : meta.from || (meta.current_page - 1) * meta.per_page + 1;
+  const endItem =
+    meta.to || Math.min(startItem + articles.length - 1, meta.total);
 
   return (
     <section className="section-blog-list">
@@ -245,7 +265,7 @@ export default function Blogs1() {
                     textAlign: "center"
                   }}>
                     <p style={{ color: "#c33", marginBottom: "10px", fontWeight: "500" }}>
-                      ⚠️ {error}
+                      âš ï¸ {error}
                     </p>
                     <button
                       onClick={handleRetry}
@@ -259,13 +279,13 @@ export default function Blogs1() {
                         fontWeight: "500"
                       }}
                     >
-                      🔄 Coba Lagi
+                      ðŸ”„ Coba Lagi
                     </button>
                   </div>
                 )}
                 {loading ? (
                   <div className="text-center py-5">
-                    <p>⏳ Memuat artikel...</p>
+                    <p>â³ Memuat artikel...</p>
                   </div>
                 ) : articles.length === 0 ? (
                   <div className="text-center py-5">
@@ -280,7 +300,7 @@ export default function Blogs1() {
                       <div className="article-thumb image-wrap">
                           <Image
                             className="lazyload"
-                            alt={post.title || "Article image"}
+                            alt={post.title || "Gambar artikel"}
                             src={post.image_url || "/images/default.jpg"}
                             fill
                             style={{ objectFit: "cover" }}
@@ -353,40 +373,49 @@ export default function Blogs1() {
               </div>
 
               {/* PAGINATION */}
-              {meta.last_page > 1 && (
-                <ul className="wg-pagination">
-                  <li className={`arrow ${meta.current_page <= 1 ? "disabled" : ""}`}>
-                    <button
-                      type="button"
-                      onClick={() => setPage((current) => Math.max(1, current - 1))}
-                      disabled={meta.current_page <= 1 || loading}
-                    >
-                      <i className="icon-arrow-left" />
-                    </button>
-                  </li>
-                  {pageItems.map((item, index) =>
-                    item === "..." ? (
-                      <li key={`ellipsis-${index}`}>
-                        <span>...</span>
-                      </li>
-                    ) : (
-                      <li key={item} className={item === meta.current_page ? "active" : ""}>
-                        <button type="button" onClick={() => setPage(item)} disabled={loading}>
-                          {item}
-                        </button>
-                      </li>
-                    )
-                  )}
-                  <li className={`arrow ${meta.current_page >= meta.last_page ? "disabled" : ""}`}>
-                    <button
-                      type="button"
-                      onClick={() => setPage((current) => Math.min(meta.last_page, current + 1))}
-                      disabled={meta.current_page >= meta.last_page || loading}
-                    >
-                      <i className="icon-arrow-right" />
-                    </button>
-                  </li>
-                </ul>
+              {meta.total > 0 && (
+                <div className="wrap-pagination">
+                  <p className="text-1">
+                    Menampilkan {startItem}-{endItem} of {meta.total} hasil.
+                  </p>
+                  <ul className="wg-pagination">
+                    <li className={`arrow ${meta.current_page <= 1 ? "disabled" : ""}`}>
+                      <button
+                        type="button"
+                        onClick={() => handlePageChange(meta.current_page - 1)}
+                        disabled={meta.current_page <= 1 || loading}
+                      >
+                        <i className="icon-arrow-left" />
+                      </button>
+                    </li>
+                    {pageItems.map((item, index) =>
+                      item === "..." ? (
+                        <li key={`ellipsis-${index}`}>
+                          <span>...</span>
+                        </li>
+                      ) : (
+                        <li key={item} className={item === meta.current_page ? "active" : ""}>
+                          <button
+                            type="button"
+                            onClick={() => handlePageChange(item)}
+                            disabled={item === meta.current_page || loading}
+                          >
+                            {item}
+                          </button>
+                        </li>
+                      )
+                    )}
+                    <li className={`arrow ${meta.current_page >= meta.last_page ? "disabled" : ""}`}>
+                      <button
+                        type="button"
+                        onClick={() => handlePageChange(meta.current_page + 1)}
+                        disabled={meta.current_page >= meta.last_page || loading}
+                      >
+                        <i className="icon-arrow-right" />
+                      </button>
+                    </li>
+                  </ul>
+                </div>
               )}
             </div>
           </div>

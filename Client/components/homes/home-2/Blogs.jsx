@@ -22,7 +22,7 @@ const formatDate = (dateString) => {
   });
 };
 
-export default function Blogs({ parentClass = "section-opinion tf-spacing-1" }) {
+export default function Blogs({ parentClass = "section-opinion tf-spacing-1 home-latest-news" }) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -82,7 +82,7 @@ export default function Blogs({ parentClass = "section-opinion tf-spacing-1" }) 
                 <SplitTextAnimation text="Informasi Terbaru" />
               </h2>
               <p className="text-1 split-text split-lines-transform">
-                Ribuan pencari properti seperti Anda mengunjungi website kami untuk mendapatkan informasi terbaru.
+                Ratusan pencari properti seperti Anda mengunjungi website kami untuk mendapatkan informasi terbaru.
               </p>
             </div>
 
@@ -90,7 +90,7 @@ export default function Blogs({ parentClass = "section-opinion tf-spacing-1" }) 
             {loading && (
               <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
-                  <span className="visually-hidden">Loading...</span>
+                  <span className="visually-hidden">Memuat...</span>
                 </div>
                 <p className="mt-2 text-1">Memuat artikel...</p>
               </div>

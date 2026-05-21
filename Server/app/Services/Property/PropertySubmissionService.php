@@ -58,10 +58,12 @@ class PropertySubmissionService
 
     public function adminPaginate(Request $request)
     {
+        $perPage = (int) $request->input('per_page', 10);
+
         $submissions = Property::with(['user', 'detail', 'images'])
             ->orderBy('is_verified', 'asc')
             ->orderByDesc('created_at')
-            ->paginate(20);
+            ->paginate($perPage);
 
         $this->mediaService->appendImageUrls($submissions);
         $this->mediaService->appendDocumentUrls($submissions);
@@ -72,11 +74,13 @@ class PropertySubmissionService
 
     public function userPaginate(Request $request)
     {
+        $perPage = (int) $request->input('per_page', 10);
+
         $submissions = Property::with(['user', 'detail', 'images'])
             ->where('user_id', $request->user()->id)
             ->orderByRaw('CASE WHEN status = "sold" THEN 0 WHEN is_verified = 0 THEN 1 ELSE 2 END')
             ->orderByDesc('created_at')
-            ->paginate(20);
+            ->paginate($perPage);
 
         $this->mediaService->appendImageUrls($submissions);
         $this->mediaService->appendDocumentUrls($submissions);

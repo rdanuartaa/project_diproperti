@@ -31,7 +31,7 @@ export default function Nav({ variant = "desktop" }) {
         message={attention.message}
       />
       <li className={getTopLevelActiveClass("/")}>
-        <Link href="/">Home</Link>
+        <Link href="/">Beranda</Link>
       </li>
       <li className={getTopLevelActiveClass("/list-properti")}>
         <Link href="/list-properti">Properti</Link>

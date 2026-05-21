@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -8,8 +8,12 @@ import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
 import LocationPicker from "../common/LocationPicker";
+import DashboardPagination, {
+  DASHBOARD_PAGE_SIZE,
+  paginateDashboardItems,
+} from "../common/DashboardPagination";
 
-// ✅ IMPORT LIBRARY PROPERTY YANG SUDAH DIPECAH
+// âœ… IMPORT LIBRARY PROPERTY YANG SUDAH DIPECAH
 import {
   PROPERTY_TYPE_CONFIG,
   CERTIFICATE_REQUIRED_TYPES,
@@ -88,6 +92,13 @@ export default function Properti() {
   });
   const [primaryExistingId, setPrimaryExistingId] = useState(null);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: DASHBOARD_PAGE_SIZE,
+  });
 
   const [formData, setFormData] = useState({
     title: "",
@@ -153,7 +164,7 @@ export default function Properti() {
   });
 
   const activeTitle = useMemo(
-    () => activeProperty?.title || "Selected Property",
+    () => activeProperty?.title || "Properti Terpilih",
     [activeProperty],
   );
 
@@ -169,7 +180,7 @@ export default function Properti() {
 
   const buildingTypeDisplayValue =
     formData.type === "tanah" && buildingTypeDisplay
-      ? `${buildingTypeDisplay} m²`
+      ? `${buildingTypeDisplay} mÂ²`
       : buildingTypeDisplay;
 
   const buildingTypePlaceholder = useMemo(
@@ -182,7 +193,7 @@ export default function Properti() {
     [formData.type],
   );
 
-  // ✅ AUTO-CALCULATE BUILDING TYPE
+  // âœ… AUTO-CALCULATE BUILDING TYPE
   useEffect(() => {
     const applicableTypes = ["rumah", "villa", "ruko", "tanah", "kos"];
     if (!applicableTypes.includes(formData.type)) return;
@@ -260,12 +271,52 @@ export default function Properti() {
     return result;
   }, [properties, filters]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const hasServerPagination = Boolean(pagination?.total);
+
+  const displayedProperties = useMemo(
+    () =>
+      hasServerPagination
+        ? properties
+        : paginateDashboardItems(filteredProperties, currentPage),
+    [hasServerPagination, properties, filteredProperties, currentPage],
+  );
+
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/admin/properties");
-      const data = response.data.data || response.data || [];
-      setProperties(data.filter((property) => property.is_verified !== false));
+      const params = {
+        page: currentPage,
+        per_page: DASHBOARD_PAGE_SIZE,
+        sort_order: filters.sort === "Terlama" ? "asc" : "desc",
+      };
+
+      if (filters.search) params.search = filters.search;
+      if (filters.type !== ALL_TYPE_OPTION) {
+        params.type = getPropertyTypeValue(filters.type);
+      }
+      if (filters.listingType !== ALL_LISTING_TYPE_OPTION) {
+        params.listing_type = getListingTypeValue(filters.listingType);
+      }
+
+      const response = await api.get("/admin/properties", { params });
+      const payload = response.data || {};
+      const data = payload.data || payload || [];
+
+      setProperties(
+        (Array.isArray(data) ? data : []).filter(
+          (property) => property.is_verified !== false,
+        ),
+      );
+      setPagination({
+        current_page: payload.current_page || currentPage,
+        last_page: payload.last_page || 1,
+        total: payload.total || (Array.isArray(data) ? data.length : 0),
+        per_page: payload.per_page || DASHBOARD_PAGE_SIZE,
+      });
     } catch (error) {
       console.error("Failed to fetch properties:", error);
     } finally {
@@ -275,7 +326,7 @@ export default function Properti() {
 
   useEffect(() => {
     fetchProperties();
-  }, []);
+  }, [currentPage, filters]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -334,9 +385,17 @@ export default function Properti() {
       .join(" | ");
 
   const handleRemoveNewImage = (index) => {
-    if (primaryNewIndex === index) setPrimaryNewIndex(null);
-    else if (primaryNewIndex !== null && index < primaryNewIndex)
+    if (primaryNewIndex === index) {
+      const nextNewImageCount = Math.max((formData.newImages?.length || 0) - 1, 0);
+      if (nextNewImageCount > 0) {
+        setPrimaryNewIndex(Math.min(index, nextNewImageCount - 1));
+      } else {
+        setPrimaryNewIndex(null);
+        setPrimaryExistingId(formData.existingImages?.[0]?.id || null);
+      }
+    } else if (primaryNewIndex !== null && index < primaryNewIndex) {
       setPrimaryNewIndex(primaryNewIndex - 1);
+    }
     setFormData((prev) => ({
       ...prev,
       newImages: prev.newImages.filter((_, i) => i !== index),
@@ -344,10 +403,17 @@ export default function Properti() {
   };
 
   const handleRemoveExistingImage = (imageId) => {
+    const nextExistingImages = formData.existingImages.filter(
+      (img) => img.id !== imageId,
+    );
+    if (primaryExistingId === imageId) {
+      const nextPrimaryExistingId = nextExistingImages[0]?.id || null;
+      setPrimaryExistingId(nextPrimaryExistingId);
+      if (!nextPrimaryExistingId && formData.newImages?.length > 0) {
+        setPrimaryNewIndex(0);
+      }
+    }
     setFormData((prev) => {
-      const nextExistingImages = prev.existingImages.filter(
-        (img) => img.id !== imageId,
-      );
       const nextImagesToDelete = prev.imagesToDelete.includes(imageId)
         ? prev.imagesToDelete
         : [...prev.imagesToDelete, imageId];
@@ -357,7 +423,6 @@ export default function Properti() {
         imagesToDelete: nextImagesToDelete,
       };
     });
-    if (primaryExistingId === imageId) setPrimaryExistingId(null);
   };
 
   const resetForm = () => {
@@ -502,7 +567,9 @@ export default function Properti() {
     setActiveProperty(property);
     const nextFormData = mapPropertyToFormData(property);
     const currentPrimaryId =
-      property.images?.find((img) => img.is_primary)?.id || null;
+      property.images?.find((img) => img.is_primary)?.id ||
+      property.images?.[0]?.id ||
+      null;
     setPrimaryExistingId(currentPrimaryId);
     setFormData(nextFormData);
     setInitialSnapshot(buildSnapshot(nextFormData, currentPrimaryId, null));
@@ -654,7 +721,7 @@ export default function Properti() {
     setFormData((prev) => ({ ...prev, listing_type: "sewa" }));
   }
     try {
-      // ✅ VALIDASI MANUAL (karena library validatePropertyForm tidak handle imagesToDelete di sini)
+      // âœ… VALIDASI MANUAL (karena library validatePropertyForm tidak handle imagesToDelete di sini)
       const requiredMain = [
         "title",
         "price",
@@ -687,7 +754,7 @@ export default function Properti() {
         (formData.newImages?.length || 0);
       if (totalImages < 1) throw new Error("Minimal unggah 1 gambar.");
 
-      // ✅ BUILD PAYLOAD MENGGUNAKAN LIBRARY
+      // âœ… BUILD PAYLOAD MENGGUNAKAN LIBRARY
       const jsonPayload = buildJsonPayload(formData);
       if (formData.listing_type === "sewa") {
         delete jsonPayload.certificate_type;
@@ -739,7 +806,7 @@ export default function Properti() {
     setFormLoading(true);
     setErrors({});
 
-    // ✅ VALIDASI
+    // âœ… VALIDASI
     const requiredError = validatePropertyForm(formData);
     if (requiredError) {
       showAttention(requiredError);
@@ -762,14 +829,14 @@ export default function Properti() {
           : {};
 
       const payload = isMultipart
-        ? buildFormDataPayload(formData, primaryNewIndex)
+        ? buildFormDataPayload(formData, primaryNewIndex, {
+            autoPrimaryNewImage: false,
+          })
         : { ...jsonPayload, ...primaryPayload };
 
       if (isMultipart && payload instanceof FormData) {
         if (primaryPayload.primary_image_id)
           payload.append("primary_image_id", primaryPayload.primary_image_id);
-        if (primaryPayload.primary_new_index !== undefined)
-          payload.append("primary_new_index", primaryPayload.primary_new_index);
         payload.append("_method", "PUT");
         await api.post(
           `/admin/properties/${activeProperty.id}`,
@@ -818,12 +885,12 @@ export default function Properti() {
       setIsDeleting(false);
     }
   };
-  // ✅ Tampilkan sertifikat untuk tipe yang membutuhkannya, kecuali sewa
+  // âœ… Tampilkan sertifikat untuk tipe yang membutuhkannya, kecuali sewa
   const showCertificate =
     CERTIFICATE_REQUIRED_TYPES.includes(formData.type) &&
     formData.listing_type !== "sewa";
 
-  const getRentPeriodLabel = (item) => {
+  const getSewaPeriodLabel = (item) => {
     const period = String(item?.price_period || item?.rent_period || "bulan");
     if (period === "hari") return "hari";
     if (period === "minggu") return "minggu";
@@ -837,7 +904,7 @@ export default function Properti() {
     const base = `Rp ${Number(item?.price || 0).toLocaleString("id-ID")}`;
     if (item?.listing_type !== "sewa") return base;
     if (!item?.price) return base;
-    return `${base}/${getRentPeriodLabel(item)}`;
+    return `${base}/${getSewaPeriodLabel(item)}`;
   };
 
   const getStatusBadge = (item) => {
@@ -855,7 +922,7 @@ export default function Properti() {
     if (status === "published") {
       return (
         <span style={{ ...badgeStyle, background: "#e8f8ef", color: "#168a4a" }}>
-          Disetujui
+          Ditampilkan
         </span>
       );
     }
@@ -1023,7 +1090,7 @@ export default function Properti() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredProperties.map((property) => (
+                    {displayedProperties.map((property) => (
                       <tr key={property.id} className="file-delete">
                         <td>
                           <div className="listing-box">
@@ -1153,27 +1220,21 @@ export default function Properti() {
                 </table>
               )}
             </div>
-            <ul className="wg-pagination">
-              <li className="arrow">
-                <a href="#">
-                  <i className="icon-arrow-left" />
-                </a>
-              </li>
-              <li className="active">
-                <a href="#">1</a>
-              </li>
-              <li className="arrow">
-                <a href="#">
-                  <i className="icon-arrow-right" />
-                </a>
-              </li>
-            </ul>
+            <DashboardPagination
+              currentPage={currentPage}
+              totalItems={
+                hasServerPagination ? pagination.total : filteredProperties.length
+              }
+              totalPages={hasServerPagination ? pagination.last_page : undefined}
+              pageSize={pagination.per_page || DASHBOARD_PAGE_SIZE}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
 
         <div className="footer-dashboard">
           <p>
-            © {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights
+            Â© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights
             reserved.
           </p>
           <ul className="list">
@@ -1224,7 +1285,7 @@ export default function Properti() {
                     {/* INFORMASI DASAR */}
                     <div className="col-12">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        📋 Informasi Dasar
+                        Informasi Dasar
                       </h6>
                     </div>
                     <div className="col-md-6">
@@ -1432,20 +1493,6 @@ export default function Properti() {
                     )}
 
                     <div className="col-12">
-                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        📍 Lokasi Detail
-                      </h6>
-                      <LocationPicker
-                        address={formData.address}
-                        latitude={formData.latitude}
-                        longitude={formData.longitude}
-                        onChange={(next) =>
-                          setFormData((prev) => ({ ...prev, ...next }))
-                        }
-                      />
-                    </div>
-
-                    <div className="col-12">
                       <fieldset className="box-fieldset">
                         <label>Deskripsi</label>
                         <textarea
@@ -1459,10 +1506,24 @@ export default function Properti() {
                       </fieldset>
                     </div>
 
-                    {/* ✅ DETAIL PROPERTI DINAMIS */}
+                    <div className="col-12">
+                      <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
+                        Lokasi Detail
+                      </h6>
+                      <LocationPicker
+                        address={formData.address}
+                        latitude={formData.latitude}
+                        longitude={formData.longitude}
+                        onChange={(next) =>
+                          setFormData((prev) => ({ ...prev, ...next }))
+                        }
+                      />
+                    </div>
+
+                    {/* âœ… DETAIL PROPERTI DINAMIS */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🏠 Detail Properti -{" "}
+                        Detail Properti -{" "}
                         {PROPERTY_TYPE_CONFIG[formData.type]?.label}
                       </h6>
                     </div>
@@ -1555,10 +1616,10 @@ export default function Properti() {
                       });
                     })()}
 
-                    {/* ✅ GAMBAR PROPERTI */}
+                    {/* âœ… GAMBAR PROPERTI */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
-                        🖼️ Gambar Properti
+                        Gambar Properti
                       </h6>
                     </div>
                     {isEditOpen && formData.existingImages?.length > 0 && (
@@ -1582,6 +1643,9 @@ export default function Properti() {
                                   width={615}
                                   height={405}
                                 />
+                                {isPrimary && (
+                                  <span className="primary-badge">Utama</span>
+                                )}
                                 <button
                                   type="button"
                                   className="icon primary-toggle"
@@ -1670,6 +1734,9 @@ export default function Properti() {
                                   width={615}
                                   height={405}
                                 />
+                                {primaryNewIndex === idx && (
+                                  <span className="primary-badge">Utama</span>
+                                )}
                                 <button
                                   type="button"
                                   className="icon primary-toggle"

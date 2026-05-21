@@ -7,7 +7,7 @@ import Process from "@/components/otherPages/BungaFlat/Process";
 import React from "react";
 
 export const metadata = {
-  title: "Simulasi KPR || Diproperti - Real Estate",
+  title: "Simulasi KPR || Diproperti - Properti",
   description: "Simulasi KPR page.",
 };
 
@@ -27,5 +27,3 @@ export default function page() {
     </>
   );
 }
-
-

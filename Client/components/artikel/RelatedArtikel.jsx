@@ -124,7 +124,7 @@ export default function RelatedArtikel({ currentSlug }) {
                       <Link href={`/artikel/${article.slug}`}>
                         <Image
                           className="lazyload"
-                          alt={article.title || "Article image"}
+                          alt={article.title || "Gambar artikel"}
                           src={article.image_url || "/images/default.jpg"}
                           fill
                           style={{ objectFit: "cover" }}

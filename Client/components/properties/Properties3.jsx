@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 import { useCompare } from "@/components/compare/CompareContext";
 import { getPropertyConfig } from "@/lib/property";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 10;
 
 const EMPTY_FILTERS = {
   search: "", city: "", location: "", type: "", listing_type: "",
@@ -29,7 +29,7 @@ const LISTING_TYPE_LABELS = {
   jual: "Dijual",
   sewa: "Disewa",
 };
-const SORT_OPTIONS = ["Terbaru", "Terlama", "Terpopuler"];
+const SORT_OPTIONS = ["Terbaru", "Terlama", "Terpopuler", "Termurah", "Termahal"];
 const TYPE_FILTER_KEYS = {
   rumah: ["bedrooms", "bathrooms", "living_rooms", "kitchens", "floors", "certificate_type", "water", "listrik_type", "luas_tanah", "luas_bangunan"],
   villa: ["bedrooms", "bathrooms", "living_rooms", "kitchens", "floors", "certificate_type", "water", "listrik_type", "luas_tanah", "luas_bangunan"],
@@ -45,6 +45,18 @@ const TYPE_AMENITIES = {
   tanah: [],
 };
 const SHARED_FILTER_KEYS = ["search", "city", "location", "type", "listing_type", "min_price", "max_price", "kecamatan", "rent_period"];
+const VALID_SORT_ORDERS = ["desc", "asc", "popular", "price_asc", "price_desc"];
+
+function normalizeSortOrder(value) {
+  if (!value) return "desc";
+  const normalized = String(value).toLowerCase();
+  if (normalized === "populer" || normalized === "terpopuler") return "popular";
+  if (normalized === "terbaru") return "desc";
+  if (normalized === "terlama" || normalized === "oldest") return "asc";
+  if (normalized === "termurah" || normalized === "price-low" || normalized === "price_low") return "price_asc";
+  if (normalized === "termahal" || normalized === "price-high" || normalized === "price_high") return "price_desc";
+  return VALID_SORT_ORDERS.includes(normalized) ? normalized : "desc";
+}
 
 function normalizeFiltersForType(filters, type) {
   const allowedKeys = new Set([...SHARED_FILTER_KEYS, ...(TYPE_FILTER_KEYS[type] || [])]);
@@ -91,16 +103,14 @@ function buildQueryParams(filters, page) {
 }
 
 function getPageItems(currentPage, lastPage) {
-  if (lastPage <= 1) return [1];
-  const pages = new Set([1, lastPage, currentPage - 1, currentPage, currentPage + 1]);
-  return Array.from(pages)
-    .filter((page) => page >= 1 && page <= lastPage)
-    .sort((a, b) => a - b)
-    .flatMap((page, index, array) => {
-      const previous = array[index - 1];
-      if (previous && page - previous > 1) return ["...", page];
-      return [page];
-    });
+  if (lastPage <= 4) {
+    return Array.from({ length: lastPage }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 2) return [1, 2, "...", lastPage];
+  if (currentPage >= lastPage - 1) return [1, "...", lastPage - 1, lastPage];
+
+  return [1, currentPage, "...", lastPage];
 }
 
 export default function Properties3({ defaultGrid = false }) {
@@ -152,10 +162,11 @@ export default function Properties3({ defaultGrid = false }) {
   const [filters, setFilters] = useState(getFiltersFromUrl);
   const [appliedFilters, setAppliedFilters] = useState(getFiltersFromUrl);
   const [sortOrder, setSortOrder] = useState(() => {
-    const value = searchParams?.get("sort_order");
-    return value === "asc" || value === "popular" ? value : "desc";
+    const value = searchParams?.get("sort_order") ?? searchParams?.get("sort");
+    return normalizeSortOrder(value);
   });
   const [properties, setProperties] = useState([]);
+  const [featuredProperties, setFeaturedProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(() => parseInt(searchParams?.get("page") || "1", 10));
@@ -174,8 +185,8 @@ export default function Properties3({ defaultGrid = false }) {
     const newFilters = getFiltersFromUrl();
     setFilters(newFilters);
     setAppliedFilters(newFilters);
-    const sortFromUrl = searchParams?.get("sort_order");
-    if (sortFromUrl) setSortOrder(sortFromUrl === "asc" || sortFromUrl === "popular" ? sortFromUrl : "desc");
+    const sortFromUrl = searchParams?.get("sort_order") ?? searchParams?.get("sort");
+    setSortOrder(normalizeSortOrder(sortFromUrl));
     const pageFromUrl = parseInt(searchParams?.get("page") || "1", 10);
     if (pageFromUrl !== page) setPage(pageFromUrl);
   }, [searchParams, compareMeta]);
@@ -216,7 +227,10 @@ export default function Properties3({ defaultGrid = false }) {
         setLoading(true);
         setError("");
         const response = await api.get("/properties", {
-          params: buildQueryParams({ ...appliedFilters, sort_order: sortOrder }, page),
+          params: buildQueryParams(
+            { ...appliedFilters, status: "published", sort_order: sortOrder },
+            page,
+          ),
         });
         if (!isMounted) return;
         const payload = response.data || {};
@@ -243,8 +257,39 @@ export default function Properties3({ defaultGrid = false }) {
     return () => { isMounted = false; };
   }, [appliedFilters, page, sortOrder]); // ✅ Depend on appliedFilters
 
-  const featuredProperties = useMemo(() => properties.slice(0, 4), [properties]);
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchFeaturedProperties = async () => {
+      try {
+        const response = await api.get("/properties", {
+          params: {
+            ...buildQueryParams(
+              { ...appliedFilters, status: "published", sort_order: "popular" },
+              1,
+            ),
+            per_page: 4,
+          },
+        });
+        if (!isMounted) return;
+        const payload = response.data || {};
+        const items = Array.isArray(payload.data) ? payload.data : [];
+        setFeaturedProperties(items);
+      } catch (fetchError) {
+        if (!isMounted) return;
+        setFeaturedProperties([]);
+      }
+    };
+
+    fetchFeaturedProperties();
+    return () => {
+      isMounted = false;
+    };
+  }, [appliedFilters]);
+
   const pageItems = useMemo(() => getPageItems(pagination.current_page, pagination.last_page), [pagination.current_page, pagination.last_page]);
+  const currentPage = pagination.current_page || page;
+  const lastPage = pagination.last_page || 1;
 
   const syncUrl = (nextFilters, nextSortOrder = sortOrder) => {
     const params = new URLSearchParams(window.location.search);
@@ -272,6 +317,17 @@ export default function Properties3({ defaultGrid = false }) {
     syncUrl(nextAppliedFilters, nextSortOrder);
   };
 
+  const handlePageChange = (nextPage) => {
+    const normalizedPage = Math.min(Math.max(1, nextPage), lastPage);
+    if (normalizedPage === page || loading) return;
+
+    setPage(normalizedPage);
+
+    const params = new URLSearchParams(window.location.search);
+    params.set("page", String(normalizedPage));
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   const handleFilterChange = (name, value) => {
     if (compareLock && (name === "type" || name === "listing_type")) return;
 
@@ -294,6 +350,10 @@ export default function Properties3({ defaultGrid = false }) {
         ? "asc"
         : value === "Terpopuler"
           ? "popular"
+          : value === "Termurah"
+          ? "price_asc"
+          : value === "Termahal"
+          ? "price_desc"
           : "desc";
     setSortOrder(newSort);
     applyFiltersImmediately(appliedFilters, newSort);
@@ -316,7 +376,7 @@ export default function Properties3({ defaultGrid = false }) {
     router.replace(window.location.pathname, { scroll: false });
   };
 
-  const startItem = pagination.total === 0 ? 0 : pagination.from || (page - 1) * pagination.per_page + 1;
+  const startItem = pagination.total === 0 ? 0 : pagination.from || (currentPage - 1) * pagination.per_page + 1;
   const endItem = pagination.to || Math.min(startItem + properties.length - 1, pagination.total);
   const hasResults = properties.length > 0;
   const showGridLayout = isMobileLayout || defaultGrid;
@@ -346,7 +406,7 @@ export default function Properties3({ defaultGrid = false }) {
               className="box-title"
               style={isMobileLayout ? { marginBottom: 4 } : undefined}
             >
-              <div><h2>List Daftar Properti</h2></div>
+              <div><h2>Daftar Properti</h2></div>
               {!isMobileLayout && (
                 <div className="right wrap-sort">
                   <ul className="nav-tab-filter group-layout" role="tablist">
@@ -409,22 +469,22 @@ export default function Properties3({ defaultGrid = false }) {
 
             {pagination.total > 0 && (
               <div className="wrap-pagination">
-                <p className="text-1">Showing {startItem}-{endItem} of {pagination.total} results.</p>
+                <p className="text-1">Menampilkan {startItem}-{endItem} of {pagination.total} hasil.</p>
                 <ul className="wg-pagination">
-                  <li className={`arrow ${page <= 1 ? "disabled" : ""}`}>
-                    <button type="button" onClick={() => setPage((c) => Math.max(1, c - 1))} disabled={page <= 1 || loading}><i className="icon-arrow-left" /></button>
+                  <li className={`arrow ${currentPage <= 1 ? "disabled" : ""}`}>
+                    <button type="button" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage <= 1 || loading}><i className="icon-arrow-left" /></button>
                   </li>
                   {pageItems.map((item, index) =>
                     item === "..." ? (
                       <li key={`ellipsis-${index}`}><span>...</span></li>
                     ) : (
-                      <li key={item} className={item === page ? "active" : ""}>
-                        <button type="button" onClick={() => setPage(item)} disabled={loading}>{item}</button>
+                      <li key={item} className={item === currentPage ? "active" : ""}>
+                        <button type="button" onClick={() => handlePageChange(item)} disabled={item === currentPage || loading}>{item}</button>
                       </li>
                     )
                   )}
-                  <li className={`arrow ${page >= pagination.last_page ? "disabled" : ""}`}>
-                    <button type="button" onClick={() => setPage((c) => Math.min(pagination.last_page, c + 1))} disabled={page >= pagination.last_page || loading}><i className="icon-arrow-right" /></button>
+                  <li className={`arrow ${currentPage >= lastPage ? "disabled" : ""}`}>
+                    <button type="button" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= lastPage || loading}><i className="icon-arrow-right" /></button>
                   </li>
                 </ul>
               </div>

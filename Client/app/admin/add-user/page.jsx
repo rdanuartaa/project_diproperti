@@ -2,8 +2,8 @@ import React from "react";
 import User from "@/components/dashboard/User";
 
 export const metadata = {
-	title: "User || Diproperti - Real Estate",
-	description: "Diproperti || Real Estate",
+	title: "Pengguna || Diproperti - Properti",
+	description: "Diproperti || Properti",
 };
 
 export default function page() {
@@ -13,5 +13,3 @@ export default function page() {
 		</>
 	);
 }
-
-

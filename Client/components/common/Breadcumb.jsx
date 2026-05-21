@@ -9,9 +9,7 @@ export default function Breadcumb({ pageName = "Detail Properti" }) {
             <div className="title-inner">
               <ul className="breadcrumb">
                 <li>
-                  <Link className="home fw-6 text-color-3" href={`/`}>
-                    Home
-                  </Link>
+                  <Link className="home fw-6 text-color-3" href={`/`}>Beranda</Link>
                 </li>
                 <li>{pageName}</li>
               </ul>

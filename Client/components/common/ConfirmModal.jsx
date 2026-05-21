@@ -145,7 +145,7 @@ export default function ConfirmModal({
                     className="spinner-border spinner-border-sm" 
                     style={{ width: "1rem", height: "1rem" }}
                   />
-                  Loading...
+                  Memuat...
                 </>
               ) : (
                 confirmText

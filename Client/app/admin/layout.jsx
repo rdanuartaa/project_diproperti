@@ -3,8 +3,8 @@ import Header1 from "@/components/headers/Header1";
 import React from "react";
 
 export const metadata = {
-  title: "Dashboard || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+  title: "Dasboard || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 export default function page({ children }) {
   return (
@@ -21,5 +21,3 @@ export default function page({ children }) {
     </>
   );
 }
-
-

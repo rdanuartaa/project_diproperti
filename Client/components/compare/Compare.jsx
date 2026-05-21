@@ -69,7 +69,7 @@ const COMPARE_ROWS = [
   { key: "garden", label: "Taman", source: "detail", boolean: true },
   {
     key: "one_gate_system",
-    label: "One Gate System",
+    label: "Sistem Satu Gerbang",
     source: "detail",
     boolean: true,
   },
@@ -947,8 +947,9 @@ export default function Compare() {
                   borderRadius: "8px",
                 }}
               >
-                <h6 style={{ marginBottom: "8px" }}>Penjelasan</h6>
+                <h6 className="compare-explanation-title">Penjelasan</h6>
                 <div
+                  className="compare-explanation-list"
                   style={{
                     display: "flex",
                     flexWrap: "wrap",
@@ -957,18 +958,20 @@ export default function Compare() {
                 >
                   {prosCons.map((item, idx) => (
                     <div
+                      className="compare-explanation-card"
                       key={item.id}
                       style={{
-                        flex: "0 0 calc(33.333% - 8px)",
-                        maxWidth: "calc(33.333% - 8px)",
                         padding: "10px 12px",
                         background: "#fff",
                         borderRadius: "16px",
                         border: "1px solid #e5e7eb",
-                        overflow: "hidden",
+                        overflow: "visible",
                       }}
                     >
-                      <div style={{ position: "relative", marginBottom: "10px" }}>
+                      <div
+                        className="compare-explanation-media"
+                        style={{ position: "relative", marginBottom: "10px" }}
+                      >
                         <Link
                           href={`/properti/${item.slug}`}
                           style={{
@@ -1015,6 +1018,7 @@ export default function Compare() {
                         </div>
                       </div>
 
+                      <div className="compare-explanation-content">
                       <p style={{ margin: "0 0 6px", fontWeight: 600 }}>
                         {item.title}
                       </p>
@@ -1060,10 +1064,11 @@ export default function Compare() {
                           </p>
                         )}
                       </div>
+                      </div>
                     </div>
                   ))}
                 </div>
-                <h6 style={{ margin: "12px 0 8px" }}>Rekomendasi</h6>
+                <h6 style={{ margin: "18px 0 8px" }}>Rekomendasi</h6>
                 <p style={{ margin: 0, color: "#555" }}>
                   {properties[bestScoreIndex]?.title
                     ? `Berdasarkan perbandingan, properti "${properties[bestScoreIndex].title}" memiliki nilai terbaik dengan skor ${scores[bestScoreIndex]}/100 dan lebih layak untuk dipertimbangkan.`

@@ -57,8 +57,8 @@ export const PROPERTY_VALUE_LABELS = {
     sewa: "Disewakan",
   },
   status: {
-    draft: "Draft",
-    published: "Dipublikasikan",
+    draft: "Pending",
+    published: "Ditampilkan",
     sold: "Terjual",
   },
 };

@@ -30,7 +30,7 @@ export default function SearchForm({
   // ✅ Dropdown states
   const [bedrooms, setBedrooms] = useState(initialFilters.bedrooms || "Jumlah Kamar Tidur");
   const [bathrooms, setBathrooms] = useState(initialFilters.bathrooms || "Jumlah Kamar Mandi");
-  const [livingRooms, setLivingRooms] = useState(initialFilters.livingRooms || "Ruang Tamu");
+  const [livingRuangan, setLivingRuangan] = useState(initialFilters.livingRuangan || "Ruang Tamu");
   const [kitchens, setKitchens] = useState(initialFilters.kitchens || "Dapur");
   const [floors, setFloors] = useState(initialFilters.floors || "Jumlah Lantai");
   const [certificateType, setCertificateType] = useState(initialFilters.certificateType || "Jenis Sertifikat");
@@ -67,9 +67,9 @@ export default function SearchForm({
     if (onFilterChange) onFilterChange("bathrooms", numValue);
   }, [onFilterChange]);
 
-  const handleLivingRoomsChange = useCallback((value) => {
+  const handleLivingRuanganChange = useCallback((value) => {
     const numValue = value === "Ruang Tamu" ? "" : value.replace("+", "");
-    setLivingRooms(value);
+    setLivingRuangan(value);
     if (onFilterChange) onFilterChange("living_rooms", numValue);
   }, [onFilterChange]);
 
@@ -259,8 +259,8 @@ export default function SearchForm({
         <div className="box-select">
           <DropdownSelect
             options={["Ruang Tamu", "1", "2", "3+"]}
-            selectedValue={livingRooms}
-            onChange={handleLivingRoomsChange}
+            selectedValue={livingRuangan}
+            onChange={handleLivingRuanganChange}
             addtionalParentClass=""
           />
         </div>
@@ -357,7 +357,7 @@ export default function SearchForm({
 
           <fieldset className="checkbox-item style-1 mt-12">
             <label>
-              <span className="text-4">One Gate System</span>
+              <span className="text-4">Sistem Satu Gerbang</span>
               <input 
                 type="checkbox" 
                 checked={amenities.oneGateSystem}
@@ -381,7 +381,7 @@ export default function SearchForm({
 
           <fieldset className="checkbox-item style-1 mt-12">
             <label>
-              <span className="text-4">WiFi Ready</span>
+              <span className="text-4">Siap WiFi</span>
               <input 
                 type="checkbox" 
                 checked={amenities.wifiReady}

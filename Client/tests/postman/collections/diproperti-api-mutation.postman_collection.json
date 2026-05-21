@@ -1,0 +1,265 @@
+{
+  "info": {
+    "name": "DIPROPERTI API - Mutation Dummy",
+    "_postman_id": "diproperti-api-mutation-dummy",
+    "description": "Collection endpoint mutasi data Laravel DIPROPERTI. Jalankan hanya pada database lokal/staging dengan data dummy.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{admin_token}}", "type": "string" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('status 2xx/4xx valid', function () {",
+          "  pm.expect(pm.response.code).to.be.oneOf([200, 201, 204, 409, 422]);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "PATCH /user/profile",
+          "request": {
+            "method": "PATCH",
+            "url": "{{base_url}}/user/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"User Postman\",\n  \"phone\": \"081234567890\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "POST /user/profile",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/user/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"User Postman\",\n  \"phone\": \"081234567890\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Tags Dummy CRUD",
+      "item": [
+        {
+          "name": "POST /admin/tags",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/admin/tags",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Dummy {{$timestamp}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.environment.set('test_tag_id', json.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /admin/tags/{tag}",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/admin/tags/{{test_tag_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Dummy Updated {{$timestamp}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "DELETE /admin/tags/{tag}",
+          "request": { "method": "DELETE", "url": "{{base_url}}/admin/tags/{{test_tag_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Admin FAQ Dummy CRUD",
+      "item": [
+        {
+          "name": "POST /admin/faqs",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/admin/faqs",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Pertanyaan dummy Postman {{$timestamp}}?\",\n  \"answer\": \"Jawaban dummy untuk pengujian API Postman.\",\n  \"topic\": \"umum\",\n  \"status\": \"draft\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.environment.set('test_faq_id', json.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /admin/faqs/{faq}",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/admin/faqs/{{test_faq_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question\": \"Pertanyaan dummy Postman updated {{$timestamp}}?\",\n  \"answer\": \"Jawaban dummy sudah diperbarui.\",\n  \"topic\": \"umum\",\n  \"status\": \"published\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "DELETE /admin/faqs/{faq}",
+          "request": { "method": "DELETE", "url": "{{base_url}}/admin/faqs/{{test_faq_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Admin Articles Dummy CRUD",
+      "item": [
+        {
+          "name": "POST /admin/articles",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/admin/articles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Artikel Dummy Postman {{$timestamp}}\",\n  \"description\": \"Deskripsi artikel dummy.\",\n  \"content\": \"Konten artikel dummy untuk pengujian API Postman.\",\n  \"status\": \"draft\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.environment.set('test_article_id', json.article.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /admin/articles/{article}",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/admin/articles/{{test_article_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Artikel Dummy Postman Updated {{$timestamp}}\",\n  \"description\": \"Deskripsi artikel dummy updated.\",\n  \"content\": \"Konten artikel dummy sudah diperbarui.\",\n  \"status\": \"draft\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "DELETE /admin/articles/{article}",
+          "request": { "method": "DELETE", "url": "{{base_url}}/admin/articles/{{test_article_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Admin Properties Dummy CRUD",
+      "item": [
+        {
+          "name": "POST /admin/properties",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/admin/properties",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Properti Dummy Postman {{$timestamp}}\",\n  \"type\": \"rumah\",\n  \"listing_type\": \"jual\",\n  \"kecamatan\": \"Sumbersari\",\n  \"city\": \"Jember\",\n  \"address\": \"Jl. Dummy Postman, Jember\",\n  \"latitude\": -8.1724,\n  \"longitude\": 113.7000,\n  \"price\": 500000000,\n  \"certificate_type\": \"SHM\",\n  \"certificate_status\": \"lunas\",\n  \"status\": \"draft\",\n  \"description\": \"Properti dummy untuk pengujian API Postman.\",\n  \"detail\": {\n    \"luas_tanah\": 90,\n    \"luas_bangunan\": 60,\n    \"bedrooms\": 2,\n    \"bathrooms\": 1,\n    \"floors\": 1,\n    \"living_rooms\": 1,\n    \"kitchens\": 1,\n    \"water\": \"pdam\",\n    \"listrik_type\": \"overground\",\n    \"road_access\": \"aspal\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.environment.set('test_property_id', json.property.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PUT /admin/properties/{property}",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/admin/properties/{{test_property_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Properti Dummy Postman Updated {{$timestamp}}\",\n  \"type\": \"rumah\",\n  \"status\": \"published\",\n  \"is_verified\": true,\n  \"price\": 525000000,\n  \"certificate_type\": \"SHM\",\n  \"certificate_status\": \"lunas\",\n  \"description\": \"Properti dummy updated untuk pengujian API Postman.\",\n  \"detail\": {\n    \"luas_tanah\": 95,\n    \"luas_bangunan\": 65,\n    \"bedrooms\": 2,\n    \"bathrooms\": 1,\n    \"floors\": 1,\n    \"living_rooms\": 1,\n    \"kitchens\": 1,\n    \"water\": \"pdam\",\n    \"listrik_type\": \"overground\",\n    \"road_access\": \"aspal\"\n  }\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "header": [{ "key": "Content-Type", "value": "application/json" }]
+          }
+        },
+        {
+          "name": "DELETE /admin/properties/{property}",
+          "request": { "method": "DELETE", "url": "{{base_url}}/admin/properties/{{test_property_id}}" }
+        }
+      ]
+    },
+    {
+      "name": "Logout",
+      "item": [
+        {
+          "name": "POST /logout",
+          "request": { "method": "POST", "url": "{{base_url}}/logout" }
+        }
+      ]
+    }
+  ]
+}

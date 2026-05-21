@@ -8,6 +8,10 @@ import DropdownSelect from "../common/DropdownSelect";
 import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
+import DashboardPagination, {
+  DASHBOARD_PAGE_SIZE,
+  paginateDashboardItems,
+} from "../common/DashboardPagination";
 import { formatViewCount } from "@/lib/property";
 
 const emptyForm = {
@@ -41,9 +45,16 @@ export default function Artikel() {
   const [tagPickerLabel, setTagPickerLabel] = useState("Pilih tag...");
 
   const [filters, setFilters] = useState({ status: "All", search: "" });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    total: 0,
+    per_page: DASHBOARD_PAGE_SIZE,
+  });
 
   const activeTitle = useMemo(
-    () => activeArticle?.title || "Selected Article",
+    () => activeArticle?.title || "Artikel Terpilih",
     [activeArticle],
   );
 
@@ -59,25 +70,46 @@ export default function Artikel() {
     });
   }, [articles, filters]);
 
-  // 🔹 Fetch articles dari API
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const paginatedArticles = useMemo(
+    () =>
+      pagination?.total
+        ? articles
+        : paginateDashboardItems(filteredArticles, currentPage),
+    [articles, filteredArticles, currentPage, pagination?.total],
+  );
+
+  // ðŸ”¹ Fetch articles dari API
   const fetchArticles = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (filters.status !== "All") params.append("status", filters.status);
       if (filters.search) params.append("search", filters.search);
+      params.append("page", currentPage);
+      params.append("per_page", DASHBOARD_PAGE_SIZE);
 
       const response = await api.get(`/admin/articles?${params}`);
-      setArticles(response.data.data || response.data);
+      const payload = response.data || {};
+      setArticles(payload.data || payload);
+      setPagination({
+        current_page: payload.current_page || currentPage,
+        last_page: payload.last_page || 1,
+        total: payload.total || payload.data?.length || 0,
+        per_page: payload.per_page || DASHBOARD_PAGE_SIZE,
+      });
     } catch (error) {
       console.error("Failed to fetch articles:", error);
-      alert("❌ Gagal mengambil data artikel");
+      alert("âŒ Gagal mengambil data artikel");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔹 Fetch all tags untuk dropdown
+  // ðŸ”¹ Fetch all tags untuk dropdown
   const fetchTags = async () => {
     try {
       const response = await api.get("/admin/tags");
@@ -91,7 +123,7 @@ export default function Artikel() {
   useEffect(() => {
     fetchArticles();
     fetchTags();
-  }, [filters]);
+  }, [filters, currentPage]);
 
   const openCreate = () => {
     setFormData(emptyForm);
@@ -169,7 +201,7 @@ export default function Artikel() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("❌ Maksimal ukuran gambar 5MB");
+      alert("âŒ Maksimal ukuran gambar 5MB");
       return;
     }
 
@@ -210,7 +242,7 @@ export default function Artikel() {
     }));
   };
 
-  // 🔹 Prepare FormData untuk upload
+  // ðŸ”¹ Prepare FormData untuk upload
   const prepareFormData = (jsonPayload) => {
     const formDataToSend = new FormData();
 
@@ -235,7 +267,7 @@ export default function Artikel() {
     return formDataToSend;
   };
 
-  // 🔹 Handle Create Article
+  // ðŸ”¹ Handle Create Article
   const handleCreate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
@@ -261,18 +293,18 @@ export default function Artikel() {
         const firstError = Object.values(
           error.response.data.errors || {},
         )[0]?.[0];
-        alert(`❌ Validation: ${firstError}`);
+        alert(`âŒ Validation: ${firstError}`);
       } else if (error.response?.status === 403) {
-        alert("❌ Unauthorized - Admin access required");
+        alert("âŒ Unauthorized - Admin access required");
       } else {
-        alert("❌ Failed to create article");
+        alert("âŒ Failed to create article");
       }
     } finally {
       setFormLoading(false);
     }
   };
 
-  // 🔹 Handle Update Article
+  // ðŸ”¹ Handle Update Article
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!activeArticle?.id) return;
@@ -307,18 +339,18 @@ export default function Artikel() {
         const firstError = Object.values(
           error.response.data.errors || {},
         )[0]?.[0];
-        alert(`❌ Validation: ${firstError}`);
+        alert(`âŒ Validation: ${firstError}`);
       } else if (error.response?.status === 403) {
-        alert("❌ Unauthorized - Admin access required");
+        alert("âŒ Unauthorized - Admin access required");
       } else {
-        alert("❌ Failed to update article");
+        alert("âŒ Failed to update article");
       }
     } finally {
       setFormLoading(false);
     }
   };
 
-  // 🔹 Handle Delete Article
+  // ðŸ”¹ Handle Delete Article
   const handleDelete = async () => {
     if (!activeArticle?.id) return;
 
@@ -333,9 +365,9 @@ export default function Artikel() {
     } catch (error) {
       console.error("Error deleting article:", error);
       if (error.response?.status === 403) {
-        alert("❌ Unauthorized - Admin access required");
+        alert("âŒ Unauthorized - Admin access required");
       } else {
-        alert("❌ Failed to delete article");
+        alert("âŒ Failed to delete article");
       }
     } finally {
       setIsDeleting(false);
@@ -371,7 +403,7 @@ export default function Artikel() {
           onClick={() => handleRemoveTag(tagId)}
           aria-label={`Remove ${tagName}`}
         >
-          ×
+          Ã—
         </button>
         <span className="tag-badge__text">{tagName}</span>
       </div>
@@ -431,7 +463,7 @@ export default function Artikel() {
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
                 <label>
-                  Search:<span>*</span>
+                  Cari:<span>*</span>
                 </label>
                 <input
                   type="text"
@@ -490,7 +522,7 @@ export default function Artikel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredArticles.map((article) => (
+                    {paginatedArticles.map((article) => (
                       <tr key={article.id} className="file-delete">
                         <td>
                           <div className="listing-box">
@@ -505,7 +537,7 @@ export default function Artikel() {
                                 />
                               ) : (
                                 <div className="listing-image-placeholder">
-                                  No Image
+                                  Tidak Ada Gambar
                                 </div>
                               )}
                             </div>
@@ -620,22 +652,13 @@ export default function Artikel() {
               )}
             </div>
 
-            {/* Pagination */}
-            <ul className="wg-pagination">
-              <li className="arrow">
-                <a href="#">
-                  <i className="icon-arrow-left" />
-                </a>
-              </li>
-              <li className="active">
-                <a href="#">1</a>
-              </li>
-              <li className="arrow">
-                <a href="#">
-                  <i className="icon-arrow-right" />
-                </a>
-              </li>
-            </ul>
+            <DashboardPagination
+              currentPage={currentPage}
+              totalItems={pagination.total || filteredArticles.length}
+              totalPages={pagination.last_page}
+              pageSize={pagination.per_page || DASHBOARD_PAGE_SIZE}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
 
@@ -771,7 +794,7 @@ export default function Artikel() {
 
                     <div className="col-12">
                       <fieldset className="box-fieldset">
-                        <label>Tags</label>
+                        <label>Tag</label>
                         <p className="text-xs text-gray-500 mt-1">
                           Pilih tag dari dropdown, lalu bisa dibatalkan dari badge
                         </p>
@@ -821,7 +844,7 @@ export default function Artikel() {
                               />
                             ) : (
                               <div className="w-full h-64 bg-gray-200 rounded flex items-center justify-center text-gray-400">
-                                No Image
+                                Tidak Ada Gambar
                               </div>
                             )}
                             <button

@@ -5,16 +5,16 @@ import Footer1 from "@/components/footers/Footer1";
 import Header1 from "@/components/headers/Header1";
 import React from "react";
 
-// 🔹 Dynamic Metadata SEO
+// ðŸ”¹ Dynamic Metadata SEO
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   return {
-    title: `${slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} | Diproperti || Real Estate`,
-    description: "Detail Artikel Diproperti || Real Estate",
+    title: `${slug.replace(/-/g, " ").replace(/\b\w/g, (l) => l.toUpperCase())} | Diproperti || Properti`,
+    description: "Detail Artikel Diproperti || Properti",
   };
 }
 
-// 🔹 Server Component
+// ðŸ”¹ Server Component
 export default async function page({ params }) {
   const { slug } = await params;
 

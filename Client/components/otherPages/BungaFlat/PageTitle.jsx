@@ -30,9 +30,7 @@ export default function PageTitle() {
                 <h2 className="title text_white">Simulasi KPR</h2>
                 <ul className="breadcrumb justify-center">
                   <li>
-                    <Link className="home fw-6 text-color-3" href={`/`}>
-                      Home
-                    </Link>
+                    <Link className="home fw-6 text-color-3" href={`/`}>Beranda</Link>
                   </li>
                   <li className="text_white">Simulasi KPR</li>
                 </ul>

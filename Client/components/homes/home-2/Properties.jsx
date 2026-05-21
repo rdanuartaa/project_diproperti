@@ -3,6 +3,7 @@
 import { Swiper, SwiperSlide } from "swiper/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import SplitTextAnimation from "@/components/common/SplitTextAnimation";
 import { Navigation, Pagination } from "swiper/modules";
 import { useEffect, useState } from "react";
@@ -71,7 +72,7 @@ function formatHarga(value) {
   return `Rp ${num}`;
 }
 
-function getRentPeriodLabel(property) {
+function getSewaPeriodLabel(property) {
   const period = String(property?.price_period || "bulan");
   if (period === "3bulan") return "3 bulan";
   if (period === "6bulan") return "6 bulan";
@@ -83,7 +84,7 @@ function formatPriceDisplay(property) {
   const base = formatHarga(property?.price);
   if (property?.listing_type !== "sewa") return base;
   if (!property?.price) return base;
-  return `${base}/${getRentPeriodLabel(property)}`;
+  return `${base}/${getSewaPeriodLabel(property)}`;
 }
 
 // ✅ Daftar tipe properti untuk filter tabs (sesuai enum di backend)
@@ -146,6 +147,7 @@ const PROPERTY_TYPES = [
 ];
 
 export default function Properties() {
+  const router = useRouter();
   const [activeType, setActiveType] = useState("rumah");
   const [properties, setProperties] = useState([]);
   const [listingCounts, setListingCounts] = useState({});
@@ -245,6 +247,22 @@ export default function Properties() {
     return `${count} Listing`;
   };
 
+  const handleCompareProperty = (property, added) => {
+    if (added) {
+      removeFromCompare(property.id);
+      return;
+    }
+
+    const didAdd = addToCompare(property);
+    if (!didAdd) return;
+
+    const params = new URLSearchParams();
+    if (property?.type) params.set("type", property.type);
+    if (property?.listing_type) params.set("listing_type", property.listing_type);
+
+    router.push(`/list-properti${params.toString() ? `?${params.toString()}` : ""}`);
+  };
+
   return (
     <section className="section-popular-searches tf-spacing-1">
       <div className="tf-container md">
@@ -255,7 +273,7 @@ export default function Properties() {
                 <SplitTextAnimation text="Properti Terpopuler" />
               </h2>
               <p className="text-1 split-text split-lines-transform">
-                Ribuan pencari properti mewah seperti Anda mengunjungi website kami.
+                Ratusan pencari properti mewah seperti Anda mengunjungi website kami.
               </p>
             </div>
 
@@ -285,7 +303,7 @@ export default function Properties() {
                   {loading && (
                     <div className="text-center py-5">
                       <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
+                        <span className="visually-hidden">Memuat...</span>
                       </div>
                       <p className="mt-2 text-1">Memuat properti...</p>
                     </div>
@@ -367,11 +385,7 @@ export default function Properties() {
                                 <button
                                   type="button"
                                   className={`btn-icon save hover-tooltip ${added ? "active" : ""}`}
-                                  onClick={() =>
-                                    added
-                                      ? removeFromCompare(property.id)
-                                      : addToCompare(property)
-                                  }
+                                  onClick={() => handleCompareProperty(property, added)}
                                   disabled={disabled}
                                   aria-pressed={added}
                                 >
@@ -424,22 +438,18 @@ export default function Properties() {
                                   <button
                                     type="button"
                                     className="compare flex gap-8 items-center text-1"
-                                    onClick={() =>
-                                      added
-                                        ? removeFromCompare(property.id)
-                                        : addToCompare(property)
-                                    }
+                                    onClick={() => handleCompareProperty(property, added)}
                                     disabled={disabled}
                                     aria-pressed={added}
                                   >
                                     <i className="icon-compare" />
-                                    {added ? "Dibandingkan ✓" : "Compare"}
+                                    {added ? "Dibandingkan ✓" : "Bandingkan"}
                                   </button>
                                   <Link
                                     href={`/properti/${property.slug}`}
                                     className="tf-btn style-border pd-4"
                                   >
-                                    Details
+                                    Detail
                                   </Link>
                                 </div>
                               </div>

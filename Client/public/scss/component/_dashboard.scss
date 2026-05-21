@@ -682,6 +682,20 @@ table.table-save-search {
     .primary-toggle {
       right: 40px;
     }
+    .primary-badge {
+      position: absolute;
+      left: 8px;
+      bottom: 8px;
+      border-radius: 999px;
+      background: var(--Primary);
+      color: var(--White);
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 6px 10px;
+      z-index: 4;
+      pointer-events: none;
+    }
     &.is-primary::after {
       content: "";
       position: absolute;
@@ -690,7 +704,7 @@ table.table-save-search {
       z-index: 1;
     }
     &.is-primary::before {
-      content: "Primary";
+      content: "";
       position: absolute;
       inset: 0;
       @include mixin.flex(center, center);

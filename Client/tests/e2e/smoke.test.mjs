@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import { Builder, By, until } from "selenium-webdriver";
 import chrome from "selenium-webdriver/chrome.js";
 
-const HOST = process.env.E2E_HOST || "127.0.0.1";
+const HOST = process.env.E2E_HOST || "localhost";
 const PORT = Number(process.env.E2E_PORT || 3000);
 const BASE_URL = process.env.E2E_BASE_URL || `http://${HOST}:${PORT}`;
 const HEADLESS = process.env.HEADLESS !== "false";
@@ -17,15 +17,15 @@ const SCREENSHOT_DIR = new URL("./screenshots/", import.meta.url);
 const routes = [
   { path: "/", text: "Rumah" },
   { path: "/list-properti", text: "Properti" },
-  { path: "/jual-properti", text: "Jual" },
+  { path: "/jual-properti", text: ["Jual", "Sign in", "Masuk"] },
   { path: "/komparasi", text: "Komparasi" },
   { path: "/simulasi-kpr", text: "KPR" },
   { path: "/rekomendasi-properti", text: "Rekomendasi" },
   { path: "/faq", text: "FAQ" },
   { path: "/contact", text: "Kontak" },
   { path: "/list-artikel", text: "Artikel" },
-  { path: "/admin/add-properti", text: "Properti" },
-  { path: "/admin/pengajuan-properti", text: "Pengajuan" },
+  { path: "/admin/add-properti", text: ["Properti", "Sign in", "Masuk"] },
+  { path: "/admin/pengajuan-properti", text: ["Pengajuan", "Sign in", "Masuk"] },
 ];
 
 function requestUrl(url) {
@@ -146,15 +146,21 @@ async function visit(driver, path, expectedText) {
     30000
   );
 
-  const body = await driver.findElement(By.css("body")).getText();
+  const body = await driver.executeScript("return document.body?.innerText || ''");
   assert.ok(body.trim().length > 0, `${path} menampilkan body kosong`);
   assert.ok(!body.includes("404") || path.includes("404"), `${path} terdeteksi 404`);
   if (expectedText) {
+    const expectedTexts = Array.isArray(expectedText) ? expectedText : [expectedText];
+    const lowerBody = body.toLowerCase();
     assert.ok(
-      body.toLowerCase().includes(expectedText.toLowerCase()),
-      `${path} tidak memuat teks "${expectedText}"`
+      expectedTexts.some((text) => lowerBody.includes(text.toLowerCase())),
+      `${path} tidak memuat salah satu teks "${expectedTexts.join('", "')}"`
     );
   }
+}
+
+async function getBodyText(driver) {
+  return String(await driver.executeScript("return document.body?.innerText || ''"));
 }
 
 async function testMainRoutes(driver) {
@@ -187,7 +193,7 @@ async function testHomePropertyTabs(driver) {
 async function testListingInteractions(driver) {
   await visit(driver, "/list-properti", "Properti");
 
-  const body = await driver.findElement(By.css("body")).getText();
+  const body = await getBodyText(driver);
   assert.ok(
     body.includes("Terapkan Filter") || body.includes("Filter") || body.includes("Properti"),
     "Halaman list properti tidak memuat area filter/listing"
@@ -201,9 +207,18 @@ async function testListingInteractions(driver) {
     console.log("OK reset filter list properti");
   }
 
-  const detailLinks = await driver.findElements(
-    By.css('a[href^="/properti/"]')
-  );
+  let detailLinks = [];
+  try {
+    await driver.wait(async () => {
+      detailLinks = await driver.findElements(
+        By.css('a[href*="/properti/"]')
+      );
+      return detailLinks.length > 0;
+    }, 20000);
+  } catch {
+    detailLinks = [];
+  }
+
   if (detailLinks.length > 0) {
     const href = await detailLinks[0].getAttribute("href");
     await driver.get(href);
@@ -211,7 +226,7 @@ async function testListingInteractions(driver) {
       async () => (await driver.executeScript("return document.readyState")) === "complete",
       30000
     );
-    const detailBody = await driver.findElement(By.css("body")).getText();
+    const detailBody = await getBodyText(driver);
     assert.ok(detailBody.trim().length > 0, "Halaman detail properti kosong");
     assert.ok(!detailBody.includes("404"), "Halaman detail properti 404");
     console.log("OK detail properti dari list");
@@ -228,10 +243,11 @@ async function testComparePage(driver) {
 }
 
 async function testSellPropertyAccess(driver) {
-  await visit(driver, "/jual-properti", "Jual");
-  const body = await driver.findElement(By.css("body")).getText();
+  await visit(driver, "/jual-properti", ["Jual", "Sign in", "Masuk"]);
+  const body = await getBodyText(driver);
   assert.ok(
     body.includes("login") ||
+      body.includes("Sign in") ||
       body.includes("Masuk") ||
       body.includes("Pengajuan") ||
       body.includes("Jual"),

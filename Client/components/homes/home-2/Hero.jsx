@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 const PROPERTY_TYPE_OPTIONS = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"];
 const LISTING_TYPE_OPTIONS = ["Jual/Sewa", "Dijual", "Disewa"];
-const SORT_OPTIONS = ["Terbaru", "Terlama", "Terpopuler"];
+const SORT_OPTIONS = ["Terbaru", "Terlama", "Terpopuler", "Termurah", "Termahal"];
 
 export default function Hero() {
   const router = useRouter();
@@ -35,6 +35,10 @@ export default function Hero() {
       setSortOrder("Terlama");
     } else if (sortParam === "popular" || sortParam === "populer") {
       setSortOrder("Terpopuler");
+    } else if (sortParam === "price_asc" || sortParam === "termurah") {
+      setSortOrder("Termurah");
+    } else if (sortParam === "price_desc" || sortParam === "termahal") {
+      setSortOrder("Termahal");
     } else {
       setSortOrder("Terbaru");
     }
@@ -57,6 +61,10 @@ export default function Hero() {
       params.set("sort_order", "asc");
     } else if (sortOrder === "Terpopuler") {
       params.set("sort_order", "popular");
+    } else if (sortOrder === "Termurah") {
+      params.set("sort_order", "price_asc");
+    } else if (sortOrder === "Termahal") {
+      params.set("sort_order", "price_desc");
     } else {
       params.set("sort_order", "desc");
     }
@@ -99,7 +107,7 @@ export default function Hero() {
                   DiProperti
                 </h1>
                 <p className="h6 fw-4">
-                  Ribuan properti terpercaya siap menanti — temukan rumah, ruko,
+                  Ratusan properti terpercaya siap menanti — temukan rumah, ruko,
                   kos, dan tanah terbaik untuk Anda.
                 </p>
               </div>

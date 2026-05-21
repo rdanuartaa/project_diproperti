@@ -2,8 +2,8 @@ import React from "react";
 import Faq from "@/components/dashboard/Faq";
 
 export const metadata = {
-  title: "FAQ || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+  title: "FAQ || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 
 export default function page() {
@@ -13,5 +13,3 @@ export default function page() {
     </>
   );
 }
-
-

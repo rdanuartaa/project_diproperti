@@ -2,8 +2,8 @@ import React from "react";
 import Properti from "@/components/dashboard/Properti";
 
 export const metadata = {
-  title: "My Property || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+  title: "Properti Saya || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 export default function page() {
   return (
@@ -12,4 +12,3 @@ export default function page() {
     </>
   );
 }
-

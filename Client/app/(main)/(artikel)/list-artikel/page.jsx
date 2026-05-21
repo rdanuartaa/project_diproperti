@@ -5,8 +5,8 @@ import Header1 from "@/components/headers/Header1";
 import React from "react";
 
 export const metadata = {
-  title: "Daftar Artikel || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+  title: "Daftar Artikel || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 export default function page() {
   return (
@@ -22,5 +22,3 @@ export default function page() {
     </>
   );
 }
-
-

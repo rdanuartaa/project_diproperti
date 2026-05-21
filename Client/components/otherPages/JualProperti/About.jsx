@@ -3,12 +3,12 @@ import Image from "next/image";
 
 export default function About() {
   return (
-    <section className="section-contact style-4 pb-0" style={{ paddingTop: "160px" }}>
+    <section className="section-contact style-4 pb-0 jual-properti-about" style={{ paddingTop: "160px" }}>
       <div className="tf-container">
         <div className="row align-items-start">
           <div className="col-md-6">
             <div className="box-contact">
-              <div className="heading-section mb-48 mt-0">
+              <div className="heading-section mb-48 mt-0 jual-properti-about-heading">
                 <h2 className="title split-text split-lines-transform">
                   Jual Properti Anda dengan Jangkauan Lebih Luas
                 </h2>
@@ -18,7 +18,7 @@ export default function About() {
                   seluruh wilayah Jember dan sekitarnya dengan sistem yang terintegrasi.
                 </p>
               </div>
-              <ul className="list-info">
+              <ul className="list-info jual-properti-about-list">
                 <li>
                   <div className="icon">
                     <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#A8ABAE" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -55,11 +55,20 @@ export default function About() {
                   </div>
                 </li>
               </ul>
+              <div className="image-wrap jual-properti-about-mobile-image">
+                <Image
+                  src="/images/diproperti/sell-house.jpg"
+                  alt="Jual Properti"
+                  fill
+                  style={{ objectFit: "cover" }}
+                  className="lazyload"
+                />
+              </div>
             </div>
           </div>
           <div className="col-md-6">
             <div
-              className="image-wrap"
+              className="image-wrap jual-properti-about-desktop-image"
               style={{ position: "relative", width: "100%", height: "520px", borderRadius: "16px", overflow: "hidden", marginTop: "10px" }}
             >
               <Image

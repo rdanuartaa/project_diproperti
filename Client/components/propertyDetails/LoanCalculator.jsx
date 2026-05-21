@@ -37,16 +37,16 @@ export default function LoanCalculator() {
           </fieldset>
           <div className="select">
             <label className="text-1 fw-6 mb-12">
-              Amortization Period (months)
+              Periode Angsuran (bulan)
             </label>
             <DropdownSelect
               options={[
                 "Select amortization period",
                 "1 month",
-                "2 months",
-                "3 months",
-                "4 months",
-                "5 months",
+                "2 bulan",
+                "3 bulan",
+                "4 bulan",
+                "5 bulan",
               ]}
             />
           </div>
@@ -54,13 +54,13 @@ export default function LoanCalculator() {
         <div className="cols">
           <fieldset>
             <label className="text-1 fw-6 mb-12" htmlFor="tax">
-              Property Tax
+              Pajak Properti
             </label>
             <input type="number" id="tax" placeholder="$3000" />
           </fieldset>
           <fieldset>
             <label className="text-1 fw-6 mb-12" htmlFor="insurance">
-              Home Insurance
+              Asuransi Rumah
             </label>
             <input type="number" id="insurance" placeholder="$3000" />
           </fieldset>

@@ -6,8 +6,8 @@ import Header1 from "@/components/headers/Header1";
 import React from "react";
 
 export const metadata = {
-  title: "Contact || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+  title: "Kontak || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 export default function page() {
   return (
@@ -24,4 +24,3 @@ export default function page() {
     </>
   );
 }
-

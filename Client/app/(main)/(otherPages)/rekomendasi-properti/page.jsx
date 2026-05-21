@@ -5,8 +5,8 @@ import RekomendasiProperti from "@/components/otherPages/rekomendasi/Rekomendasi
 import React from "react";
 
 export const metadata = {
-  title: "Rekomendasi Properti || Diproperti - Real Estate",
-  description: "Diproperti || Real Estate",
+  title: "Rekomendasi Properti || Diproperti - Properti",
+  description: "Diproperti || Properti",
 };
 
 export default function Page() {

@@ -4,7 +4,7 @@ export default function Attachments() {
   return (
     <>
       <div className="wg-title text-11 fw-6 text-color-heading">
-        File Attachments
+        Lampiran File
       </div>
       <div className="row">
         <div className="col-sm-6">
@@ -17,7 +17,7 @@ export default function Attachments() {
                 height={80}
               />
             </div>
-            <span>Villa-Document.pdf</span>
+            <span>Dokumen-Villa.pdf</span>
             <i className="icon icon-DownloadSimple" />
           </a>
         </div>
@@ -31,7 +31,7 @@ export default function Attachments() {
                 height={80}
               />
             </div>
-            <span>Villa-Document.pdf</span>
+            <span>Dokumen-Villa.pdf</span>
             <i className="icon icon-DownloadSimple" />
           </a>
         </div>

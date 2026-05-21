@@ -36,7 +36,7 @@ export default function Dashboard() {
       const start = dateRange.startDate || dateRange.endDate;
       const end = dateRange.endDate || dateRange.startDate;
       if (start === end) return `Tanggal ${formatDisplayDate(start)}`;
-      return `Rentang tanggal ${formatDisplayDate(start)} hingga ${formatDisplayDate(end)}`;
+      return `Sewaang tanggal ${formatDisplayDate(start)} hingga ${formatDisplayDate(end)}`;
     }
 
     const periodLabels = {
@@ -49,7 +49,7 @@ export default function Dashboard() {
     return periodLabels[chartPeriod] || "Kunjungan Platform";
   };
 
-  // 🔹 Fetch dashboard stats
+  // ðŸ”¹ Fetch dashboard stats
   const fetchStats = async () => {
     try {
       const { data } = await api.get("/admin/dashboard/stats");
@@ -61,7 +61,7 @@ export default function Dashboard() {
     }
   };
 
-  // 🔹 Fetch analytics chart data
+  // ðŸ”¹ Fetch analytics chart data
   const fetchAnalytics = async (period = "day", range = dateRange) => {
     try {
       const params = { period };
@@ -92,7 +92,7 @@ export default function Dashboard() {
     loadData();
   }, [chartPeriod, dateRange]);
 
-  // 🔹 Handle period change
+  // ðŸ”¹ Handle period change
   const handlePeriodChange = (period) => {
     setChartPeriod(period);
     setDateRange({ startDate: "", endDate: "" });
@@ -118,10 +118,10 @@ export default function Dashboard() {
     <div className="main-content w-100">
       <div className="main-content-inner">
         <div className="button-show-hide show-mb">
-          <span className="body-1">Show Dashboard</span>
+          <span className="body-1">Tampilkan Dasboard</span>
         </div>
 
-        {/* 🔹 Counter Boxes */}
+        {/* ðŸ”¹ Counter Boxes */}
         <div className="flat-counter-v2 tf-counter">
           {/* Properties */}
           <div className="counter-box">
@@ -336,7 +336,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 🔹 Chart Section */}
+        {/* ðŸ”¹ Chart Section */}
         <div className="row">
           <div className="col-xl-12">
             <div className="widget-box-2 wd-chart">

@@ -68,7 +68,7 @@ export default function Header2() {
                             borderRadius: "50%",
                             overflow: "hidden",
                           }}
-                          aria-label="User menu"
+                          aria-label="Menu pengguna"
                           aria-expanded={dropdownOpen}
                         >
                           {user.avatar ? (
@@ -178,7 +178,7 @@ export default function Header2() {
                         className="tf-btn style-border pd-23"
                         href={`/admin/add-properti`}
                       >
-                        Add property
+                        Kelola Properti
                       </Link>
                     ) : isAuthenticated ? (
                       <Link

@@ -6,7 +6,7 @@ import RelatedProperties from "@/components/propertyDetails/RelatedProperties";
 import Slider1 from "@/components/propertyDetails/sliders/Slider1";
 import React from "react";
 
-// 🔹 Dynamic Metadata SEO (Sama seperti detail artikel)
+// ðŸ”¹ Dynamic Metadata SEO (Sama seperti detail artikel)
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   
@@ -16,17 +16,17 @@ export async function generateMetadata({ params }) {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 
   return {
-    title: `${formattedTitle} | Diproperti || Real Estate`,
-    description: `Detail Properti ${formattedTitle} - Diproperti || Real Estate React Nextjs Template`,
+    title: `${formattedTitle} | Diproperti || Properti`,
+    description: `Detail Properti ${formattedTitle} - Diproperti || Properti`,
     openGraph: {
-      title: `${formattedTitle} | Diproperti || Real Estate`,
+      title: `${formattedTitle} | Diproperti || Properti`,
       description: `Temukan detail lengkap properti ${formattedTitle}.`,
       type: "website",
     },
   };
 }
 
-// 🔹 Server Component (Tanpa "use client")
+// ðŸ”¹ Server Component (Tanpa "use client")
 export default async function page({ params }) {
   const { slug } = await params;
 

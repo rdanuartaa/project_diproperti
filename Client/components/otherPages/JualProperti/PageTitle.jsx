@@ -6,7 +6,7 @@ export default function PageTitle() {
     <div
       className="page-title style-2"
       style={{
-        backgroundImage: "url('/images/diproperti/bungaflathero.jpg')",
+        backgroundImage: "url('/images/diproperti/jualproperti.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
@@ -29,9 +29,7 @@ export default function PageTitle() {
                 <h2 className="title text_white">Jual Properti</h2>
                 <ul className="breadcrumb justify-center">
                   <li>
-                    <Link className="home fw-6 text-color-3" href={`/`}>
-                      Home
-                    </Link>
+                    <Link className="home fw-6 text-color-3" href={`/`}>Beranda</Link>
                   </li>
                   <li className="text_white">Jual Properti</li>
                 </ul>

@@ -6,6 +6,10 @@ import DropdownSelect from "../common/DropdownSelect";
 import SuccessModal from "../common/SuccesModal";
 import ConfirmModal from "../common/ConfirmModal";
 import AttentionModal from "../common/AttentionModal";
+import DashboardPagination, {
+  DASHBOARD_PAGE_SIZE,
+  paginateDashboardItems,
+} from "../common/DashboardPagination";
 
 const emptyForm = {
   name: "",
@@ -32,7 +36,7 @@ export default function TagArtikel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // 🔥 NEW (pagination)
+  // ðŸ”¥ NEW (pagination)
   const [pagination, setPagination] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -41,13 +45,14 @@ export default function TagArtikel() {
     [activeTag],
   );
 
-  // 🔹 Fetch tags dari API
+  // ðŸ”¹ Fetch tags dari API
   const fetchTags = async () => {
     try {
       setLoading(true);
 
       const params = {
         page: currentPage,
+        per_page: DASHBOARD_PAGE_SIZE,
       };
 
       if (searchQuery) params.search = searchQuery;
@@ -59,13 +64,13 @@ export default function TagArtikel() {
       setPagination(response.data);
     } catch (error) {
       console.error("Failed to fetch tags:", error);
-      alert("❌ Gagal mengambil data tag");
+      alert("âŒ Gagal mengambil data tag");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔥 Debounce fetch
+  // ðŸ”¥ Debounce fetch
   useEffect(() => {
     const delay = setTimeout(() => {
       fetchTags();
@@ -74,7 +79,7 @@ export default function TagArtikel() {
     return () => clearTimeout(delay);
   }, [searchQuery, statusFilter, currentPage]);
 
-  // 🔥 Reset page saat search/filter berubah
+  // ðŸ”¥ Reset page saat search/filter berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);
@@ -229,6 +234,12 @@ export default function TagArtikel() {
       .replace(/[^a-z0-9\s-]/g, "")
       .replace(/\s+/g, "-")
       .replace(/-+/g, "-");
+
+  const hasServerPagination = Boolean(pagination?.total);
+  const displayedTags = hasServerPagination
+    ? tags
+    : paginateDashboardItems(tags, currentPage);
+
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">
@@ -276,7 +287,7 @@ export default function TagArtikel() {
           <div className="col-md-9">
             <form onSubmit={(e) => e.preventDefault()}>
               <fieldset className="box-fieldset">
-                <label>Search:<span>*</span></label>
+                <label>Cari:<span>*</span></label>
                 <input
                   type="text"
                   className="form-control"
@@ -336,7 +347,7 @@ export default function TagArtikel() {
                     </tr>
                   </thead>
                   <tbody>
-                    {tags.map((tag) => (
+                    {displayedTags.map((tag) => (
                       <tr key={tag.id} className="file-delete">
                         <td style={{ maxWidth: 0, paddingLeft: 0 }}>
                           <div
@@ -415,22 +426,13 @@ export default function TagArtikel() {
               )}
             </div>
 
-            {/* Pagination - Static untuk saat ini */}
-            <ul className="wg-pagination">
-              <li className="arrow">
-                <a href="#">
-                  <i className="icon-arrow-left" />
-                </a>
-              </li>
-              <li className="active">
-                <a href="#">1</a>
-              </li>
-              <li className="arrow">
-                <a href="#">
-                  <i className="icon-arrow-right" />
-                </a>
-              </li>
-            </ul>
+            <DashboardPagination
+              currentPage={currentPage}
+              totalItems={pagination.total || tags.length}
+              totalPages={pagination.last_page}
+              pageSize={DASHBOARD_PAGE_SIZE}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
 

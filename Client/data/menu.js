@@ -1,77 +1,77 @@
 import { allProperties } from "./properties";
 
 export const homes = [
-  { href: "/", label: "Home Page 02", isCurrent: true },
+  { href: "/", label: "Halaman Beranda 02", isCurrent: true },
 ];
 
 export const propertyLinks = [
   {
-    title: "Layout",
+    title: "Tata Letak",
     submenu: [
-      { href: "/property-grid-full-width", label: "Grid Style - Full Width" },
-      { href: "/property-gird-top-search", label: "Grid Style - Top Search" },
+      { href: "/property-grid-full-width", label: "Grid - Lebar Penuh" },
+      { href: "/property-gird-top-search", label: "Grid - Pencarian Atas" },
       {
         href: "/property-gird-left-sidebar",
-        label: "Grid Style - Sidebar Left",
+        label: "Grid - Sidebar Kiri",
       },
       {
         href: "/property-gird-right-sidebar",
-        label: "Grid Style - Sidebar Right",
+        label: "Grid - Sidebar Kanan",
       },
-      { href: "/property-list-full-width", label: "List Style - Full Width" },
-      { href: "/property-list-top-search", label: "List Style - Top Search" },
+      { href: "/property-list-full-width", label: "Daftar - Lebar Penuh" },
+      { href: "/property-list-top-search", label: "Daftar - Pencarian Atas" },
       {
         href: "/property-list-left-sidebar",
-        label: "List Style - Sidebar Left",
+        label: "Daftar - Sidebar Kiri",
       },
       {
         href: "/property-list-right-sidebar",
-        label: "List Style - Sidebar Right",
+        label: "Daftar - Sidebar Kanan",
       },
     ],
   },
   {
-    title: "Feature",
+    title: "Fitur",
     submenu: [
-      { href: "/property-half-map-grid", label: "Property Half Map Grid" },
-      { href: "/property-half-map-list", label: "Property Half Map List" },
-      { href: "/property-half-top-map", label: "Property Half Map Top" },
-      { href: "/property-filter-popup", label: "Property Filter Popup" },
+      { href: "/property-half-map-grid", label: "Properti Peta Separuh Grid" },
+      { href: "/property-half-map-list", label: "Properti Peta Separuh Daftar" },
+      { href: "/property-half-top-map", label: "Properti Peta Atas" },
+      { href: "/property-filter-popup", label: "Popup Filter Properti" },
       {
         href: "/property-filter-popup-left",
-        label: "Property Filter Popup Left",
+        label: "Popup Filter Properti Kiri",
       },
       {
         href: "/property-filter-popup-right",
-        label: "Property Filter Popup Right",
+        label: "Popup Filter Properti Kanan",
       },
     ],
   },
   {
-    title: "Listing Details",
+    title: "Detail Listing",
     submenu: [
       {
         href: `/properti/${allProperties[0]?.slug}`,
-        label: "Property Details 1",
+        label: "Detail Properti 1",
       },
-      { href: "/property-detail-v2/1", label: "Property Details 2" },
-      { href: "/property-detail-v3/1", label: "Property Details 3" },
-      { href: "/property-detail-v4/1", label: "Property Details 4" },
-      { href: "/property-detail-v5/1", label: "Property Details 5" },
+      { href: "/property-detail-v2/1", label: "Detail Properti 2" },
+      { href: "/property-detail-v3/1", label: "Detail Properti 3" },
+      { href: "/property-detail-v4/1", label: "Detail Properti 4" },
+      { href: "/property-detail-v5/1", label: "Detail Properti 5" },
     ],
   },
 ];
 
 export const otherPages = [
-  { href: "/home-loan-process", label: "Home Loan Process" },
-  { href: "/faq", label: "Faq's" },
-  { href: "/compare", label: "Compare" },
-  { href: "/404", label: "Page 404" },
-  { href: "/dashboard", label: "Dashboard" },
+  { href: "/home-loan-process", label: "Proses KPR" },
+  { href: "/faq", label: "FAQ" },
+  { href: "/compare", label: "Komparasi" },
+  { href: "/404", label: "Halaman 404" },
+  { href: "/dashboard", label: "Dasbor" },
 ];
 
 export const blogMenu = [
-  { href: "/blog-list", label: "Blog List" },
-  { href: "/blog-grid", label: "Blog Grid" },
-  { href: "/blog-details/1", label: "Blog Detail" },
+  { href: "/blog-list", label: "Daftar Artikel" },
+  { href: "/blog-grid", label: "Grid Artikel" },
+  { href: "/blog-details/1", label: "Detail Artikel" },
 ];

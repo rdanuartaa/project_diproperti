@@ -2,7 +2,7 @@ import React from "react";
 import PropertySubmissions from "@/components/dashboard/PropertySubmissions";
 
 export const metadata = {
-  title: "Pengajuan Properti || Diproperti - Real Estate",
+  title: "Pengajuan Properti || Diproperti - Properti",
   description: "Pengajuan properti dari user.",
 };
 

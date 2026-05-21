@@ -1,0 +1,340 @@
+{
+  "info": {
+    "name": "DIPROPERTI API - Read Only",
+    "_postman_id": "diproperti-api-readonly",
+    "description": "Collection pengujian API Laravel DIPROPERTI untuk endpoint public, auth, dan admin read-only. Request mutasi data dipisah agar run default aman.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('status 2xx/3xx', function () {",
+          "  pm.expect(pm.response.code).to.be.within(200, 399);",
+          "});",
+          "pm.test('response time < 5000ms', function () {",
+          "  pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "GET /properties",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": {
+              "raw": "{{base_url}}/properties?per_page=10&page=1&status=published",
+              "host": ["{{base_url}}"],
+              "path": ["properties"],
+              "query": [
+                { "key": "per_page", "value": "10" },
+                { "key": "page", "value": "1" },
+                { "key": "status", "value": "published" }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('properties response has data array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "if (json.data && json.data.length) pm.environment.set('property_slug', json.data[0].slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /properties/recommendations",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/properties/recommendations?per_page=10&page=1&type=rumah"
+          }
+        },
+        {
+          "name": "GET /properties/{slug}",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/properties/{{property_slug}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('property detail has slug', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.slug).to.eql(pm.environment.get('property_slug'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /articles",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/articles?per_page=5&page=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('articles response has data array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "if (json.data && json.data.length) pm.environment.set('article_slug', json.data[0].slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /articles/popular",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/articles/popular?limit=3"
+          }
+        },
+        {
+          "name": "GET /articles/{slug}",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/articles/{{article_slug}}"
+          }
+        },
+        {
+          "name": "GET /tags",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/tags"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('tags response is array', function () { pm.expect(json).to.be.an('array'); });",
+                  "if (json && json.length) pm.environment.set('tag_slug', json[0].slug);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /tags/{slug}",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/tags/{{tag_slug}}"
+          }
+        },
+        {
+          "name": "GET /faqs",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/faqs?per_page=10&page=1&status=published"
+          }
+        },
+        {
+          "name": "GET /login",
+          "request": {
+            "method": "GET",
+            "auth": { "type": "noauth" },
+            "url": "{{base_url}}/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protected User",
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          { "key": "token", "value": "{{user_token}}", "type": "string" }
+        ]
+      },
+      "item": [
+        {
+          "name": "GET /me",
+          "request": { "method": "GET", "url": "{{base_url}}/me" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('me returns user', function () { pm.expect(json.user || json).to.exist; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /properties/my-submissions",
+          "request": { "method": "GET", "url": "{{base_url}}/properties/my-submissions?per_page=10&page=1" }
+        }
+      ]
+    },
+    {
+      "name": "Admin Read Only",
+      "item": [
+        {
+          "name": "GET /me admin",
+          "request": { "method": "GET", "url": "{{base_url}}/me" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('admin role returned', function () { pm.expect((json.user || json).role).to.eql('admin'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /admin/dashboard/stats",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/dashboard/stats" }
+        },
+        {
+          "name": "GET /admin/dashboard/analytics",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/dashboard/analytics?period=month" }
+        },
+        {
+          "name": "GET /admin/users",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/users?per_page=10&page=1" }
+        },
+        {
+          "name": "GET /admin/properties",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/properties?per_page=10&page=1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('admin properties has data array', function () { pm.expect(json.data).to.be.an('array'); });",
+                  "if (json.data && json.data.length) {",
+                  "  pm.environment.set('admin_property_id', json.data[0].id);",
+                  "  pm.environment.set('property_slug', json.data[0].slug);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /admin/property-submissions",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/property-submissions?per_page=10&page=1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const rows = json.data || [];",
+                  "if (rows.length) pm.environment.set('submission_property_id', rows[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /admin/articles",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/articles?per_page=10&page=1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length) pm.environment.set('admin_article_id', json.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /admin/tags",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/tags?per_page=10&page=1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length) {",
+                  "  pm.environment.set('admin_tag_id', json.data[0].id);",
+                  "  pm.environment.set('admin_tag_slug', json.data[0].slug);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /admin/tags/{slug}",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/tags/{{admin_tag_slug}}" }
+        },
+        {
+          "name": "GET /admin/faqs",
+          "request": { "method": "GET", "url": "{{base_url}}/admin/faqs?per_page=10&page=1" },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const rows = json.data || [];",
+                  "if (rows.length) pm.environment.set('admin_faq_id', rows[0].id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

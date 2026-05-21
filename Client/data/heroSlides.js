@@ -1,17 +1,17 @@
 export const slidesData = [
   {
     title:
-      "Find the <span class='text_white'>home</span> that <span class='text_white'> best fits</span> your <span class='text_white'>finances</span>",
+      "Temukan <span class='text_white'>rumah</span> yang <span class='text_white'>paling sesuai</span> dengan <span class='text_white'>anggaran Anda</span>",
     image: {
-      src: "/images/page-title/gallery-1.jpg",
-      alt: "gallery",
+      src: "/gambar/page-title/galeri-1.jpg",
+      alt: "galeri",
       width: 214,
       height: 209,
     },
     content: {
-      text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ultrices sapien dolor, non consequat risus feugiat eu. Quisque congue, nisi vel tincidunt suscipit,",
+      text: "Temukan properti pilihan dengan informasi yang rapi, jelas, dan mudah dibandingkan sesuai kebutuhan Anda.",
       button: {
-        text: "See property",
+        text: "Lihat properti",
         icon: {
           src: "icons/arrow-down-3.svg",
           alt: "",
@@ -23,17 +23,17 @@ export const slidesData = [
   },
   {
     title:
-      "Find the <span class='text_white'>home</span> that <span class='text_white'> best fits</span> your <span class='text_white'>finances</span>",
+      "Temukan <span class='text_white'>rumah</span> yang <span class='text_white'>paling sesuai</span> dengan <span class='text_white'>anggaran Anda</span>",
     image: {
-      src: "/images/page-title/gallery-1.jpg",
-      alt: "gallery",
+      src: "/gambar/page-title/galeri-1.jpg",
+      alt: "galeri",
       width: 214,
       height: 209,
     },
     content: {
-      text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ultrices sapien dolor, non consequat risus feugiat eu. Quisque congue, nisi vel tincidunt suscipit,",
+      text: "Temukan properti pilihan dengan informasi yang rapi, jelas, dan mudah dibandingkan sesuai kebutuhan Anda.",
       button: {
-        text: "See property",
+        text: "Lihat properti",
         icon: {
           src: "icons/arrow-down-3.svg",
           alt: "",
@@ -45,17 +45,17 @@ export const slidesData = [
   },
   {
     title:
-      "Find the <span class='text_white'>home</span> that <span class='text_white'> best fits</span> your <span class='text_white'>finances</span>",
+      "Temukan <span class='text_white'>rumah</span> yang <span class='text_white'>paling sesuai</span> dengan <span class='text_white'>anggaran Anda</span>",
     image: {
-      src: "/images/page-title/gallery-1.jpg",
-      alt: "gallery",
+      src: "/gambar/page-title/galeri-1.jpg",
+      alt: "galeri",
       width: 214,
       height: 209,
     },
     content: {
-      text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas ultrices sapien dolor, non consequat risus feugiat eu. Quisque congue, nisi vel tincidunt suscipit,",
+      text: "Temukan properti pilihan dengan informasi yang rapi, jelas, dan mudah dibandingkan sesuai kebutuhan Anda.",
       button: {
-        text: "See property",
+        text: "Lihat properti",
         icon: {
           src: "icons/arrow-down-3.svg",
           alt: "",
@@ -71,24 +71,24 @@ export const slidesData = [
 export const paginationSlidesData = [
   {
     image: {
-      src: "/images/page-title/pagi-thumbs-1.jpg",
-      alt: "images",
+      src: "/gambar/page-title/pagi-thumbs-1.jpg",
+      alt: "gambar",
       width: 480,
       height: 220,
     },
   },
   {
     image: {
-      src: "/images/page-title/pagi-thumbs-2.jpg",
-      alt: "images",
+      src: "/gambar/page-title/pagi-thumbs-2.jpg",
+      alt: "gambar",
       width: 480,
       height: 220,
     },
   },
   {
     image: {
-      src: "/images/page-title/pagi-thumbs-3.jpg",
-      alt: "images",
+      src: "/gambar/page-title/pagi-thumbs-3.jpg",
+      alt: "gambar",
       width: 240,
       height: 110,
     },
@@ -98,8 +98,8 @@ export const paginationSlidesData = [
 export const mainSlidesData = [
   {
     image: {
-      src: "/images/page-title/thumbs-main.jpg",
-      dataSrc: "/images/page-title/thumbs-main.jpg",
+      src: "/gambar/page-title/thumbs-main.jpg",
+      dataSrc: "/gambar/page-title/thumbs-main.jpg",
       alt: "",
       width: 688,
       height: 816,
@@ -107,8 +107,8 @@ export const mainSlidesData = [
   },
   {
     image: {
-      src: "/images/page-title/thumbs-main-1.jpg",
-      dataSrc: "/images/page-title/thumbs-main-1.jpg",
+      src: "/gambar/page-title/thumbs-main-1.jpg",
+      dataSrc: "/gambar/page-title/thumbs-main-1.jpg",
       alt: "",
       width: 688,
       height: 816,
@@ -116,8 +116,8 @@ export const mainSlidesData = [
   },
   {
     image: {
-      src: "/images/page-title/thumbs-main-2.jpg",
-      dataSrc: "/images/page-title/thumbs-main-2.jpg",
+      src: "/gambar/page-title/thumbs-main-2.jpg",
+      dataSrc: "/gambar/page-title/thumbs-main-2.jpg",
       alt: "",
       width: 688,
       height: 816,

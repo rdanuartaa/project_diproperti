@@ -133,7 +133,9 @@ function DocUploadCard({ label, icon, file, preview, onSelect, onRemove, accept 
         position: "relative",
       }}
     >
-      <div style={{ fontSize: "28px", marginBottom: "8px" }}>{icon}</div>
+      {icon && (
+        <div style={{ fontSize: "28px", marginBottom: "8px" }}>{icon}</div>
+      )}
 
       {/* Label diperbesar pakai text-1 */}
       <p className="text-1" style={{ fontWeight: 600, margin: "0 0 12px" }}>
@@ -1153,7 +1155,7 @@ export default function SubmitPropertyForm() {
             <div className="row g-3">
               <div className="col-md-6">
                 <fieldset className="box-fieldset">
-                  <label>Username</label>
+                  <label>Nama Pengguna</label>
                   <input
                     type="text"
                     className="form-control"
@@ -1313,7 +1315,6 @@ export default function SubmitPropertyForm() {
                           ? "Ganti Foto KTP"
                           : "Unggah Foto KTP"
                     }
-                    icon="ID"
                     file={profileForm.idCardFile}
                     preview={idCardPreview}
                     accept=".jpg,.jpeg,.png,.pdf,image/*"

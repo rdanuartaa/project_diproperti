@@ -15,7 +15,7 @@ export default function FilterSidebarLeft() {
     >
       <div className="offcanvas-header">
         <h4 className="offcanvas-title" id="offcanvasLabel">
-          Find Your Home
+          Temukan Rumah Anda
         </h4>
         <button
           type="button"
@@ -44,7 +44,7 @@ export default function FilterSidebarLeft() {
               <span className="current">Status</span>
               <ul className="list">
                 <li data-value={1} className="option">
-                  Rent
+                  Sewa
                 </li>
                 <li data-value={2} className="option selected">
                   Sale
@@ -55,18 +55,18 @@ export default function FilterSidebarLeft() {
               options={[
                 "Status",
                 "Bungalow",
-                "Apartment",
-                "House",
-                "Smart Home",
-                "Office",
+                "Apartemen",
+                "Rumah",
+                "Rumah Pintar",
+                "Kantor",
               ]}
             />
           </div>
           <div className="group-amenities mb-30">
-            <div className="title text-4 fw-6">Property type:</div>
+            <div className="title text-4 fw-6">Tipe properti:</div>
             <fieldset className="checkbox-item style-1">
               <label>
-                <span className="text-4">Apartment</span>
+                <span className="text-4">Apartemen</span>
                 <input type="checkbox" />
                 <span className="btn-checkbox" />
               </label>
@@ -101,21 +101,21 @@ export default function FilterSidebarLeft() {
             </fieldset>
             <fieldset className="checkbox-item style-1 mt-12">
               <label>
-                <span className="text-4">Commercial</span>
+                <span className="text-4">Komersial</span>
                 <input type="checkbox" />
                 <span className="btn-checkbox" />
               </label>
             </fieldset>
             <fieldset className="checkbox-item style-1 mt-12">
               <label>
-                <span className="text-4">Family Home</span>
+                <span className="text-4">Rumah Keluarga</span>
                 <input type="checkbox" />
                 <span className="btn-checkbox" />
               </label>
             </fieldset>
             <fieldset className="checkbox-item style-1">
               <label>
-                <span className="text-4">Land/Plot</span>
+                <span className="text-4">Lahan/Kavling</span>
                 <input type="checkbox" />
                 <span className="btn-checkbox" />
               </label>
@@ -124,13 +124,13 @@ export default function FilterSidebarLeft() {
           <div className="group-price mb-30">
             <div className="widget-price">
               <div className="box-title-price">
-                <span className="title-price">Price range</span>
+                <span className="title-price">Rentang harga</span>
                 <div className="caption-price">
-                  <span>from</span>{" "}
+                  <span>dari</span>{" "}
                   <span className="value fw-6" id="slider-range-value1">
                     ${priceRange[0].toLocaleString()}
                   </span>{" "}
-                  <span>to</span>
+                  <span>sampai</span>
                   <span className="value fw-6" id="slider-range-value2">
                     {" "}
                     ${priceRange[1].toLocaleString()}
@@ -147,13 +147,13 @@ export default function FilterSidebarLeft() {
             </div>
             <div className="widget-price">
               <div className="box-title-price">
-                <span className="title-price">Size range</span>
+                <span className="title-price">Rentang ukuran</span>
                 <div className="caption-price">
-                  <span>from</span>{" "}
+                  <span>dari</span>{" "}
                   <span className="value fw-6" id="slider-range-value01">
                     {sizeRange[0]}
                   </span>{" "}
-                  <span>to</span>{" "}
+                  <span>sampai</span>{" "}
                   <span className="value fw-6" id="slider-range-value02">
                     {sizeRange[1]}
                   </span>
@@ -172,11 +172,11 @@ export default function FilterSidebarLeft() {
             <div className="box-select">
               <DropdownSelect
                 options={[
-                  "Province / States",
+                  "Provinsi",
                   "California",
                   "Texas",
                   "Florida",
-                  "New York",
+                  "Jakarta",
                   "Illinois",
                   "Washington",
                   "Pennsylvania",
@@ -186,19 +186,19 @@ export default function FilterSidebarLeft() {
             </div>
             <div className="box-select">
               <DropdownSelect
-                options={["Rooms", "1", "2", "3", "4", "5", "6", "7", "8"]}
+                options={["Ruangan", "1", "2", "3", "4", "5", "6", "7", "8"]}
                 addtionalParentClass=""
               />
             </div>
             <div className="box-select">
               <DropdownSelect
-                options={["Bath: Any", "1", "2", "3"]}
+                options={["Kamar Mandi: Semua", "1", "2", "3"]}
                 addtionalParentClass=""
               />
             </div>
             <div className="box-select">
               <DropdownSelect
-                options={["Beds: Any", "1", "2", "3", "4", "5", "6"]}
+                options={["Kamar Tidur: Semua", "1", "2", "3", "4", "5", "6"]}
                 addtionalParentClass=""
               />
             </div>
@@ -212,69 +212,69 @@ export default function FilterSidebarLeft() {
               aria-expanded="false"
               aria-controls="collapseExample"
             >
-              <div className="text-4 fw-6">Other features</div>
+              <div className="text-4 fw-6">Fasilitas lain</div>
             </div>
             <div className="collapse" id="collapseExample">
               <div className="group-amenities">
                 <fieldset className="checkbox-item style-1">
                   <label>
-                    <span className="text-4">Bed linens</span>
+                    <span className="text-4">Seprai</span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4"> Carbon alarm</span>
+                    <span className="text-4"> Alarm karbon</span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">Check-in lockbox </span>
+                    <span className="text-4">Kotak kunci check-in </span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">Coffee maker </span>
+                    <span className="text-4">Mesin kopi </span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4"> Fireplace</span>
+                    <span className="text-4"> Perapian</span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">Extra pillows </span>
+                    <span className="text-4">Bantal tambahan </span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">First aid kit </span>
+                    <span className="text-4">Kotak P3K </span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1">
                   <label>
-                    <span className="text-4">Hangers </span>
+                    <span className="text-4">Gantungan </span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">Iron</span>
+                    <span className="text-4">Setrika</span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
@@ -288,35 +288,35 @@ export default function FilterSidebarLeft() {
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">Fireplace</span>
+                    <span className="text-4">Perapian</span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1">
                   <label>
-                    <span className="text-4"> Refrigerator</span>
+                    <span className="text-4"> Kulkas</span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">Security cameras </span>
+                    <span className="text-4">Kamera keamanan </span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4"> Smoke alarm</span>
+                    <span className="text-4"> Alarm asap</span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
                 </fieldset>
                 <fieldset className="checkbox-item style-1 mt-12">
                   <label>
-                    <span className="text-4">Fireplace </span>
+                    <span className="text-4">Perapian </span>
                     <input type="checkbox" />
                     <span className="btn-checkbox" />
                   </label>
@@ -328,7 +328,7 @@ export default function FilterSidebarLeft() {
             type="submit"
             className="tf-btn bg-color-primary w-100 fw-6 mb-30"
           >
-            Search <i className="icon-MagnifyingGlass fw-6" />
+            Cari <i className="icon-MagnifyingGlass fw-6" />
           </button>
           <div className="bot">
             <a href="#" className="option">
@@ -350,7 +350,7 @@ export default function FilterSidebarLeft() {
               Reset search
             </a>
             <a href="#" className="option">
-              Save search
+              Simpan pencarian
               <svg
                 width={20}
                 height={20}

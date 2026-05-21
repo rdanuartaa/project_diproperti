@@ -3,7 +3,7 @@ import Image from "next/image";
 import SplitTextAnimation from "@/components/common/SplitTextAnimation";
 export default function About() {
   return (
-    <section className="section-trusted  tf-spacing-1">
+    <section className="section-trusted home-about-gradient tf-spacing-1">
       <div className="tf-container">
         <div className="row relative">
           <div className="col-xl-6">
@@ -334,7 +334,7 @@ export default function About() {
           data-wow-duration="2s"
         >
           <Image
-            alt="About Home"
+            alt="Subjek Tentang Beranda"
             width={576}
             height={790}
             src="/images/diproperti/womenhome.png"
@@ -347,7 +347,7 @@ export default function About() {
           data-wow-delay="0.3s"
         >
           <Image
-            alt="About Home Sub"
+            alt="Subjek Tentang Beranda Sub"
             width={379}
             height={687}
             src="/images/diproperti/abouthome2.webp"
@@ -355,6 +355,37 @@ export default function About() {
           />
         </div>
       </div>
+      <style jsx global>{`
+        .home-about-gradient {
+          background: linear-gradient(
+            90deg,
+            #5f9cda 0%,
+            #78afe3 58%,
+            #9cc8ef 100%
+          ) !important;
+        }
+
+        .home-about-gradient .heading-section .title,
+        .home-about-gradient .heading-section p {
+          color: #fff !important;
+        }
+
+        .home-about-gradient .icons-box.style-1 .tf-icon {
+          background-color: var(--Sub-primary-1) !important;
+        }
+
+        .home-about-gradient .icons-box.style-1:hover .tf-icon {
+          background-color: var(--Primary) !important;
+        }
+
+        .home-about-gradient .icons-box.style-1:hover .tf-icon svg:not(.stroke) path {
+          fill: #fff !important;
+        }
+
+        .home-about-gradient .icons-box.style-1:hover .tf-icon .stroke path {
+          stroke: #fff !important;
+        }
+      `}</style>
     </section>
   );
 }

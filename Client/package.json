@@ -7,7 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test:e2e": "node tests/e2e/smoke.test.mjs"
+    "test:e2e": "node tests/e2e/smoke.test.mjs",
+    "test:blackbox:admin": "node tests/blackbox/admin-menu.test.mjs",
+    "postman:env": "node tests/postman/create-env.mjs",
+    "test:api:postman": "npm run postman:env && newman run tests/postman/collections/diproperti-api-readonly.postman_collection.json -e tests/postman/environments/diproperti-local.postman_environment.json --reporters cli,json --reporter-json-export tests/postman/reports/diproperti-api-readonly-results.json",
+    "test:api:postman:mutation": "npm run postman:env && newman run tests/postman/collections/diproperti-api-mutation.postman_collection.json -e tests/postman/environments/diproperti-local.postman_environment.json --reporters cli,json --reporter-json-export tests/postman/reports/diproperti-api-mutation-results.json",
+    "postman:report": "node tests/postman/generate-report.mjs"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
@@ -30,6 +35,8 @@
     "swiper": "^11.2.4"
   },
   "devDependencies": {
+    "mysql2": "^3.22.3",
+    "newman": "^6.2.2",
     "selenium-webdriver": "^4.44.0"
   }
 }

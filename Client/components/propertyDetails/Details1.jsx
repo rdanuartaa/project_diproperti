@@ -54,7 +54,7 @@ export default function Details1({ slug }) {
         <div className="tf-container">
           <div className="py-5 text-center">
             <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
+              <span className="visually-hidden">Memuat...</span>
             </div>
             <p className="text-1 mt-2">Memuat detail properti...</p>
           </div>

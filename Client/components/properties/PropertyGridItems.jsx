@@ -8,6 +8,30 @@ import PropertyViewMeta from "./PropertyViewMeta";
 
 const fallbackImage = "/images/section/location-23.jpg";
 
+const RANK_STYLES = [
+  {
+    label: "#1",
+    border: "1px solid rgba(212, 175, 55, 0.72)",
+    background: "linear-gradient(135deg, rgba(255, 248, 220, 0.78), #fff)",
+    badgeBackground: "linear-gradient(135deg, #f6d365, #d4af37)",
+    badgeColor: "#2c2100",
+  },
+  {
+    label: "#2",
+    border: "1px solid rgba(192, 192, 192, 0.8)",
+    background: "linear-gradient(135deg, rgba(245, 247, 250, 0.9), #fff)",
+    badgeBackground: "linear-gradient(135deg, #f2f4f7, #aeb4bd)",
+    badgeColor: "#1f2937",
+  },
+  {
+    label: "#3",
+    border: "1px solid rgba(205, 127, 50, 0.7)",
+    background: "linear-gradient(135deg, rgba(255, 237, 213, 0.72), #fff)",
+    badgeBackground: "linear-gradient(135deg, #e6a15c, #cd7f32)",
+    badgeColor: "#2f1700",
+  },
+];
+
 const META_CONFIG_BY_TYPE = {
   rumah: [
     { key: "bedrooms", label: "KT" },
@@ -65,7 +89,7 @@ function getListingTypeLabel(type) {
   return type || "-";
 }
 
-function getRentPeriodLabel(property) {
+function getSewaPeriodLabel(property) {
   const period = String(property?.price_period || "bulan");
   if (period === "3bulan") return "3 bulan";
   if (period === "6bulan") return "6 bulan";
@@ -77,7 +101,7 @@ function formatPriceDisplay(property) {
   const base = formatHarga(property?.price);
   if (property?.listing_type !== "sewa") return base;
   if (!property?.price) return base;
-  return `${base}/${getRentPeriodLabel(property)}`;
+  return `${base}/${getSewaPeriodLabel(property)}`;
 }
 
 function getRoomSize(property) {
@@ -128,7 +152,7 @@ function getPropertyMetaItems(property) {
   }));
 }
 
-export default function PropertyGridItems({ properties, showItems }) {
+export default function PropertyGridItems({ properties, showItems, showTopRankBadges = false }) {
   const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
 
   const items = Array.isArray(properties) ? properties : [];
@@ -137,13 +161,51 @@ export default function PropertyGridItems({ properties, showItems }) {
 
   return (
     <>
-      {visibleItems.map((property) => {
+      {visibleItems.map((property, index) => {
         const added = isInCompare(property.id);
         const disabled = !added && isFull;
         const metaItems = getPropertyCardMetaItems(property);
+        const rankStyle = showTopRankBadges ? RANK_STYLES[index] : null;
 
         return (
-          <div className="box-house hover-img" key={property.id}>
+          <div
+            className="box-house hover-img"
+            key={property.id}
+            style={
+              rankStyle
+                ? {
+                    position: "relative",
+                    border: rankStyle.border,
+                    background: rankStyle.background,
+                  }
+                : undefined
+            }
+          >
+            {rankStyle && (
+              <span
+                aria-label={`Peringkat rekomendasi ${rankStyle.label}`}
+                style={{
+                  position: "absolute",
+                  top: 14,
+                  right: 14,
+                  zIndex: 5,
+                  minWidth: 44,
+                  height: 34,
+                  padding: "0 10px",
+                  borderRadius: 999,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: rankStyle.badgeBackground,
+                  color: rankStyle.badgeColor,
+                  fontSize: 15,
+                  fontWeight: 600,
+                  boxShadow: "0 10px 24px rgba(15, 23, 42, 0.16)",
+                }}
+              >
+                {rankStyle.label}
+              </span>
+            )}
             <div className="image-wrap property-card-image-wrap">
               <Link href={`/properti/${property.slug}`}>
                 <div
@@ -244,14 +306,14 @@ export default function PropertyGridItems({ properties, showItems }) {
                     aria-pressed={added}
                   >
                     <i className="icon-compare" />
-                    {added ? "Dibandingkan ✓" : "Compare"}
+                    {added ? "Dibandingkan ✓" : "Bandingkan"}
                   </button>
 
                   <Link
                     href={`/properti/${property.slug}`}
                     className="tf-btn style-border pd-4"
                   >
-                    Details
+                    Detail
                   </Link>
                 </div>
               </div>

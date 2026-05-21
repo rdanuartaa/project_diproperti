@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { api } from "@/lib/api";
 import DropdownSelect from "@/components/common/DropdownSelect";
 import PropertyGridItems from "@/components/properties/PropertyGridItems";
 import PropertyListItems from "@/components/properties/PropertyListItems";
 
+const PAGE_SIZE = 10;
 const PROPERTY_TYPE_OPTIONS = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"];
 const LISTING_TYPE_OPTIONS = ["Jual/Sewa", "Dijual", "Disewa"];
 const DEFAULT_FILTERS = {
@@ -72,6 +74,17 @@ const AHP_PAIRS = [
 const DEFAULT_AHP_COMPARISONS = Object.fromEntries(
   AHP_PAIRS.map((pair) => [`${pair.a}:${pair.b}`, 1]),
 );
+
+function getPageItems(currentPage, lastPage) {
+  if (lastPage <= 4) {
+    return Array.from({ length: lastPage }, (_, index) => index + 1);
+  }
+
+  if (currentPage <= 2) return [1, 2, "...", lastPage];
+  if (currentPage >= lastPage - 1) return [1, "...", lastPage - 1, lastPage];
+
+  return [1, currentPage, "...", lastPage];
+}
 
 const RANDOM_INDEX_BY_SIZE = {
   4: 0.9,
@@ -157,10 +170,11 @@ export default function RekomendasiProperti() {
     current_page: 1,
     last_page: 1,
     total: 0,
-    per_page: 8,
+    per_page: PAGE_SIZE,
     from: 0,
     to: 0,
   });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isMobileLayout, setIsMobileLayout] = useState(false);
@@ -182,7 +196,7 @@ export default function RekomendasiProperti() {
           current_page: 1,
           last_page: 1,
           total: 0,
-          per_page: 8,
+          per_page: PAGE_SIZE,
           from: 0,
           to: 0,
         });
@@ -196,7 +210,8 @@ export default function RekomendasiProperti() {
 
         const response = await api.get("/properties/recommendations", {
           params: {
-            per_page: 8,
+            page,
+            per_page: PAGE_SIZE,
             ...(filters.type ? { type: filters.type } : {}),
             ...(filters.listing_type ? { listing_type: filters.listing_type } : {}),
             price_weight: weights.price,
@@ -216,7 +231,7 @@ export default function RekomendasiProperti() {
           current_page: payload.current_page || 1,
           last_page: payload.last_page || 1,
           total: payload.total || items.length || 0,
-          per_page: payload.per_page || 8,
+          per_page: payload.per_page || PAGE_SIZE,
           from: payload.from || 0,
           to: payload.to || items.length || 0,
         });
@@ -227,7 +242,7 @@ export default function RekomendasiProperti() {
           current_page: 1,
           last_page: 1,
           total: 0,
-          per_page: 8,
+          per_page: PAGE_SIZE,
           from: 0,
           to: 0,
         });
@@ -241,10 +256,9 @@ export default function RekomendasiProperti() {
       isMounted = false;
       clearTimeout(timeout);
     };
-  }, [weights, filters, hasAppliedAhp]);
+  }, [weights, filters, hasAppliedAhp, page]);
 
   const totalWeight = Object.values(weights).reduce((sum, value) => sum + value, 0);
-  const topProperty = properties[0];
   const ahpResult = calculateAhpResult(ahpComparisons);
   const ahpIsConsistent = ahpResult.consistencyRatio <= 0.1;
 
@@ -252,6 +266,7 @@ export default function RekomendasiProperti() {
     setWeights(ahpResult.weights);
     setHasAppliedAhp(true);
     setShowAhp(false);
+    setPage(1);
   };
 
   const resetRecommendationWeights = () => {
@@ -260,24 +275,52 @@ export default function RekomendasiProperti() {
     setHasAppliedAhp(false);
     setShowAhp(true);
     setProperties([]);
+    setPage(1);
   };
 
+  const handleFilterChange = (nextFilters) => {
+    setFilters(nextFilters);
+    setPage(1);
+  };
+
+  const handlePageChange = (nextPage) => {
+    const lastPage = pagination.last_page || 1;
+    const normalizedPage = Math.min(Math.max(1, nextPage), lastPage);
+    if (normalizedPage === pagination.current_page || loading) return;
+    setPage(normalizedPage);
+  };
+
+  const pageItems = getPageItems(
+    pagination.current_page || page,
+    pagination.last_page || 1,
+  );
+  const startItem =
+    pagination.total === 0
+      ? 0
+      : pagination.from ||
+        ((pagination.current_page || page) - 1) * pagination.per_page + 1;
+  const endItem =
+    pagination.to || Math.min(startItem + properties.length - 1, pagination.total);
+
   return (
-    <section className="flat-title style-2" style={{ paddingTop: 24, paddingBottom: 48 }}>
+    <section className="flat-title style-2 recommendation-page" style={{ paddingTop: 24, paddingBottom: 48 }}>
       <div className="tf-container">
         <div
+          className="recommendation-hero-card"
           style={{
             marginBottom: 28,
-            padding: 28,
+            padding: "72px 0 72px 69px",
             borderRadius: 24,
             background:
-              "linear-gradient(135deg, rgba(16, 24, 40, 0.96), rgba(35, 55, 92, 0.92))",
+              "linear-gradient(90deg, #5f9cda 0%, #78afe3 58%, #9cc8ef 100%)",
             color: "#fff",
-            boxShadow: "0 24px 60px rgba(15, 23, 42, 0.18)",
+            boxShadow: "none",
+            overflow: "visible",
+            position: "relative",
           }}
         >
           <div className="row align-items-center g-4">
-            <div className="col-lg-8">
+            <div className="col-lg-8" style={{ position: "relative", zIndex: 2 }}>
               <div className="text-1" style={{ letterSpacing: 0.8, textTransform: "uppercase", opacity: 0.8 }}>
                 Sistem Rekomendasi Properti
               </div>
@@ -305,28 +348,62 @@ export default function RekomendasiProperti() {
             </div>
             <div className="col-lg-4">
               <div
+                className="recommendation-hero-side"
                 style={{
-                  padding: 20,
-                  borderRadius: 20,
-                  background: "rgba(255,255,255,0.08)",
-                  backdropFilter: "blur(12px)",
-                  border: "1px solid rgba(255,255,255,0.12)",
+                  minHeight: 0,
                 }}
               >
-                <div style={{ color: "rgba(255,255,255,0.72)", marginBottom: 6 }}>Total bobot</div>
-                <div style={{ fontSize: 48, fontWeight: 700, lineHeight: 1 }}>{totalWeight}%</div>
-                <div style={{ marginTop: 12, color: "rgba(255,255,255,0.78)", lineHeight: 1.6 }}>
-                  {topProperty ? (
-                    <>
-                      Rekomendasi teratas saat ini: <strong style={{ color: "#fff" }}>{topProperty.title}</strong>
-                    </>
-                  ) : (
-                    "Belum ada properti untuk direkomendasikan."
-                  )}
-                </div>
+              <Image
+                className="recommendation-hero-person"
+                src="/images/diproperti/womenbannerhome.png"
+                alt="Asisten rekomendasi properti"
+                width={486}
+                height={650}
+                priority={false}
+                style={{
+                  position: "absolute",
+                  right: 87,
+                  bottom: 0,
+                  width: 486,
+                  height: "auto",
+                  zIndex: 1,
+                  pointerEvents: "none",
+                }}
+              />
               </div>
             </div>
           </div>
+          <style jsx global>{`
+            @media (min-width: 992px) {
+              .recommendation-hero-side {
+                min-height: 0 !important;
+              }
+            }
+
+            @media (max-width: 991px) {
+              .recommendation-hero-card {
+                padding: 70px 15px !important;
+              }
+
+              .recommendation-hero-side {
+                min-height: 0 !important;
+              }
+
+              .recommendation-hero-person {
+                display: none !important;
+              }
+            }
+
+            @media (max-width: 575px) {
+              .recommendation-hero-person {
+                display: none !important;
+              }
+
+              .recommendation-hero-side {
+                min-height: auto !important;
+              }
+            }
+          `}</style>
         </div>
 
         <div className="row" style={{ marginTop: isMobileLayout ? 24 : undefined }}>
@@ -344,10 +421,10 @@ export default function RekomendasiProperti() {
                   options={PROPERTY_TYPE_OPTIONS}
                   selectedValue={filters.type || "Semua Tipe"}
                   onChange={(value) =>
-                    setFilters((currentFilters) => ({
-                      ...currentFilters,
+                    handleFilterChange({
+                      ...filters,
                       type: value === "Semua Tipe" ? "" : value,
-                    }))
+                    })
                   }
                 />
                 <DropdownSelect
@@ -361,15 +438,15 @@ export default function RekomendasiProperti() {
                         : "Jual/Sewa"
                   }
                   onChange={(value) =>
-                    setFilters((currentFilters) => ({
-                      ...currentFilters,
+                    handleFilterChange({
+                      ...filters,
                       listing_type:
                         value === "Dijual"
                           ? "jual"
                           : value === "Disewa"
                             ? "sewa"
                             : "",
-                    }))
+                    })
                   }
                 />
               </div>
@@ -394,13 +471,58 @@ export default function RekomendasiProperti() {
             ) : properties.length > 0 ? (
               isMobileLayout ? (
                 <div className="tf-grid-layout md-col-2">
-                  <PropertyGridItems properties={properties} />
+                  <PropertyGridItems properties={properties} showTopRankBadges />
                 </div>
               ) : (
                 <PropertyListItems properties={properties} showTopRankBadges />
               )
             ) : (
               <div className="w-100 py-5 text-center text-1">Tidak ada properti rekomendasi yang cocok.</div>
+            )}
+
+            {hasAppliedAhp && pagination.total > 0 && (
+              <div className="wrap-pagination">
+                <p className="text-1">
+                  Menampilkan {startItem}-{endItem} of {pagination.total} hasil.
+                </p>
+                <ul className="wg-pagination">
+                  <li className={`arrow ${pagination.current_page <= 1 ? "disabled" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => handlePageChange((pagination.current_page || page) - 1)}
+                      disabled={pagination.current_page <= 1 || loading}
+                    >
+                      <i className="icon-arrow-left" />
+                    </button>
+                  </li>
+                  {pageItems.map((item, index) =>
+                    item === "..." ? (
+                      <li key={`ellipsis-${index}`}>
+                        <span>...</span>
+                      </li>
+                    ) : (
+                      <li key={item} className={item === pagination.current_page ? "active" : ""}>
+                        <button
+                          type="button"
+                          onClick={() => handlePageChange(item)}
+                          disabled={item === pagination.current_page || loading}
+                        >
+                          {item}
+                        </button>
+                      </li>
+                    ),
+                  )}
+                  <li className={`arrow ${pagination.current_page >= pagination.last_page ? "disabled" : ""}`}>
+                    <button
+                      type="button"
+                      onClick={() => handlePageChange((pagination.current_page || page) + 1)}
+                      disabled={pagination.current_page >= pagination.last_page || loading}
+                    >
+                      <i className="icon-arrow-right" />
+                    </button>
+                  </li>
+                </ul>
+              </div>
             )}
           </div>
 
@@ -465,19 +587,76 @@ export default function RekomendasiProperti() {
                         const first = getCriterionDisplay(pair.a, filters.type);
                         const second = getCriterionDisplay(pair.b, filters.type);
                         const rawValue = Number(ahpComparisons[pairKey]) || 1;
-                        const activeSide = rawValue < 1 ? pair.b : pair.a;
+                        const activeSide =
+                          rawValue > 1 ? pair.a : rawValue < 1 ? pair.b : null;
                         const intensity = rawValue < 1 ? Math.round(1 / rawValue) : Math.round(rawValue);
+                        const importanceLabel =
+                          intensity === 1
+                            ? "Sama penting"
+                            : `${intensity}x lebih penting`;
 
                         return (
                           <div key={pairKey}>
                             <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 8 }}>
-                              <span style={{ fontSize: 13, fontWeight: activeSide === pair.a ? 700 : 500 }}>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  fontSize: 13,
+                                  fontWeight: activeSide === pair.a ? 700 : 500,
+                                  color:
+                                    activeSide === pair.a
+                                      ? "var(--Primary)"
+                                      : undefined,
+                                }}
+                              >
                                 {first.label}
+                                {activeSide === pair.a && intensity !== 1 && (
+                                  <span
+                                    className="text-1"
+                                    style={{
+                                      fontSize: 12,
+                                      fontWeight: 500,
+                                      color: "var(--Text)",
+                                    }}
+                                  >
+                                    {importanceLabel}
+                                  </span>
+                                )}
                               </span>
-                              <span className="text-1" style={{ fontSize: 12 }}>
-                                {intensity === 1 ? "Sama penting" : `${intensity}x lebih penting`}
-                              </span>
-                              <span style={{ fontSize: 13, fontWeight: activeSide === pair.b ? 700 : 500, textAlign: "right" }}>
+                              {intensity === 1 && (
+                                <span className="text-1" style={{ fontSize: 12 }}>
+                                  {importanceLabel}
+                                </span>
+                              )}
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 8,
+                                  justifyContent: "flex-end",
+                                  fontSize: 13,
+                                  fontWeight: activeSide === pair.b ? 700 : 500,
+                                  textAlign: "right",
+                                  color:
+                                    activeSide === pair.b
+                                      ? "var(--Primary)"
+                                      : undefined,
+                                }}
+                              >
+                                {activeSide === pair.b && intensity !== 1 && (
+                                  <span
+                                    className="text-1"
+                                    style={{
+                                      fontSize: 12,
+                                      fontWeight: 500,
+                                      color: "var(--Text)",
+                                    }}
+                                  >
+                                    {importanceLabel}
+                                  </span>
+                                )}
                                 {second.label}
                               </span>
                             </div>

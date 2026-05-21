@@ -6,7 +6,7 @@ import PageTitle from "@/components/otherPages/JualProperti/PageTitle";
 import React from "react";
 
 export const metadata = {
-  title: "Jual Properti || Diproperti - Real Estate",
+  title: "Jual Properti || Diproperti - Properti",
   description: "Pengajuan jual properti.",
 };
 

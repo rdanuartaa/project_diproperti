@@ -115,7 +115,7 @@ export default function DetailArtikel({ slug }) {
       <section className="section-blog-details py-5">
         <div className="tf-container text-center">
           <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">Loading...</span>
+            <span className="visually-hidden">Memuat...</span>
           </div>
           <p className="mt-3">Memuat artikel...</p>
         </div>
@@ -127,12 +127,12 @@ export default function DetailArtikel({ slug }) {
     return (
       <section className="section-blog-details py-5">
         <div className="tf-container text-center">
-          <h3 className="mb-3">😔 Artikel Tidak Ditemukan</h3>
+          <h3 className="mb-3">ðŸ˜” Artikel Tidak Ditemukan</h3>
           <p className="mb-4">
             {error || "Maaf, artikel yang Anda cari tidak ada."}
           </p>
           <Link href="/artikel" className="tf-btn bg-color-primary">
-            ← Kembali ke Daftar Artikel
+            â† Kembali ke Daftar Artikel
           </Link>
         </div>
       </section>
@@ -262,7 +262,7 @@ export default function DetailArtikel({ slug }) {
             <div className="tag-wrap flex justify-between items-center flex-wrap gap-4">
               {/* Tags - Pill Style Auto-width */}
               <div className="tags">
-                <p>Tags:</p>
+                <p>Tag:</p>
                 <div className="tags-list">
                   {article.tags?.map((tag) => (
                     <span key={tag.id} className="box-tag">
@@ -275,7 +275,7 @@ export default function DetailArtikel({ slug }) {
               </div>
               {/* Social Share - WA, IG, FB, TikTok */}
               <div className="wrap-social">
-                <p className="mb-2 mb-md-0">Share:</p>
+                <p className="mb-2 mb-md-0">Bagikan:</p>
                 <ul className="tf-social style-1 d-flex gap-2">
                   {/* WhatsApp */}
                   <li>
@@ -284,7 +284,7 @@ export default function DetailArtikel({ slug }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="social-btn whatsapp"
-                      title="Share via WhatsApp"
+                      title="Bagikan via WhatsApp"
                     >
                       <svg
                         width="18"
@@ -303,7 +303,7 @@ export default function DetailArtikel({ slug }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="social-btn twitter"
-                      title="Share via Twitter"
+                      title="Bagikan via Twitter"
                     >
                       <svg
                         width="18"
@@ -322,7 +322,7 @@ export default function DetailArtikel({ slug }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="social-btn facebook"
-                      title="Share via Facebook"
+                      title="Bagikan via Facebook"
                     >
                       <svg
                         width="18"
@@ -341,7 +341,7 @@ export default function DetailArtikel({ slug }) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="social-btn tiktok"
-                      title="Share via TikTok"
+                      title="Bagikan via TikTok"
                     >
                       <svg
                         width="18"

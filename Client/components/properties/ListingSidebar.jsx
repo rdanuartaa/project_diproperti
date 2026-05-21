@@ -47,7 +47,7 @@ const ADVANCED_FILTER_CONFIG = {
     { key: "listrik_type", label: "Jenis Listrik", options: ["Overground", "Underground"], mapValue: (value) => value.toLowerCase() },
     { key: "amenities", amenity: "carport", label: "Carport", options: ["Ya"] },
     { key: "amenities", amenity: "garden", label: "Taman", options: ["Ya"] },
-    { key: "amenities", amenity: "one_gate_system", label: "One Gate System", options: ["Ya"] },
+    { key: "amenities", amenity: "one_gate_system", label: "Sistem Satu Gerbang", options: ["Ya"] },
     { key: "amenities", amenity: "security_24jam", label: "Keamanan 24 Jam", options: ["Ya"] },
   ],
   villa: [
@@ -154,7 +154,7 @@ export default function ListingSidebar({
   onSortChange,
   propertyTypeOptions = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"],
   listingTypeOptions = ["Jual/Sewa", "Dijual", "Disewa"],
-  sortOptions = ["Terbaru", "Terlama", "Terpopuler"],
+  sortOptions = ["Terbaru", "Terlama", "Terpopuler", "Termurah", "Termahal"],
   mainFilterLocked = false,
   loading,
   featuredProperties = [],
@@ -193,6 +193,10 @@ export default function ListingSidebar({
       ? "Terlama"
       : sortOrder === "popular"
       ? "Terpopuler"
+      : sortOrder === "price_asc"
+      ? "Termurah"
+      : sortOrder === "price_desc"
+      ? "Termahal"
       : "Terbaru";
 
   const handleTypeChange = (value) => {

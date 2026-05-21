@@ -47,7 +47,7 @@ export default function MobileMenu() {
               Hubungi via WhatsApp
             </a>
             <div className="wrap-social">
-              <div className="text-3 fw-6">Follow us</div>
+              <div className="text-3 fw-6">Ikuti kami</div>
               <ul className="tf-social">
                 <li>
                   <a
@@ -73,7 +73,7 @@ export default function MobileMenu() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="social-btn instagram"
-                    title="Visit Instagram"
+                    title="Kunjungi Instagram"
                   >
                     <svg
                       width="18"
@@ -91,7 +91,7 @@ export default function MobileMenu() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="social-btn tiktok"
-                    title="Share via TikTok"
+                    title="Bagikan via TikTok"
                   >
                     <svg
                       width="18"
@@ -107,7 +107,7 @@ export default function MobileMenu() {
             </div>
             <div className="text-3" style={{ marginTop: "16px" }}>
               <span className="fw-6" style={{ color: "var(--Primary)" }}>
-                © 2026 DIPROPERTI REAL ESTATE . All rights reserved.
+                © 2026 DIPROPERTI REAL ESTATE. All rights reserved.
               </span>
             </div>
           </div>
