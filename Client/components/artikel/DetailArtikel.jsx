@@ -171,9 +171,7 @@ export default function DetailArtikel({ slug }) {
                       strokeLinejoin="round"
                     />
                   </svg>
-                  <p className="text-color-primary">
-                    {article.user?.name || "Admin"}
-                  </p>
+                  <p className="text-color-primary">Admin Diproperti</p>
                 </div>
                 {article.tags?.[0] && (
                   <div className="meta-item flex align-center">
