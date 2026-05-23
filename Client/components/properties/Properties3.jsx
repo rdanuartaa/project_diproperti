@@ -397,14 +397,14 @@ export default function Properties3({ defaultGrid = false }) {
   return (
     <section
       className="flat-title style-2 property-list-page"
-      style={isMobileLayout ? { paddingTop: 16 } : undefined}
+      style={isMobileLayout ? { paddingTop: 8 } : undefined}
     >
       <div className="tf-container">
         <div className="row">
           <div className="col-12" style={{ order: isMobileLayout ? 1 : undefined }}>
             <div
               className="box-title"
-              style={isMobileLayout ? { marginBottom: 4 } : undefined}
+              style={isMobileLayout ? { marginBottom: 18 } : undefined}
             >
               <div><h2>Daftar Properti</h2></div>
               {!isMobileLayout && (
@@ -416,17 +416,7 @@ export default function Properties3({ defaultGrid = false }) {
               )}
             </div>
             {compareLock && (
-              <div
-                style={{
-                  margin: "-10px 0 24px",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
-                  background: "#eef4ff",
-                  color: "var(--Primary, #1a3c6e)",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                }}
-              >
+              <div className="compare-lock-banner">
                 Mode komparasi aktif: listing otomatis difilter ke{" "}
                 {compareLock.typeLabel} {compareLock.listingTypeLabel}.
               </div>
@@ -495,7 +485,7 @@ export default function Properties3({ defaultGrid = false }) {
             className="col-lg-4"
             style={{
               order: isMobileLayout ? 2 : undefined,
-              marginTop: isMobileLayout ? 0 : undefined,
+              marginTop: isMobileLayout ? -38 : undefined,
             }}
           >
             <ListingSidebar

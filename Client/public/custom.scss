@@ -149,6 +149,17 @@
   }
 }
 
+.property-list-page .compare-lock-banner {
+  margin: -10px 0 24px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #eef4ff;
+  color: var(--Primary, #1a3c6e);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 22px;
+}
+
 /* ========================================
    MOBILE MENU SOCIAL (PRIMARY DEFAULT)
    ======================================== */
@@ -745,14 +756,15 @@ select.form-control-equal {
   }
 }
 
-/* Contact (About) mobile: image first, then heading/content */
+/* Contact (About) mobile: info first, then banner before the contact form */
 @media (max-width: 767px) {
   .section-contact.style-4 .row > div:nth-child(1) {
-    order: 2;
+    order: 1;
   }
 
   .section-contact.style-4 .row > div:nth-child(2) {
-    order: 1;
+    order: 2;
+    margin-top: 20px;
     margin-bottom: 24px;
   }
 
@@ -1357,13 +1369,43 @@ select.form-control-equal {
   }
 
   .property-list-page {
+    padding-top: 8px !important;
+    padding-bottom: 32px !important;
+
+    > .tf-container > .row {
+      --bs-gutter-y: 0;
+    }
+
+    .box-title {
+      margin-bottom: 18px !important;
+    }
+
+    .compare-lock-banner {
+      margin: 0;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: #eef4ff;
+      color: var(--Primary, #1a3c6e);
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 22px;
+    }
+
     .tf-sidebar,
     .form-advanced-search {
       margin-top: 0 !important;
     }
 
     .form-advanced-search.mb-30 {
-      margin-bottom: 18px !important;
+      margin-bottom: 12px !important;
+    }
+  }
+
+  .property-list-breadcrumb {
+    margin-bottom: 18px !important;
+
+    .title-inner {
+      padding-top: 18px !important;
     }
   }
 

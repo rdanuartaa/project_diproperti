@@ -306,7 +306,9 @@ export default function RekomendasiProperti() {
     <section className="flat-title style-2 recommendation-page" style={{ paddingTop: 24, paddingBottom: 48 }}>
       <div className="tf-container">
         <div
-          className="recommendation-hero-card"
+          className="recommendation-hero-card wow animate__fadeInUp animate__animated"
+          data-wow-duration="1s"
+          data-wow-delay="0s"
           style={{
             marginBottom: 28,
             padding: "72px 0 72px 69px",
@@ -314,23 +316,41 @@ export default function RekomendasiProperti() {
             background:
               "linear-gradient(90deg, #5f9cda 0%, #78afe3 58%, #9cc8ef 100%)",
             color: "#fff",
-            boxShadow: "none",
+            boxShadow: "0 18px 42px rgba(31, 84, 139, 0.16)",
             overflow: "visible",
             position: "relative",
           }}
         >
           <div className="row align-items-center g-4">
             <div className="col-lg-8" style={{ position: "relative", zIndex: 2 }}>
-              <div className="text-1" style={{ letterSpacing: 0.8, textTransform: "uppercase", opacity: 0.8 }}>
-                Sistem Rekomendasi Properti
+              <div
+                className="text-1 wow animate__fadeInUp animate__animated"
+                data-wow-duration="1s"
+                data-wow-delay="0.1s"
+                style={{ letterSpacing: 0.8, textTransform: "uppercase", opacity: 0.8 }}
+              >
+                Sistem Pintar Rekomendasi Properti
               </div>
-              <h2 style={{ marginTop: 10, marginBottom: 12, fontSize: "clamp(28px, 4vw, 48px)", color: "#fff" }}>
+              <h2
+                className="wow animate__fadeInUp animate__animated"
+                data-wow-duration="1s"
+                data-wow-delay="0.18s"
+                style={{ marginTop: 10, marginBottom: 12, fontSize: "clamp(28px, 4vw, 48px)", color: "#fff" }}
+              >
                 Atur preferensi untuk rekomendasi yang lebih tepat.
               </h2>
-              <p style={{ margin: 0, maxWidth: 760, color: "rgba(255,255,255,0.8)", fontSize: 16, lineHeight: 1.7 }}>
+              <p
+                className="wow animate__fadeInUp animate__animated"
+                data-wow-duration="1s"
+                data-wow-delay="0.26s"
+                style={{ margin: 0, maxWidth: 760, color: "rgba(255,255,255,0.8)", fontSize: 16, lineHeight: 1.7 }}
+              >
                 Bandingkan kriteria Harga, Lokasi, Luas, dan Fasilitas. Sistem akan membuat skor kecocokan dan mengurutkan properti sesuai preferensi Anda.
               </p>
               <div
+                className="recommendation-hero-note wow animate__fadeInUp animate__animated"
+                data-wow-duration="1s"
+                data-wow-delay="0.34s"
                 style={{
                   marginTop: 18,
                   padding: "14px 16px",
@@ -354,7 +374,9 @@ export default function RekomendasiProperti() {
                 }}
               >
               <Image
-                className="recommendation-hero-person"
+                className="recommendation-hero-person wow animate__fadeInRight animate__animated"
+                data-wow-duration="1.3s"
+                data-wow-delay="0.15s"
                 src="/images/diproperti/womenbannerhome.png"
                 alt="Asisten rekomendasi properti"
                 width={486}
@@ -374,6 +396,42 @@ export default function RekomendasiProperti() {
             </div>
           </div>
           <style jsx global>{`
+            .recommendation-hero-card {
+              transition:
+                transform 0.35s ease,
+                box-shadow 0.35s ease,
+                filter 0.35s ease;
+            }
+
+            .recommendation-hero-card:hover {
+              transform: translateY(-4px);
+              box-shadow: 0 24px 52px rgba(31, 84, 139, 0.22) !important;
+            }
+
+            .recommendation-hero-note {
+              backdrop-filter: blur(10px);
+              -webkit-backdrop-filter: blur(10px);
+              transition:
+                background 0.3s ease,
+                border-color 0.3s ease,
+                transform 0.3s ease;
+            }
+
+            .recommendation-hero-card:hover .recommendation-hero-note {
+              background: rgba(255, 255, 255, 0.14) !important;
+              border-color: rgba(255, 255, 255, 0.24) !important;
+              transform: translateY(-2px);
+            }
+
+            .recommendation-hero-person {
+              filter: drop-shadow(0 22px 30px rgba(31, 84, 139, 0.18));
+              transition: transform 0.35s ease;
+            }
+
+            .recommendation-hero-card:hover .recommendation-hero-person {
+              transform: translateY(-5px);
+            }
+
             @media (min-width: 992px) {
               .recommendation-hero-side {
                 min-height: 0 !important;

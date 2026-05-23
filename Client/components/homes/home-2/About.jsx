@@ -43,8 +43,8 @@ export default function About() {
                     </h5>
                   </div>
                   <p className="text-1">
-                    Rumah, ruko, kos, hingga tanah — filter lokasi dan harga
-                    sesuai kebutuhan Anda.
+                    Temukan properti yang cocok lebih cepat dengan pencarian
+                    yang rapi sesuai lokasi dan anggaran Anda.
                   </p>
                   <a href="/list-properti" className="tf-btn-link color-1">
                     <span> Pelajari Selengkapnya </span>
@@ -71,8 +71,8 @@ export default function About() {
                     </h5>
                   </div>
                   <p className="text-1">
-                    Pilih beberapa properti dan bandingkan harga, luas, kamar,
-                    serta fasilitasnya.
+                    Lihat perbedaan harga, luas, dan fasilitas secara jelas agar
+                    Anda lebih yakin sebelum memilih.
                   </p>
                   <a href="/komparasi" className="tf-btn-link color-1">
                     <span> Pelajari Selengkapnya </span>
@@ -282,8 +282,8 @@ export default function About() {
                     </h5>
                   </div>
                   <p className="text-1">
-                    Masukkan harga, DP, suku bunga, dan tenor — langsung dapat
-                    estimasi cicilan.{" "}
+                    Rencanakan pembelian dengan estimasi cicilan yang membantu
+                    Anda menilai kesiapan anggaran.
                   </p>
                   <a href="/simulasi-kpr" className="tf-btn-link color-1">
                     <span> Pelajari Selengkapnya </span>
@@ -314,12 +314,12 @@ export default function About() {
                       </svg>
                     </div>
                     <h5 className="title">
-                      <a href="/rekomendasi-properti">Rekomendasi Properti</a>
+                      <a href="/rekomendasi-properti">Rekomendasi Pintar Properti</a>
                     </h5>
                   </div>
                   <p className="text-1">
-                    Dapatkan pilihan properti yang disesuaikan dengan kebutuhan
-                    dan preferensi Anda.
+                    Fitur pintar kami membantu memilihkan properti paling sesuai
+                    dengan kebutuhan dan preferensi Anda.
                   </p>
                   <a href="/rekomendasi-properti" className="tf-btn-link color-1">
                     <span> Pelajari Selengkapnya </span>

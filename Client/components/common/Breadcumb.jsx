@@ -1,8 +1,8 @@
 import React from "react";
 import Link from "next/link";
-export default function Breadcumb({ pageName = "Detail Properti" }) {
+export default function Breadcumb({ pageName = "Detail Properti", className = "" }) {
   return (
-    <section className="flat-title">
+    <section className={`flat-title ${className}`.trim()}>
       <div className="tf-container">
         <div className="row">
           <div className="col-lg-12">

@@ -48,7 +48,7 @@ class ProfileController extends Controller
                 $user->id_card_file ? 'nullable' : 'required',
                 'file',
                 'mimes:jpg,jpeg,png,pdf',
-                'max:5120',
+                'max:10240',
             ],
         ], [
             'full_name.required' => 'Nama lengkap wajib diisi.',
@@ -58,7 +58,7 @@ class ProfileController extends Controller
             'phone.max'          => 'Nomor WhatsApp terlalu panjang.',
             'id_card_file.required' => 'Foto KTP wajib diunggah.',
             'id_card_file.mimes'    => 'Foto KTP harus berupa JPG, PNG, atau PDF.',
-            'id_card_file.max'      => 'Ukuran foto KTP maksimal 5MB.',
+            'id_card_file.max'      => 'Ukuran foto KTP maksimal 10MB.',
         ]);
 
         $user->full_name = $validated['full_name'];

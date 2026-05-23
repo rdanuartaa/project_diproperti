@@ -87,6 +87,42 @@ const EMPTY_FORM = {
   waterBillFile: null,
 };
 
+const DOCUMENT_MAX_SIZE_MB = 10;
+const DOCUMENT_MAX_SIZE_BYTES = DOCUMENT_MAX_SIZE_MB * 1024 * 1024;
+const DOCUMENT_ALLOWED_EXTENSIONS = ["pdf", "jpg", "jpeg", "png"];
+const DOCUMENT_FIELD_LABELS = {
+  certificate_file: "Sertifikat",
+  electric_bill_file: "Tagihan listrik",
+  water_bill_file: "Tagihan air",
+};
+
+const formatServerErrors = (serverErrors = {}) => {
+  return Object.entries(serverErrors)
+    .flatMap(([field, messages]) => {
+      const label = DOCUMENT_FIELD_LABELS[field] || field.replaceAll("_", " ");
+      return (Array.isArray(messages) ? messages : [messages]).map(
+        (message) => `${label}: ${message}`,
+      );
+    })
+    .filter(Boolean)
+    .join(" ");
+};
+
+const validateDocumentFile = (file) => {
+  if (!file) return null;
+  const extension = file.name.split(".").pop()?.toLowerCase();
+
+  if (!DOCUMENT_ALLOWED_EXTENSIONS.includes(extension)) {
+    return "Format dokumen harus PDF, JPG, JPEG, atau PNG.";
+  }
+
+  if (file.size > DOCUMENT_MAX_SIZE_BYTES) {
+    return `Ukuran dokumen maksimal ${DOCUMENT_MAX_SIZE_MB}MB per file.`;
+  }
+
+  return null;
+};
+
 // ✅ SectionCard — style heading seperti Contact.jsx, tanpa icon
 function SectionCard({ title, subtitle, children }) {
   return (
@@ -115,7 +151,7 @@ function SectionCard({ title, subtitle, children }) {
   );
 }
 
-function DocUploadCard({ label, icon, file, preview, onSelect, onRemove, accept = ".pdf,image/*" }) {
+function DocUploadCard({ label, icon, file, preview, onSelect, onRemove, accept = ".pdf,.jpg,.jpeg,.png" }) {
   return (
     <div
       style={{
@@ -193,7 +229,7 @@ function DocUploadCard({ label, icon, file, preview, onSelect, onRemove, accept 
             />
           </label>
           <p className="text-muted mt-4" style={{ margin: 0 }}>
-            PDF, JPG, PNG · Maks 5MB
+            PDF, JPG, PNG · Maks {DOCUMENT_MAX_SIZE_MB}MB
           </p>
         </>
       )}
@@ -341,6 +377,10 @@ export default function SubmitPropertyForm() {
     if (!userProfile?.id_card_file_url && !profileForm.idCardFile) {
       errs.id_card_file = "Foto KTP wajib diunggah.";
     }
+    const idCardFileError = validateDocumentFile(profileForm.idCardFile);
+    if (idCardFileError) {
+      errs.id_card_file = idCardFileError.replace("dokumen", "foto KTP");
+    }
     if (Object.keys(errs).length) {
       setProfileErrors(errs);
       return;
@@ -372,6 +412,14 @@ export default function SubmitPropertyForm() {
           full_name: serverErrs.full_name?.[0],
           phone: serverErrs.phone?.[0],
           id_card_file: serverErrs.id_card_file?.[0],
+        });
+        setAttention({
+          open: true,
+          message:
+            serverErrs.id_card_file?.[0] ||
+            serverErrs.full_name?.[0] ||
+            serverErrs.phone?.[0] ||
+            "Data profil belum valid.",
         });
       } else {
         setAttention({
@@ -581,6 +629,19 @@ export default function SubmitPropertyForm() {
   const handleFileChange = (field, setPreview) => (e) => {
     if (isAdminUser) return;
     const file = e.target.files?.[0] || null;
+
+    const fileError = validateDocumentFile(file);
+    if (fileError) {
+      e.target.value = "";
+      setFormData((prev) => ({ ...prev, [field]: null }));
+      setPreview(null);
+      setAttention({
+        open: true,
+        message: fileError,
+      });
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: file }));
     setPreview(file ? URL.createObjectURL(file) : null);
   };
@@ -650,6 +711,16 @@ export default function SubmitPropertyForm() {
       if ((formData.newImages?.length || 0) < 1) {
         throw new Error("Minimal unggah 1 gambar. ");
       }
+
+      const documentFiles = [
+        formData.certificateFile,
+        formData.electricBillFile,
+        formData.waterBillFile,
+      ];
+      for (const file of documentFiles) {
+        const fileError = validateDocumentFile(file);
+        if (fileError) throw new Error(fileError);
+      }
     } catch (validationError) {
       setAttention({
         open: true,
@@ -673,10 +744,14 @@ export default function SubmitPropertyForm() {
       setWaterBillPreview(null);
     } catch (error) {
       if (error.response?.status === 422) {
-        setErrors(error.response.data.errors || {});
+        const serverErrors = error.response.data.errors || {};
+        setErrors(serverErrors);
         setAttention({
           open: true,
-          message: "Ada data yang belum lengkap atau tidak valid. ",
+          message:
+            formatServerErrors(serverErrors) ||
+            error.response.data.message ||
+            "Ada data yang belum lengkap atau tidak valid. ",
         });
       } else {
         setAttention({
@@ -1321,6 +1396,24 @@ export default function SubmitPropertyForm() {
                     onSelect={(e) => {
                       if (isAdminUser) return;
                       const file = e.target.files?.[0] || null;
+                      const fileError = validateDocumentFile(file);
+                      if (fileError) {
+                        e.target.value = "";
+                        setProfileForm((prev) => ({
+                          ...prev,
+                          idCardFile: null,
+                        }));
+                        setIdCardPreview(null);
+                        setProfileErrors((prev) => ({
+                          ...prev,
+                          id_card_file: fileError.replace("dokumen", "foto KTP"),
+                        }));
+                        setAttention({
+                          open: true,
+                          message: fileError.replace("dokumen", "foto KTP"),
+                        });
+                        return;
+                      }
                       setProfileForm((prev) => ({
                         ...prev,
                         idCardFile: file,
@@ -1350,7 +1443,7 @@ export default function SubmitPropertyForm() {
                   <p className="text-muted mt-4" style={{ marginBottom: 0 }}>
                     KTP disimpan di profil penjual dan digunakan admin untuk
                     verifikasi identitas. Format JPG, PNG, atau PDF maksimal
-                    5MB.
+                    {` ${DOCUMENT_MAX_SIZE_MB}MB.`}
                   </p>
                 </fieldset>
               </div>
@@ -1864,7 +1957,7 @@ export default function SubmitPropertyForm() {
             {showCertificate && (
               <SectionCard
                 title="Dokumen Pendukung"
-                subtitle="Opsional — mempercepat proses verifikasi admin. Format: PDF, JPG, PNG (Maks 5MB per file)."
+                subtitle={`Opsional — mempercepat proses verifikasi admin. Format: PDF, JPG, PNG (Maks ${DOCUMENT_MAX_SIZE_MB}MB per file).`}
               >
                 <div className="row g-3">
                   <div className="col-md-4">

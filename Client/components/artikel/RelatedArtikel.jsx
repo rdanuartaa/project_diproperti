@@ -9,6 +9,8 @@ import ArticleViewMeta from "./ArticleViewMeta";
 import "swiper/css";
 import "swiper/css/pagination";
 
+const RELATED_ARTICLE_LIMIT = 3;
+
 export default function RelatedArtikel({ currentSlug }) {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,30 +38,41 @@ export default function RelatedArtikel({ currentSlug }) {
           .map((tag) => tag.slug)
           .filter(Boolean);
 
-        if (tagSlugs.length === 0) {
-          setArticles([]);
-          return;
+        const uniqueArticles = new Map();
+
+        if (tagSlugs.length > 0) {
+          const relatedResponses = await Promise.all(
+            tagSlugs.map((tag) =>
+              api.get("/articles", {
+                params: {
+                  page: 1,
+                  per_page: 7,
+                  tag,
+                },
+              })
+            )
+          );
+
+          relatedResponses
+            .flatMap((response) => normalizeArticles(response.data))
+            .filter((article) => article.slug !== currentSlug)
+            .forEach((article) => uniqueArticles.set(article.id || article.slug, article));
         }
 
-        const relatedResponses = await Promise.all(
-          tagSlugs.map((tag) =>
-            api.get("/articles", {
-              params: {
-                page: 1,
-                per_page: 7,
-                tag,
-              },
-            })
-          )
-        );
+        if (uniqueArticles.size < RELATED_ARTICLE_LIMIT) {
+          const fallbackRes = await api.get("/articles", {
+            params: {
+              page: 1,
+              per_page: 6,
+            },
+          });
 
-        const uniqueArticles = new Map();
-        relatedResponses
-          .flatMap((response) => normalizeArticles(response.data))
-          .filter((article) => article.slug !== currentSlug)
-          .forEach((article) => uniqueArticles.set(article.id || article.slug, article));
+          normalizeArticles(fallbackRes.data)
+            .filter((article) => article.slug !== currentSlug)
+            .forEach((article) => uniqueArticles.set(article.id || article.slug, article));
+        }
 
-        setArticles(Array.from(uniqueArticles.values()).slice(0, 6));
+        setArticles(Array.from(uniqueArticles.values()).slice(0, RELATED_ARTICLE_LIMIT));
       } catch (error) {
         console.error("Gagal ambil related articles:", error);
         setArticles([]);

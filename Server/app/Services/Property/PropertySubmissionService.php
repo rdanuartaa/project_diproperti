@@ -181,9 +181,9 @@ class PropertySubmissionService
             'images' => 'required|array|min:1',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
             'primary_new_index' => 'nullable|integer|min:0',
-            'certificate_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'electric_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'water_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'certificate_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'electric_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+            'water_bill_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ];
     }
 

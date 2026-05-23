@@ -17,7 +17,7 @@ export default function page() {
       <div id="wrapper">
         <Header1 />
         <div className="main-content">
-          <Breadcumb pageName="Daftar Properti" />
+          <Breadcumb pageName="Daftar Properti" className="property-list-breadcrumb" />
           <Suspense fallback={null}>
             <Properties3 defaultGrid />
           </Suspense>
