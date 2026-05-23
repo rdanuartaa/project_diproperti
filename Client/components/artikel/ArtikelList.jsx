@@ -265,7 +265,7 @@ export default function Blogs1() {
                     textAlign: "center"
                   }}>
                     <p style={{ color: "#c33", marginBottom: "10px", fontWeight: "500" }}>
-                      âš ï¸ {error}
+                      {error}
                     </p>
                     <button
                       onClick={handleRetry}
@@ -279,13 +279,13 @@ export default function Blogs1() {
                         fontWeight: "500"
                       }}
                     >
-                      ðŸ”„ Coba Lagi
+                      Coba Lagi
                     </button>
                   </div>
                 )}
                 {loading ? (
                   <div className="text-center py-5">
-                    <p>â³ Memuat artikel...</p>
+                    <p>Memuat artikel...</p>
                   </div>
                 ) : articles.length === 0 ? (
                   <div className="text-center py-5">

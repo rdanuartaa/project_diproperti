@@ -203,7 +203,7 @@ export default function User() {
     });
   };
 
-  // âš ï¸ HTML/JSX DI BAWAH INI TIDAK DIUBAH SAMA SEKALI âš ï¸
+  // HTML/JSX di bawah ini tidak diubah.
   return (
     <div className="main-content w-100">
       <div className="main-content-inner wrap-dashboard-content">

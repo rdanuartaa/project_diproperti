@@ -36,7 +36,7 @@ export default function TagArtikel() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
 
-  // ðŸ”¥ NEW (pagination)
+  // Pagination
   const [pagination, setPagination] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -45,7 +45,7 @@ export default function TagArtikel() {
     [activeTag],
   );
 
-  // ðŸ”¹ Fetch tags dari API
+  // Fetch tags dari API
   const fetchTags = async () => {
     try {
       setLoading(true);
@@ -64,13 +64,13 @@ export default function TagArtikel() {
       setPagination(response.data);
     } catch (error) {
       console.error("Failed to fetch tags:", error);
-      alert("âŒ Gagal mengambil data tag");
+      alert("Gagal mengambil data tag");
     } finally {
       setLoading(false);
     }
   };
 
-  // ðŸ”¥ Debounce fetch
+  // Debounce fetch
   useEffect(() => {
     const delay = setTimeout(() => {
       fetchTags();
@@ -79,7 +79,7 @@ export default function TagArtikel() {
     return () => clearTimeout(delay);
   }, [searchQuery, statusFilter, currentPage]);
 
-  // ðŸ”¥ Reset page saat search/filter berubah
+  // Reset page saat search/filter berubah
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, statusFilter]);

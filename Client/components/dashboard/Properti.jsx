@@ -13,7 +13,7 @@ import DashboardPagination, {
   paginateDashboardItems,
 } from "../common/DashboardPagination";
 
-// âœ… IMPORT LIBRARY PROPERTY YANG SUDAH DIPECAH
+// Import library property.
 import {
   PROPERTY_TYPE_CONFIG,
   CERTIFICATE_REQUIRED_TYPES,
@@ -180,7 +180,7 @@ export default function Properti() {
 
   const buildingTypeDisplayValue =
     formData.type === "tanah" && buildingTypeDisplay
-      ? `${buildingTypeDisplay} mÂ²`
+      ? `${buildingTypeDisplay} m2`
       : buildingTypeDisplay;
 
   const buildingTypePlaceholder = useMemo(
@@ -193,7 +193,7 @@ export default function Properti() {
     [formData.type],
   );
 
-  // âœ… AUTO-CALCULATE BUILDING TYPE
+  // Auto-calculate building type.
   useEffect(() => {
     const applicableTypes = ["rumah", "villa", "ruko", "tanah", "kos"];
     if (!applicableTypes.includes(formData.type)) return;
@@ -721,7 +721,7 @@ export default function Properti() {
     setFormData((prev) => ({ ...prev, listing_type: "sewa" }));
   }
     try {
-      // âœ… VALIDASI MANUAL (karena library validatePropertyForm tidak handle imagesToDelete di sini)
+      // Validasi manual karena library validatePropertyForm tidak handle imagesToDelete di sini.
       const requiredMain = [
         "title",
         "price",
@@ -754,7 +754,7 @@ export default function Properti() {
         (formData.newImages?.length || 0);
       if (totalImages < 1) throw new Error("Minimal unggah 1 gambar.");
 
-      // âœ… BUILD PAYLOAD MENGGUNAKAN LIBRARY
+      // Build payload menggunakan library.
       const jsonPayload = buildJsonPayload(formData);
       if (formData.listing_type === "sewa") {
         delete jsonPayload.certificate_type;
@@ -806,7 +806,7 @@ export default function Properti() {
     setFormLoading(true);
     setErrors({});
 
-    // âœ… VALIDASI
+    // Validasi.
     const requiredError = validatePropertyForm(formData);
     if (requiredError) {
       showAttention(requiredError);
@@ -885,7 +885,7 @@ export default function Properti() {
       setIsDeleting(false);
     }
   };
-  // âœ… Tampilkan sertifikat untuk tipe yang membutuhkannya, kecuali sewa
+  // Tampilkan sertifikat untuk tipe yang membutuhkannya, kecuali sewa.
   const showCertificate =
     CERTIFICATE_REQUIRED_TYPES.includes(formData.type) &&
     formData.listing_type !== "sewa";
@@ -1234,7 +1234,7 @@ export default function Properti() {
 
         <div className="footer-dashboard">
           <p>
-            Â© {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights
+            Copyright {new Date().getFullYear()} DIPROPERTI REAL ESTATE. All rights
             reserved.
           </p>
           <ul className="list">
@@ -1520,7 +1520,7 @@ export default function Properti() {
                       />
                     </div>
 
-                    {/* âœ… DETAIL PROPERTI DINAMIS */}
+                    {/* Detail properti dinamis */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         Detail Properti -{" "}
@@ -1616,7 +1616,7 @@ export default function Properti() {
                       });
                     })()}
 
-                    {/* âœ… GAMBAR PROPERTI */}
+                    {/* Gambar properti */}
                     <div className="col-12 mt-4">
                       <h6 className="modal-section-title fw-bold border-bottom pb-2 mb-3">
                         Gambar Properti

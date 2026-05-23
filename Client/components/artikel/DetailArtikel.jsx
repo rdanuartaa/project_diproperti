@@ -127,12 +127,12 @@ export default function DetailArtikel({ slug }) {
     return (
       <section className="section-blog-details py-5">
         <div className="tf-container text-center">
-          <h3 className="mb-3">ðŸ˜” Artikel Tidak Ditemukan</h3>
+          <h3 className="mb-3">Artikel Tidak Ditemukan</h3>
           <p className="mb-4">
             {error || "Maaf, artikel yang Anda cari tidak ada."}
           </p>
           <Link href="/artikel" className="tf-btn bg-color-primary">
-            â† Kembali ke Daftar Artikel
+            Kembali ke Daftar Artikel
           </Link>
         </div>
       </section>

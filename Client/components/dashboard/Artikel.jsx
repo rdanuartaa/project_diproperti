@@ -82,7 +82,7 @@ export default function Artikel() {
     [articles, filteredArticles, currentPage, pagination?.total],
   );
 
-  // ðŸ”¹ Fetch articles dari API
+  // Fetch articles dari API
   const fetchArticles = async () => {
     try {
       setLoading(true);
@@ -103,13 +103,13 @@ export default function Artikel() {
       });
     } catch (error) {
       console.error("Failed to fetch articles:", error);
-      alert("âŒ Gagal mengambil data artikel");
+      alert("Gagal mengambil data artikel");
     } finally {
       setLoading(false);
     }
   };
 
-  // ðŸ”¹ Fetch all tags untuk dropdown
+  // Fetch all tags untuk dropdown
   const fetchTags = async () => {
     try {
       const response = await api.get("/admin/tags");
@@ -201,7 +201,7 @@ export default function Artikel() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      alert("âŒ Maksimal ukuran gambar 5MB");
+      alert("Maksimal ukuran gambar 5MB");
       return;
     }
 
@@ -242,7 +242,7 @@ export default function Artikel() {
     }));
   };
 
-  // ðŸ”¹ Prepare FormData untuk upload
+  // Prepare FormData untuk upload
   const prepareFormData = (jsonPayload) => {
     const formDataToSend = new FormData();
 
@@ -267,7 +267,7 @@ export default function Artikel() {
     return formDataToSend;
   };
 
-  // ðŸ”¹ Handle Create Article
+  // Handle Create Article
   const handleCreate = async (e) => {
     e.preventDefault();
     setFormLoading(true);
@@ -293,18 +293,18 @@ export default function Artikel() {
         const firstError = Object.values(
           error.response.data.errors || {},
         )[0]?.[0];
-        alert(`âŒ Validation: ${firstError}`);
+        alert(`Validation: ${firstError}`);
       } else if (error.response?.status === 403) {
-        alert("âŒ Unauthorized - Admin access required");
+        alert("Unauthorized - Admin access required");
       } else {
-        alert("âŒ Failed to create article");
+        alert("Failed to create article");
       }
     } finally {
       setFormLoading(false);
     }
   };
 
-  // ðŸ”¹ Handle Update Article
+  // Handle Update Article
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!activeArticle?.id) return;
@@ -339,18 +339,18 @@ export default function Artikel() {
         const firstError = Object.values(
           error.response.data.errors || {},
         )[0]?.[0];
-        alert(`âŒ Validation: ${firstError}`);
+        alert(`Validation: ${firstError}`);
       } else if (error.response?.status === 403) {
-        alert("âŒ Unauthorized - Admin access required");
+        alert("Unauthorized - Admin access required");
       } else {
-        alert("âŒ Failed to update article");
+        alert("Failed to update article");
       }
     } finally {
       setFormLoading(false);
     }
   };
 
-  // ðŸ”¹ Handle Delete Article
+  // Handle Delete Article
   const handleDelete = async () => {
     if (!activeArticle?.id) return;
 
@@ -365,9 +365,9 @@ export default function Artikel() {
     } catch (error) {
       console.error("Error deleting article:", error);
       if (error.response?.status === 403) {
-        alert("âŒ Unauthorized - Admin access required");
+        alert("Unauthorized - Admin access required");
       } else {
-        alert("âŒ Failed to delete article");
+        alert("Failed to delete article");
       }
     } finally {
       setIsDeleting(false);
@@ -403,7 +403,7 @@ export default function Artikel() {
           onClick={() => handleRemoveTag(tagId)}
           aria-label={`Remove ${tagName}`}
         >
-          Ã—
+          x
         </button>
         <span className="tag-badge__text">{tagName}</span>
       </div>

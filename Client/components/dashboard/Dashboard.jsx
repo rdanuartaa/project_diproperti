@@ -49,7 +49,7 @@ export default function Dashboard() {
     return periodLabels[chartPeriod] || "Kunjungan Platform";
   };
 
-  // ðŸ”¹ Fetch dashboard stats
+  // Fetch dashboard stats
   const fetchStats = async () => {
     try {
       const { data } = await api.get("/admin/dashboard/stats");
@@ -61,7 +61,7 @@ export default function Dashboard() {
     }
   };
 
-  // ðŸ”¹ Fetch analytics chart data
+  // Fetch analytics chart data
   const fetchAnalytics = async (period = "day", range = dateRange) => {
     try {
       const params = { period };
@@ -92,7 +92,7 @@ export default function Dashboard() {
     loadData();
   }, [chartPeriod, dateRange]);
 
-  // ðŸ”¹ Handle period change
+  // Handle period change
   const handlePeriodChange = (period) => {
     setChartPeriod(period);
     setDateRange({ startDate: "", endDate: "" });
@@ -121,7 +121,7 @@ export default function Dashboard() {
           <span className="body-1">Tampilkan Dasboard</span>
         </div>
 
-        {/* ðŸ”¹ Counter Boxes */}
+        {/* Counter Boxes */}
         <div className="flat-counter-v2 tf-counter">
           {/* Properties */}
           <div className="counter-box">
@@ -336,7 +336,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* ðŸ”¹ Chart Section */}
+        {/* Chart Section */}
         <div className="row">
           <div className="col-xl-12">
             <div className="widget-box-2 wd-chart">
