@@ -23,7 +23,7 @@
     "gsap": "^3.12.7",
     "gsap-trial": "^3.12.7",
     "leaflet": "^1.9.4",
-    "next": "15.1.7",
+    "next": "15.1.11",
     "odometer": "^0.4.8",
     "photoswipe": "^5.4.4",
     "rc-slider": "^11.1.8",
