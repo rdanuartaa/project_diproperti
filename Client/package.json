@@ -17,6 +17,7 @@
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "@react-google-maps/api": "^2.20.6",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.15.0",
     "bootstrap": "^5.3.2",
     "chart.js": "^4.4.7",

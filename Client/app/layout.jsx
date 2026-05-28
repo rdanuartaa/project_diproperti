@@ -4,6 +4,7 @@ import "photoswipe/style.css";
 import "rc-slider/assets/index.css";
 import AppClientShell from "./AppClientShell";
 import { absoluteUrl, mainNavigation, siteDescription, siteName, siteUrl } from "./seo";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
@@ -96,6 +97,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <AppClientShell>{children}</AppClientShell>
+        <SpeedInsights />
       </body>
     </html>
   );
