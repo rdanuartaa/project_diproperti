@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Property;
 use App\Models\PropertyImage;
 use App\Services\Property\PropertyAccessService;
+use App\Services\Property\PropertyComparisonService;
 use App\Services\Property\PropertyDetailService;
 use App\Services\Property\PropertyFilterService;
 use App\Services\Property\PropertyMediaService;
@@ -25,6 +26,7 @@ class PropertyController extends Controller
         private PropertyDetailService $detailService,
         private PropertyFilterService $filterService,
         private PropertyRecommendationService $recommendationService,
+        private PropertyComparisonService $comparisonService,
         private PropertySubmissionService $submissionService,
         private ViewTrackingService $viewTrackingService,
     ) {}
@@ -37,6 +39,13 @@ class PropertyController extends Controller
     {
         return response()->json(
             $this->recommendationService->paginate($request, $request->user())
+        );
+    }
+
+    public function comparisons(Request $request): \Illuminate\Http\JsonResponse
+    {
+        return response()->json(
+            $this->comparisonService->compare($request, $request->user())
         );
     }
 

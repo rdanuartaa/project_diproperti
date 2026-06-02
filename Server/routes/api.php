@@ -21,6 +21,7 @@ Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
 // ─────────────────────────────────────────
 Route::get('/properties', [PropertyController::class, 'index']);
 Route::get('/properties/recommendations', [PropertyController::class, 'recommendations']);
+Route::get('/properties/comparisons', [PropertyController::class, 'comparisons']);
 
 Route::get('/articles', [ArticleController::class, 'index']);
 Route::get('/articles/popular', [ArticleController::class, 'popular']);

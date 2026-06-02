@@ -25,7 +25,6 @@ export {
 } from './formatters';
 
 export { getPropertyCardMetaItems } from './cardMeta';
-export { FIELD_WEIGHTS, getFieldWeight } from './fieldWeights';
 
 // Export dari transformers.js
 export {

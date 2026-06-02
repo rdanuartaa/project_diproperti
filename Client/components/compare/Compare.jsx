@@ -7,7 +7,6 @@ import { api } from "@/lib/api";
 import { useCompare } from "@/components/compare/CompareContext";
 import AttentionModal from "@/components/common/AttentionModal";
 import {
-  FIELD_WEIGHTS,
   getBuildingTypeDisplay,
   getBuildingTypeLabel,
   getPropertyConfig,
@@ -37,6 +36,19 @@ const formatPriceDisplay = (property) => {
   if (property?.listing_type !== "sewa") return base;
   if (!property?.price) return base;
   return `${base}/${getRentPeriodLabel(property)}`;
+};
+
+const getComparableMonthlyPrice = (property) => {
+  const price = Number(property?.price || 0);
+  if (property?.listing_type !== "sewa") return price;
+
+  const period = String(property?.price_period || property?.rent_period || "bulan");
+  if (period === "hari") return price * 30;
+  if (period === "minggu") return price * 4.345;
+  if (period === "3bulan") return price / 3;
+  if (period === "6bulan") return price / 6;
+  if (period === "tahun") return price / 12;
+  return price;
 };
 
 const COMPARE_ROWS = [
@@ -211,6 +223,7 @@ const buildCompareRows = (properties) => {
 };
 
 const getRawFieldValue = (property, row) => {
+  if (row.key === "price") return getComparableMonthlyPrice(property);
   if (row.key === "price_period") return property?.price_period || "bulan";
   if (row.source === "computed") {
     if (row.key === "building_type_display") return getBuildingTypeDisplay(property);
@@ -228,10 +241,8 @@ const getFieldValue = (property, row) => {
   if (val === null || val === undefined || val === "") return "-";
   if (row.boolean) return val ? "✓ Ada" : "✗ Tidak";
   if (row.format === "rupiah") {
-    const base = formatRupiah(val);
-    if (row.key !== "price" || property.listing_type !== "sewa") return base;
-    if (!property.price) return base;
-    return `${base}/${getRentPeriodLabel(property)}`;
+    if (row.key === "price") return formatPriceDisplay(property);
+    return formatRupiah(val);
   }
   if (row.unit) return `${Number(val).toLocaleString("id-ID")} ${row.unit}`;
   if (VALUE_LABELS[row.key]?.[val]) return VALUE_LABELS[row.key][val];
@@ -295,156 +306,6 @@ const getBestIndex = (properties, row) => {
   if (bestCount > 1) return -1;
 
   return valid.find((v) => v.value === bestValue)?.idx ?? -1;
-};
-
-const calculateScore = (properties) => {
-  if (!properties.length) return [];
-
-  const weights = {
-    price: 0.3,
-
-    luas_bangunan: 0.15,
-    luas_tanah: 0.1,
-
-    bedrooms: 0.08,
-    bathrooms: 0.05,
-    floors: 0.03,
-    kitchens: 0.02,
-    living_rooms: 0.02,
-
-    electricity_capacity: 0.05,
-    water: 0.03,
-    listrik_type: 0.02,
-
-    one_gate_system: 0.05,
-    security_24jam: 0.05,
-
-    carport: 0.02,
-    garden: 0.03,
-  };
-
-  const getValue = (p, key) => {
-    if (key === "price") return p.price;
-    if (["water", "listrik_type"].includes(key)) return p.detail?.[key] || null;
-    return p.detail?.[key] ?? p[key];
-  };
-
-  // mapping string → numeric
-  const mapValue = (key, val) => {
-    if (val === null || val === undefined) return null;
-
-    if (typeof val === "boolean") return val ? 1 : 0;
-
-    if (key === "water") {
-      if (val === "PDAM") return 1;
-      if (val === "Sumur") return 0.7;
-      return 0.5;
-    }
-
-    if (key === "listrik_type") {
-      if (val === "PLN") return 1;
-      return 0.7;
-    }
-
-    return Number(val);
-  };
-
-  const keys = Object.keys(weights);
-
-  // ambil semua nilai
-  const matrix = properties.map((p) =>
-    keys.map((key) => mapValue(key, getValue(p, key))),
-  );
-
-  const scores = properties.map(() => 0);
-
-  keys.forEach((key, colIndex) => {
-    const column = matrix.map((row) => row[colIndex]).filter((v) => v !== null);
-
-    if (column.length === 0) return;
-
-    const isCost = key === "price";
-
-    const min = Math.min(...column);
-    const max = Math.max(...column);
-
-    matrix.forEach((row, i) => {
-      const val = row[colIndex];
-      if (val === null) return;
-
-      let normalized = 0;
-
-      if (isCost) {
-        normalized = min / val;
-      } else {
-        normalized = max ? val / max : 0;
-      }
-
-      scores[i] += normalized * weights[key];
-    });
-  });
-
-  // convert ke 0–100
-  return scores.map((s) => Math.round(s * 100));
-};
-
-const calculateTypeScore = (properties) => {
-  if (!properties.length) return [];
-
-  const propertyType = properties[0]?.type || "rumah";
-  const fieldWeights = FIELD_WEIGHTS[propertyType] || FIELD_WEIGHTS.rumah;
-  const scoreRows = Object.entries(fieldWeights)
-    .filter(([, weight]) => Number(weight) > 0)
-    .map(([key, weight]) => ({
-      key,
-      weight: Number(weight),
-      source: key === "price" ? "root" : key === "room_size" ? "computed" : "detail",
-      compare:
-        key === "price"
-          ? "min"
-          : RANK_VALUE_MAPS[key]
-            ? "rank"
-            : PRESENCE_SCORE_KEYS.has(key)
-              ? "presence"
-              : "max",
-    }));
-
-  const totalWeight = scoreRows.reduce((sum, row) => sum + row.weight, 0);
-  if (!totalWeight) return properties.map(() => 0);
-
-  const getNumericValue = (property, row) => {
-    const rawValue = getRawFieldValue(property, row);
-    if (rawValue === null || rawValue === undefined || rawValue === "") return null;
-    if (typeof rawValue === "boolean") return rawValue ? 1 : 0;
-    if (row.compare === "rank") return RANK_VALUE_MAPS[row.key]?.[rawValue] ?? null;
-    if (row.compare === "presence") return String(rawValue).trim() ? 1 : null;
-    const value = Number(rawValue);
-    return Number.isFinite(value) ? value : null;
-  };
-
-  const matrix = properties.map((property) =>
-    scoreRows.map((row) => getNumericValue(property, row)),
-  );
-  const scores = properties.map(() => 0);
-
-  scoreRows.forEach((row, colIndex) => {
-    const column = matrix.map((item) => item[colIndex]).filter((value) => value !== null);
-    if (!column.length) return;
-
-    const min = Math.min(...column);
-    const max = Math.max(...column);
-    const weight = row.weight / totalWeight;
-
-    matrix.forEach((item, index) => {
-      const value = item[colIndex];
-      if (value === null) return;
-
-      const normalized = row.key === "price" ? min / value : max ? value / max : 0;
-      scores[index] += normalized * weight;
-    });
-  });
-
-  return scores.map((score) => Math.round(score * 100));
 };
 
 const buildProsCons = (properties, compareRows = COMPARE_ROWS) => {
@@ -531,8 +392,9 @@ export default function Compare() {
   const [error, setError] = useState("");
   const [attention, setAttention] = useState({ open: false, message: "" });
   const compareRows = useMemo(() => buildCompareRows(properties), [properties]);
+  const comparisonWeights = properties[0]?.comparison_weights;
   const scores = useMemo(
-    () => calculateTypeScore(properties),
+    () => properties.map((property) => Math.round(Number(property.comparison_score || 0) * 100)),
     [properties],
   );
   const prosCons = useMemo(
@@ -604,11 +466,16 @@ export default function Compare() {
     setLoading(true);
     setError("");
 
-    const results = await Promise.all(
+    const [results, comparisonResponse] = await Promise.all([
+      Promise.all(
       slugs.map((slug) =>
         api.get(`/properties/${slug}`).then((r) => r.data),
       ),
-    );
+      ),
+      api.get("/properties/comparisons", {
+        params: { slugs: slugs.join(",") },
+      }),
+    ]);
 
     // ✅ validasi setelah data ada
     const isValid = validateProperties(results);
@@ -618,7 +485,15 @@ export default function Compare() {
       return;
     }
 
-    setProperties(results);
+    const comparisonBySlug = new Map(
+      (comparisonResponse.data || []).map((property) => [property.slug, property]),
+    );
+    setProperties(
+      results.map((property) => ({
+        ...property,
+        ...comparisonBySlug.get(property.slug),
+      })),
+    );
   } catch {
     setError("Gagal memuat data properti.");
   } finally {
@@ -677,6 +552,27 @@ export default function Compare() {
               </p>
               {error && (
                 <p style={{ color: "red", fontSize: "13px" }}>{error}</p>
+              )}
+              {comparisonWeights && (
+                <div
+                  className="text-1"
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px 14px",
+                    marginTop: "12px",
+                    padding: "10px 12px",
+                    borderRadius: "10px",
+                    background: "rgba(2, 70, 155, 0.06)",
+                    color: "#374151",
+                  }}
+                >
+                  <strong>Profil bobot komparasi:</strong>
+                  <span>Harga {comparisonWeights.price}%</span>
+                  <span>Lokasi {comparisonWeights.location}%</span>
+                  <span>Luas {comparisonWeights.area}%</span>
+                  <span>Fasilitas {comparisonWeights.facilities}%</span>
+                </div>
               )}
 
               {/* Tombol Reset */}
@@ -811,8 +707,10 @@ export default function Compare() {
                   <h6>Skor</h6>
                 </div>
 
-                {properties.map((_, idx) => {
+                {properties.map((property, idx) => {
                   const isBest = idx === bestScoreIndex;
+                  const detail = property.comparison_detail || {};
+                  const penalty = Math.round(Number(detail.completeness_penalty || 0) * 100);
 
                   return (
                     <div
@@ -850,6 +748,17 @@ export default function Compare() {
                           </span>
                         )}
                       </span>
+                      <div style={{ marginTop: "6px", fontSize: "11px", lineHeight: 1.45, color: "#6b7280" }}>
+                        Harga {Math.round(Number(detail.price_score || 0) * 100)}% ·
+                        Lokasi {Math.round(Number(detail.location_score || 0) * 100)}% ·
+                        Luas {Math.round(Number(detail.area_score || 0) * 100)}% ·
+                        Fasilitas {Math.round(Number(detail.facility_score || 0) * 100)}%
+                        {penalty > 0 && (
+                          <div style={{ color: "#b42318", fontWeight: 600 }}>
+                            Data belum lengkap: -{penalty}%
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
