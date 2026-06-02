@@ -4,14 +4,45 @@ namespace App\Services\Property;
 
 use App\Models\Property;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 
 class PropertyRecommendationService
 {
+    private const DEFAULT_PER_PAGE = 10;
+    private const MAX_PER_PAGE = 50;
     private const JEMBER_CENTER_LATITUDE = -8.17211;
     private const JEMBER_CENTER_LONGITUDE = 113.69953;
+    private const MAX_RECOMMENDED_DISTANCE_KM = 30;
+    private const MISSING_FIELD_PENALTY = 0.05;
+    private const MAX_COMPLETENESS_PENALTY = 0.3;
+
+    /**
+     * Fixed reference ranges prevent one extreme listing from changing every
+     * other recommendation score. Rental prices are monthly equivalents.
+     */
+    private const REFERENCE_PROFILES = [
+        'rumah' => [
+            'jual' => ['price' => [100000000, 5000000000], 'area' => [20, 1000]],
+            'sewa' => ['price' => [500000, 20000000], 'area' => [20, 1000]],
+        ],
+        'villa' => [
+            'jual' => ['price' => [250000000, 10000000000], 'area' => [20, 1500]],
+            'sewa' => ['price' => [1000000, 50000000], 'area' => [20, 1500]],
+        ],
+        'ruko' => [
+            'jual' => ['price' => [100000000, 5000000000], 'area' => [10, 1500]],
+            'sewa' => ['price' => [1000000, 50000000], 'area' => [10, 1500]],
+        ],
+        'kos' => [
+            'sewa' => ['price' => [250000, 5000000], 'area' => [1, 30]],
+        ],
+        'tanah' => [
+            'jual' => ['price' => [50000000, 5000000000], 'area' => [20, 50000]],
+            'sewa' => ['price' => [500000, 30000000], 'area' => [20, 50000]],
+        ],
+    ];
 
     public function __construct(
         private PropertyFilterService $filterService,
@@ -21,26 +52,34 @@ class PropertyRecommendationService
 
     public function paginate(Request $request, ?User $user): LengthAwarePaginator
     {
-        $query = Property::with(['user', 'detail', 'images'])
-            ->where('is_verified', true);
+        $filters = $request->validate([
+            'type' => 'required|in:rumah,villa,ruko,kos,tanah',
+            'listing_type' => 'required|in:jual,sewa',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:' . self::MAX_PER_PAGE,
+            'price_weight' => 'nullable|numeric|min:0|max:100',
+            'location_weight' => 'nullable|numeric|min:0|max:100',
+            'area_weight' => 'nullable|numeric|min:0|max:100',
+            'facilities_weight' => 'nullable|numeric|min:0|max:100',
+            'min_price' => 'nullable|numeric|min:0',
+            'max_price' => 'nullable|numeric|min:0',
+        ]);
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
+        if ($filters['type'] === 'kos' && $filters['listing_type'] !== 'sewa') {
+            throw ValidationException::withMessages([
+                'listing_type' => ['Properti kos hanya dapat direkomendasikan untuk penawaran sewa.'],
+            ]);
         }
-        if ($request->filled('listing_type')) {
-            $query->where('listing_type', $request->listing_type);
-        }
+
+        $query = Property::with(['user', 'detail', 'images'])
+            ->where('is_verified', true)
+            ->where('type', $filters['type'])
+            ->where('listing_type', $filters['listing_type']);
         if ($request->filled('city')) {
             $query->where('city', $request->city);
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
-        }
-        if ($request->filled('min_price')) {
-            $query->where('price', '>=', (int) $request->min_price);
-        }
-        if ($request->filled('max_price')) {
-            $query->where('price', '<=', (int) $request->max_price);
         }
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
@@ -71,8 +110,15 @@ class PropertyRecommendationService
 
         $query->where('status', 'published')->where('is_verified', true);
 
-        $properties = $query->get();
-        $perPage = (int) $request->input('per_page', 8);
+        $properties = $query->get()
+            ->filter(function (Property $property) use ($request) {
+                $price = $this->getComparablePrice($property);
+
+                return (!$request->filled('min_price') || $price >= (float) $request->min_price)
+                    && (!$request->filled('max_price') || $price <= (float) $request->max_price);
+            })
+            ->values();
+        $perPage = (int) $request->input('per_page', self::DEFAULT_PER_PAGE);
         $page = LengthAwarePaginator::resolveCurrentPage();
 
         if ($properties->isEmpty()) {
@@ -83,12 +129,12 @@ class PropertyRecommendationService
         }
 
         $weights = $this->normalizeWeights([
-            'price' => max(0, (float) $request->input('price_weight', 35)),
-            'location' => max(0, (float) $request->input('location_weight', 30)),
-            'area' => max(0, (float) $request->input('area_weight', 20)),
-            'facilities' => max(0, (float) $request->input('facilities_weight', 15)),
+            'price' => max(0, (float) $request->input('price_weight', 25)),
+            'location' => max(0, (float) $request->input('location_weight', 25)),
+            'area' => max(0, (float) $request->input('area_weight', 25)),
+            'facilities' => max(0, (float) $request->input('facilities_weight', 25)),
         ]);
-        $stats = $this->buildStats($properties);
+        $stats = $this->buildStats($filters['type'], $filters['listing_type']);
 
         $sorted = $properties->map(function (Property $property) use ($stats, $weights) {
             $result = $this->calculateScore($property, $stats, $weights);
@@ -96,7 +142,11 @@ class PropertyRecommendationService
             $property->setAttribute('recommendation_detail', $result['detail']);
 
             return $property;
-        })->sortByDesc('recommendation_score')->values();
+        })->sortByDesc('recommendation_score')->values()->map(function (Property $property, int $index) {
+            $property->setAttribute('recommendation_rank', $index + 1);
+
+            return $property;
+        });
 
         $items = $sorted->forPage($page, $perPage)->values();
         $paginator = new LengthAwarePaginator($items, $sorted->count(), $perPage, $page, [
@@ -127,66 +177,92 @@ class PropertyRecommendationService
         return $weights;
     }
 
-    private function buildStats(Collection $properties): array
+    private function buildStats(string $type, string $listingType): array
     {
-        $prices = $properties->map(fn(Property $p) => (float) ($p->price ?? 0));
-        $areas = $properties->map(fn(Property $p) => $this->getAreaValue($p));
-        $facilities = $properties->map(fn(Property $p) => $this->getFacilityValue($p));
-        $locationCounts = $properties->groupBy(fn(Property $p) => $this->getLocationKey($p))->map->count();
-        $distancesFromCenter = $properties
-            ->map(fn(Property $p) => $this->getDistanceFromJemberCenter($p))
-            ->filter(fn($distance) => $distance !== null)
-            ->values();
+        $profile = self::REFERENCE_PROFILES[$type][$listingType];
 
         return [
-            'min_price' => (float) $prices->min(),
-            'max_price' => (float) $prices->max(),
-            'min_area' => (float) $areas->min(),
-            'max_area' => (float) $areas->max(),
-            'min_facility' => (float) $facilities->min(),
-            'max_facility' => (float) $facilities->max(),
-            'min_location_count' => (float) $locationCounts->min(),
-            'max_location_count' => (float) $locationCounts->max(),
-            'location_counts' => $locationCounts->all(),
-            'min_distance_from_center' => $distancesFromCenter->isNotEmpty() ? (float) $distancesFromCenter->min() : null,
-            'max_distance_from_center' => $distancesFromCenter->isNotEmpty() ? (float) $distancesFromCenter->max() : null,
+            'min_price' => $profile['price'][0],
+            'max_price' => $profile['price'][1],
+            'min_area' => $profile['area'][0],
+            'max_area' => $profile['area'][1],
         ];
     }
 
     private function calculateScore(Property $property, array $stats, array $weights): array
     {
-        $priceValue = (float) ($property->price ?? 0);
+        $priceValue = $this->getComparablePrice($property);
         $areaValue = $this->getAreaValue($property);
         $facilityValue = $this->getFacilityValue($property);
-        $locationCount = (int) ($stats['location_counts'][$this->getLocationKey($property)] ?? 0);
         $distanceFromCenter = $this->getDistanceFromJemberCenter($property);
 
         $priceScore = 1 - $this->normalizeValue($priceValue, $stats['min_price'], $stats['max_price']);
         $areaScore = $this->normalizeValue($areaValue, $stats['min_area'], $stats['max_area']);
-        $facilityScore = $this->normalizeValue($facilityValue, $stats['min_facility'], $stats['max_facility']);
-        $locationScore = $distanceFromCenter !== null && $stats['max_distance_from_center'] !== null
-            ? 1 - $this->normalizeValue(
-                $distanceFromCenter,
-                $stats['min_distance_from_center'],
-                $stats['max_distance_from_center']
-            )
-            : $this->normalizeValue($locationCount, $stats['min_location_count'], $stats['max_location_count']);
-
-        $score = $priceScore * ($weights['price'] / 100)
+        $facilityScore = $this->normalizeValue($facilityValue, 0, 1);
+        $locationScore = $distanceFromCenter !== null
+            ? 1 - $this->normalizeValue($distanceFromCenter, 0, self::MAX_RECOMMENDED_DISTANCE_KM)
+            : 0;
+        $missingFields = $this->getMissingRecommendationFields($property);
+        $completenessPenalty = min(
+            count($missingFields) * self::MISSING_FIELD_PENALTY,
+            self::MAX_COMPLETENESS_PENALTY
+        );
+        $rawScore = $priceScore * ($weights['price'] / 100)
             + $locationScore * ($weights['location'] / 100)
             + $areaScore * ($weights['area'] / 100)
             + $facilityScore * ($weights['facilities'] / 100);
+        $score = max(0, $rawScore - $completenessPenalty);
 
         return [
             'score' => $score,
             'detail' => [
+                'raw_score' => round($rawScore, 6),
+                'completeness_penalty' => $completenessPenalty,
+                'data_completeness_score' => round(1 - $completenessPenalty, 2),
+                'missing_fields' => $missingFields,
                 'price_score' => $priceScore,
+                'comparable_price' => round($priceValue, 2),
                 'location_score' => $locationScore,
                 'distance_from_jember_center_km' => $distanceFromCenter !== null ? round($distanceFromCenter, 3) : null,
                 'area_score' => $areaScore,
                 'facility_score' => $facilityScore,
             ],
         ];
+    }
+
+    private function getMissingRecommendationFields(Property $property): array
+    {
+        $detail = $property->detail;
+        $missing = [];
+
+        if ((float) ($property->price ?? 0) <= 0) {
+            $missing[] = 'price';
+        }
+        if ($property->listing_type === 'sewa' && empty($property->rent_period)) {
+            $missing[] = 'rent_period';
+        }
+        if ($property->latitude === null || $property->longitude === null) {
+            $missing[] = 'coordinates';
+        }
+        if (!$detail) {
+            return [...$missing, 'detail'];
+        }
+
+        $requiredDetailFields = match ($property->type) {
+            'rumah', 'villa' => ['luas_tanah', 'luas_bangunan'],
+            'ruko' => ['luas_bangunan'],
+            'kos' => ['panjang_ruangan', 'lebar_ruangan', 'total_rooms', 'bathrooms'],
+            'tanah' => ['luas_tanah', 'road_access'],
+            default => [],
+        };
+
+        foreach ($requiredDetailFields as $field) {
+            if ($detail->{$field} === null || $detail->{$field} === '') {
+                $missing[] = $field;
+            }
+        }
+
+        return $missing;
     }
 
     private function normalizeValue(float $value, float $min, float $max): float
@@ -196,6 +272,23 @@ class PropertyRecommendationService
         }
 
         return max(0, min(1, ($value - $min) / ($max - $min)));
+    }
+
+    private function getComparablePrice(Property $property): float
+    {
+        $price = (float) ($property->price ?? 0);
+        if ($property->listing_type !== 'sewa') {
+            return $price;
+        }
+
+        return match ($property->rent_period ?: 'bulan') {
+            'hari' => $price * 30,
+            'minggu' => $price * 4.345,
+            '3bulan' => $price / 3,
+            '6bulan' => $price / 6,
+            'tahun' => $price / 12,
+            default => $price,
+        };
     }
 
     private function getAreaValue(Property $property): float
@@ -307,11 +400,6 @@ class PropertyRecommendationService
                 + (!empty($detail->land_contour) ? 1 : 0) * 0.15,
             default => 0,
         };
-    }
-
-    private function getLocationKey(Property $property): string
-    {
-        return strtolower(trim(($property->city ?? '') . '|' . ($property->kecamatan ?? '')));
     }
 
     private function getDistanceFromJemberCenter(Property $property): ?float

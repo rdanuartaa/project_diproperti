@@ -46,7 +46,9 @@ export default function SidebarArtikel({
         <h4 className="sidebar-title">Penggunaan Kategori Tag</h4>
         <ul className="list-categories">
           {Array.isArray(allTags) &&
-            allTags.map((tagItem) => (
+            allTags
+              .filter((tagItem) => Number(tagItem.articles_count) > 0)
+              .map((tagItem) => (
               <li key={tagItem.id} className="flex items-center justify-between">
                 <a
                   href="#"
@@ -60,7 +62,7 @@ export default function SidebarArtikel({
                 </a>
                 <div className="number">({tagItem.articles_count || 0})</div>
               </li>
-            ))}
+              ))}
         </ul>
       </div>
 

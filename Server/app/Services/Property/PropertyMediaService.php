@@ -58,16 +58,25 @@ class PropertyMediaService
         Property|Collection|LengthAwarePaginator $data,
         Request $request
     ): Property|Collection|LengthAwarePaginator {
-        $periodKey = $this->normalizeRentPeriod((string) $request->input('rent_period', 'bulan'));
-        $labels = ['bulan' => 'bulan', '3bulan' => '3 bulan', '6bulan' => '6 bulan', 'tahun' => 'tahun'];
-        $label = $labels[$periodKey] ?? 'bulan';
-
-        $apply = function (Property $property) use ($periodKey, $label) {
+        $apply = function (Property $property) use ($request) {
             if ($property->listing_type !== 'sewa') {
                 $property->setAttribute('price_period', null);
                 $property->setAttribute('price_display', null);
                 return;
             }
+
+            $periodKey = $this->normalizeRentPeriod(
+                (string) ($property->rent_period ?: $request->input('rent_period', 'bulan'))
+            );
+            $labels = [
+                'hari' => 'hari',
+                'minggu' => 'minggu',
+                'bulan' => 'bulan',
+                '3bulan' => '3 bulan',
+                '6bulan' => '6 bulan',
+                'tahun' => 'tahun',
+            ];
+            $label = $labels[$periodKey] ?? 'bulan';
 
             $property->setAttribute('price_period', $periodKey);
             $property->setAttribute('price_display', ($property->price ?? 0) . '/' . $label);
@@ -245,6 +254,8 @@ class PropertyMediaService
         $normalized = strtolower(str_replace(' ', '', $period));
 
         return match ($normalized) {
+            'hari' => 'hari',
+            'minggu' => 'minggu',
             '3bulan' => '3bulan',
             '6bulan' => '6bulan',
             '12bulan', '1tahun', 'tahun' => 'tahun',

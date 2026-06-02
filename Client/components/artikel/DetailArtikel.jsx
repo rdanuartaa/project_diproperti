@@ -60,7 +60,7 @@ export default function DetailArtikel({ slug }) {
           if (article?.id) return item.id !== article.id;
           return item.slug !== slug;
         });
-        setPopularArticles(articlesData.slice(0, 5));
+        setPopularArticles(articlesData.slice(0, 3));
       } catch (error) {
         console.error("Gagal ambil popular articles:", error);
         setPopularArticles([]);
@@ -94,7 +94,7 @@ export default function DetailArtikel({ slug }) {
       if (article?.id) return item.id !== article.id;
       return item.slug !== slug;
     });
-      setPopularArticles(articlesData.slice(0, 5));
+      setPopularArticles(articlesData.slice(0, 3));
     } catch (error) {
       console.error("Gagal ambil popular articles:", error);
       setPopularArticles([]);
@@ -365,7 +365,7 @@ export default function DetailArtikel({ slug }) {
                 <ul>
                   {Array.isArray(popularArticles) &&
                   popularArticles.length > 0 ? (
-                    popularArticles.slice(0, 5).map((item) => (
+                    popularArticles.slice(0, 3).map((item) => (
                       <li key={item.id} className="box-listings hover-img">
                         <div className="image-wrap image-zoom-container">
                           <Image
@@ -419,7 +419,9 @@ export default function DetailArtikel({ slug }) {
                 <h4 className="sidebar-title">Kategori Tag Artikel</h4>
                 <ul className="list-categories">
                   {Array.isArray(allTags) &&
-                    allTags.map((tagItem) => (
+                    allTags
+                      .filter((tagItem) => Number(tagItem.articles_count) > 0)
+                      .map((tagItem) => (
                       <li
                         key={tagItem.id}
                         className="flex items-center justify-between"
@@ -438,7 +440,7 @@ export default function DetailArtikel({ slug }) {
                           ({tagItem.articles_count || 0})
                         </div>
                       </li>
-                    ))}
+                      ))}
                 </ul>
               </div>
             </div>

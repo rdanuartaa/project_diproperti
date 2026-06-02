@@ -70,7 +70,7 @@
           "request": {
             "method": "GET",
             "auth": { "type": "noauth" },
-            "url": "{{base_url}}/properties/recommendations?per_page=10&page=1&type=rumah"
+            "url": "{{base_url}}/properties/recommendations?per_page=10&page=1&type=rumah&listing_type=jual"
           }
         },
         {

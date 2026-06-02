@@ -204,6 +204,8 @@ export default function PropertySubmissions() {
   const formatPrice = (val) => `Rp ${Number(val || 0).toLocaleString("id-ID")}`;
   const getRentPeriodLabel = (item) => {
     const period = String(item?.price_period || "bulan");
+    if (period === "hari") return "hari";
+    if (period === "minggu") return "minggu";
     if (period === "3bulan") return "3 bulan";
     if (period === "6bulan") return "6 bulan";
     if (period === "tahun") return "tahun";

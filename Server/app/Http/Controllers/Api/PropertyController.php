@@ -46,6 +46,7 @@ class PropertyController extends Controller
 
         if ($request->filled('type')) $query->where('type', $request->type);
         if ($request->filled('listing_type')) $query->where('listing_type', $request->listing_type);
+        if ($request->filled('rent_period')) $query->where('rent_period', $request->rent_period);
         if ($request->filled('city')) $query->where('city', $request->city);
         if ($request->filled('status')) $query->where('status', $request->status);
         if ($request->filled('min_price')) $query->where('price', '>=', (int) $request->min_price);
@@ -99,6 +100,7 @@ class PropertyController extends Controller
 
         if ($request->filled('type')) $query->where('type', $request->type);
         if ($request->filled('listing_type')) $query->where('listing_type', $request->listing_type);
+        if ($request->filled('rent_period')) $query->where('rent_period', $request->rent_period);
         if ($request->filled('city')) $query->where('city', $request->city);
         if ($request->filled('min_price')) $query->where('price', '>=', (int) $request->min_price);
         if ($request->filled('max_price')) $query->where('price', '<=', (int) $request->max_price);
@@ -194,6 +196,7 @@ class PropertyController extends Controller
                 'type' => 'required|in:rumah,villa,ruko,kos,tanah', // ✅ VILLA menggantikan perumahan
                 'building_type' => 'nullable|string|max:50',
                 'listing_type' => 'required|in:jual,sewa',
+                'rent_period' => 'nullable|in:hari,minggu,bulan,3bulan,6bulan,tahun',
                 'kecamatan' => 'required|string|max:100',
                 'city' => 'required|string|max:100',
                 'address' => 'nullable|string|max:255',
@@ -223,6 +226,9 @@ class PropertyController extends Controller
                 'type' => $validated['type'],
                 'building_type' => $validated['building_type'] ?? null,
                 'listing_type' => $validated['listing_type'],
+                'rent_period' => $validated['listing_type'] === 'sewa'
+                    ? ($validated['rent_period'] ?? 'bulan')
+                    : null,
                 'kecamatan' => $validated['kecamatan'],
                 'city' => $validated['city'],
                 'address' => $validated['address'] ?? null,
@@ -294,6 +300,7 @@ class PropertyController extends Controller
                 'type' => 'sometimes|required|in:rumah,villa,ruko,kos,tanah', // ✅ VILLA
                 'building_type' => 'nullable|string|max:50',
                 'listing_type' => 'sometimes|required|in:jual,sewa',
+                'rent_period' => 'nullable|in:hari,minggu,bulan,3bulan,6bulan,tahun',
                 'kecamatan' => 'sometimes|required|string|max:100',
                 'city' => 'sometimes|required|string|max:100',
                 'address' => 'nullable|string|max:255',
@@ -323,13 +330,17 @@ class PropertyController extends Controller
             $validated = $request->validate(array_merge($baseRules, $detailRules, $certificateRules));
 
             $updatableFields = [
-                'title', 'type', 'building_type', 'listing_type',
+                'title', 'type', 'building_type', 'listing_type', 'rent_period',
                 'kecamatan', 'city', 'address', 'latitude', 'longitude',
                 'price', 'certificate_type', 'certificate_status', 'status', 'description',
             ];
             foreach ($updatableFields as $field) {
                 if (isset($validated[$field])) $property->{$field} = $validated[$field];
             }
+            $effectiveListingType = $validated['listing_type'] ?? $property->listing_type;
+            $property->rent_period = $effectiveListingType === 'sewa'
+                ? ($validated['rent_period'] ?? $property->rent_period ?? 'bulan')
+                : null;
             if ($request->user()->isAdmin() && array_key_exists('is_verified', $validated)) {
                 $property->is_verified = (bool) $validated['is_verified'];
             }

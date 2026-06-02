@@ -31,6 +31,9 @@ class PropertySubmissionService
             'type' => $validated['type'],
             'building_type' => $validated['building_type'] ?? null,
             'listing_type' => $validated['listing_type'],
+            'rent_period' => $validated['listing_type'] === 'sewa'
+                ? ($validated['rent_period'] ?? 'bulan')
+                : null,
             'kecamatan' => $validated['kecamatan'],
             'city' => $validated['city'],
             'address' => $validated['address'] ?? null,
@@ -61,6 +64,7 @@ class PropertySubmissionService
         $perPage = (int) $request->input('per_page', 10);
 
         $submissions = Property::with(['user', 'detail', 'images'])
+            ->whereHas('user', fn ($query) => $query->where('role', '!=', 'admin'))
             ->orderBy('is_verified', 'asc')
             ->orderByDesc('created_at')
             ->paginate($perPage);
@@ -171,6 +175,7 @@ class PropertySubmissionService
             'type' => 'required|in:rumah,villa,ruko,kos,tanah',
             'building_type' => 'nullable|string|max:50',
             'listing_type' => 'required|in:jual,sewa',
+            'rent_period' => 'nullable|in:hari,minggu,bulan,3bulan,6bulan,tahun',
             'kecamatan' => 'required|string|max:100',
             'city' => 'required|string|max:100',
             'address' => 'nullable|string|max:255',
@@ -198,7 +203,7 @@ class PropertySubmissionService
             'address' => 'nullable|string|max:255',
             'certificate_type' => 'nullable|in:SHM,SHGB',
             'certificate_status' => 'nullable|in:lunas,bank',
-            'rent_period' => 'nullable|string',
+            'rent_period' => 'nullable|in:hari,minggu,bulan,3bulan,6bulan,tahun',
             'images' => 'nullable|array',
             'images.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120',
             'primary_new_index' => 'nullable|integer|min:0',

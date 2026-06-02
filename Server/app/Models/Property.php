@@ -22,6 +22,7 @@ class Property extends Model
         'type',
         'building_type',
         'listing_type',
+        'rent_period',
         'kecamatan',
         'city',
         'address',
@@ -49,6 +50,7 @@ class Property extends Model
         'longitude'         => 'float',
         'type'              => 'string', // ✅ Enum: rumah, villa, ruko, kos, tanah
         'listing_type'      => 'string',
+        'rent_period'       => 'string',
     ];
 
     // ✅ Mutator dengan type hints yang benar

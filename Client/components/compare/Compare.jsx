@@ -24,6 +24,8 @@ const formatRupiah = (value) => {
 
 const getRentPeriodLabel = (property) => {
   const period = String(property?.price_period || "bulan");
+  if (period === "hari") return "hari";
+  if (period === "minggu") return "minggu";
   if (period === "3bulan") return "3 bulan";
   if (period === "6bulan") return "6 bulan";
   if (period === "tahun") return "tahun";

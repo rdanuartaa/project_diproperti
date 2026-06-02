@@ -505,7 +505,7 @@ export default function Properti() {
     type: property.type || "rumah",
     building_type: property.building_type ?? "",
     listing_type: property.listing_type || "jual",
-    rent_period: property.price_period || "",
+    rent_period: property.price_period || property.rent_period || "",
     kecamatan: property.kecamatan || "",
     city: property.city || "",
     address: "",

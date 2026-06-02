@@ -38,6 +38,8 @@ export default function SearchForm({
   const [electricityType, setElectricityType] = useState(initialFilters.electricityType || "Jenis Listrik");
   const [rentPeriod, setRentPeriod] = useState(() => {
     const value = String(initialFilters.rent_period || "");
+    if (value === "hari") return "Hari";
+    if (value === "minggu") return "Minggu";
     if (value === "3bulan") return "3 Bulan";
     if (value === "6bulan") return "6 Bulan";
     if (value === "tahun" || value === "12bulan") return "Tahun";
@@ -106,6 +108,10 @@ export default function SearchForm({
   const handleRentPeriodChange = useCallback((value) => {
     const periodValue = value === "Periode Sewa"
       ? ""
+      : value === "Hari"
+      ? "hari"
+      : value === "Minggu"
+      ? "minggu"
       : value === "3 Bulan"
       ? "3bulan"
       : value === "6 Bulan"
@@ -318,7 +324,7 @@ export default function SearchForm({
         {listingType === "sewa" && (
           <div className="box-select">
             <DropdownSelect
-              options={["Periode Sewa", "Bulan", "3 Bulan", "6 Bulan", "Tahun"]}
+              options={["Periode Sewa", "Hari", "Minggu", "Bulan", "3 Bulan", "6 Bulan", "Tahun"]}
               selectedValue={rentPeriod}
               onChange={handleRentPeriodChange}
               addtionalParentClass=""

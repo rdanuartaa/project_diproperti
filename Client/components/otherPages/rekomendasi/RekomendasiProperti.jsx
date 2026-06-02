@@ -8,18 +8,18 @@ import PropertyGridItems from "@/components/properties/PropertyGridItems";
 import PropertyListItems from "@/components/properties/PropertyListItems";
 
 const PAGE_SIZE = 10;
-const PROPERTY_TYPE_OPTIONS = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"];
-const LISTING_TYPE_OPTIONS = ["Jual/Sewa", "Dijual", "Disewa"];
+const PROPERTY_TYPE_OPTIONS = ["rumah", "villa", "ruko", "kos", "tanah"];
+const LISTING_TYPE_OPTIONS = ["Dijual", "Disewa"];
 const DEFAULT_FILTERS = {
   type: "rumah",
   listing_type: "jual",
 };
 
 const DEFAULT_WEIGHTS = {
-  price: 35,
-  location: 30,
-  area: 20,
-  facilities: 15,
+  price: 25,
+  location: 25,
+  area: 25,
+  facilities: 25,
 };
 
 const CRITERIA_LABELS = {
@@ -212,8 +212,8 @@ export default function RekomendasiProperti() {
           params: {
             page,
             per_page: PAGE_SIZE,
-            ...(filters.type ? { type: filters.type } : {}),
-            ...(filters.listing_type ? { listing_type: filters.listing_type } : {}),
+            type: filters.type,
+            listing_type: filters.listing_type,
             price_weight: weights.price,
             location_weight: weights.location,
             area_weight: weights.area,
@@ -263,6 +263,8 @@ export default function RekomendasiProperti() {
   const ahpIsConsistent = ahpResult.consistencyRatio <= 0.1;
 
   const applyAhpWeights = () => {
+    if (!ahpIsConsistent) return;
+
     setWeights(ahpResult.weights);
     setHasAppliedAhp(true);
     setShowAhp(false);
@@ -280,7 +282,7 @@ export default function RekomendasiProperti() {
 
   const handleFilterChange = (nextFilters) => {
     setFilters(nextFilters);
-    setPage(1);
+    resetRecommendationWeights();
   };
 
   const handlePageChange = (nextPage) => {
@@ -477,33 +479,27 @@ export default function RekomendasiProperti() {
                 <DropdownSelect
                   addtionalParentClass="select-filter list-sort"
                   options={PROPERTY_TYPE_OPTIONS}
-                  selectedValue={filters.type || "Semua Tipe"}
+                  selectedValue={filters.type}
                   onChange={(value) =>
                     handleFilterChange({
                       ...filters,
-                      type: value === "Semua Tipe" ? "" : value,
+                      type: value,
+                      listing_type: value === "kos" ? "sewa" : filters.listing_type,
                     })
                   }
                 />
                 <DropdownSelect
                   addtionalParentClass="select-filter list-sort"
-                  options={LISTING_TYPE_OPTIONS}
+                  options={filters.type === "kos" ? ["Disewa"] : LISTING_TYPE_OPTIONS}
                   selectedValue={
                     filters.listing_type === "jual"
                       ? "Dijual"
-                      : filters.listing_type === "sewa"
-                        ? "Disewa"
-                        : "Jual/Sewa"
+                      : "Disewa"
                   }
                   onChange={(value) =>
                     handleFilterChange({
                       ...filters,
-                      listing_type:
-                        value === "Dijual"
-                          ? "jual"
-                          : value === "Disewa"
-                            ? "sewa"
-                            : "",
+                      listing_type: value === "Dijual" ? "jual" : "sewa",
                     })
                   }
                 />
@@ -771,6 +767,7 @@ export default function RekomendasiProperti() {
                           type="button"
                           className="tf-btn style-border w-full"
                           onClick={applyAhpWeights}
+                          disabled={!ahpIsConsistent}
                           style={{ minHeight: 46, whiteSpace: "normal", lineHeight: 1.35 }}
                         >
                           Terapkan Preferensi

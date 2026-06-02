@@ -32,6 +32,18 @@ const RANK_STYLES = [
   },
 ];
 
+function getRankStyle(rank) {
+  return (
+    RANK_STYLES[rank - 1] || {
+      label: `#${rank}`,
+      border: "1px solid rgba(2, 70, 155, 0.16)",
+      background: "#fff",
+      badgeBackground: "var(--Primary)",
+      badgeColor: "#fff",
+    }
+  );
+}
+
 const META_CONFIG_BY_TYPE = {
   rumah: [
     { key: "bedrooms", label: "KT" },
@@ -91,6 +103,8 @@ function getListingTypeLabel(type) {
 
 function getSewaPeriodLabel(property) {
   const period = String(property?.price_period || "bulan");
+  if (period === "hari") return "hari";
+  if (period === "minggu") return "minggu";
   if (period === "3bulan") return "3 bulan";
   if (period === "6bulan") return "6 bulan";
   if (period === "tahun") return "tahun";
@@ -152,6 +166,32 @@ function getPropertyMetaItems(property) {
   }));
 }
 
+function RecommendationSummary({ property }) {
+  if (property?.recommendation_score === undefined) return null;
+
+  const score = Math.round(Number(property.recommendation_score || 0) * 100);
+  const penalty = Math.round(
+    Number(property?.recommendation_detail?.completeness_penalty || 0) * 100,
+  );
+
+  return (
+    <div
+      className="text-1 mb-12"
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        gap: 8,
+        padding: "8px 10px",
+        borderRadius: 8,
+        background: "rgba(2, 70, 155, 0.06)",
+      }}
+    >
+      <strong style={{ color: "var(--Primary)" }}>Kecocokan {score}%</strong>
+      {penalty > 0 && <span>Data belum lengkap: -{penalty}%</span>}
+    </div>
+  );
+}
+
 export default function PropertyGridItems({ properties, showItems, showTopRankBadges = false }) {
   const { addToCompare, removeFromCompare, isInCompare, isFull } = useCompare();
 
@@ -165,7 +205,8 @@ export default function PropertyGridItems({ properties, showItems, showTopRankBa
         const added = isInCompare(property.id);
         const disabled = !added && isFull;
         const metaItems = getPropertyCardMetaItems(property);
-        const rankStyle = showTopRankBadges ? RANK_STYLES[index] : null;
+        const rank = Number(property.recommendation_rank || index + 1);
+        const rankStyle = showTopRankBadges ? getRankStyle(rank) : null;
 
         return (
           <div
@@ -280,6 +321,7 @@ export default function PropertyGridItems({ properties, showItems, showTopRankBa
               <div className="property-card-views mb-12">
                 <PropertyViewMeta views={property.views} />
               </div>
+              <RecommendationSummary property={property} />
               <ul className="meta-list flex">
                 {metaItems.map((item) => (
                   <li className="text-1 flex" key={item.key}>

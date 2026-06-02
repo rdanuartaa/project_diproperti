@@ -24,7 +24,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 Saat `listing_type=sewa`, frontend dapat meminta dan menampilkan periode sewa:
 
-- Query param: `rent_period` (`bulan`, `3bulan`, `6bulan`, `tahun`)
+- Query param: `rent_period` (`hari`, `minggu`, `bulan`, `3bulan`, `6bulan`, `tahun`)
 - Field response: `price_period` dan `price_display` (contoh: `Rp 2.500.000/bulan`)
 
 UI menampilkan selector "Periode Sewa" di filter lanjutan dan default ke per bulan ketika periode tidak dikirim.

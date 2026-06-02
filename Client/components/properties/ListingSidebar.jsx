@@ -165,6 +165,8 @@ export default function ListingSidebar({
 }) {
   const getRentPeriodLabel = (item) => {
     const period = String(item?.price_period || "bulan");
+    if (period === "hari") return "hari";
+    if (period === "minggu") return "minggu";
     if (period === "3bulan") return "3 bulan";
     if (period === "6bulan") return "6 bulan";
     if (period === "tahun") return "tahun";
@@ -349,9 +351,13 @@ export default function ListingSidebar({
                 <div className="box-select mb-20">
                   <DropdownSelect
                     addtionalParentClass="select-filter"
-                    options={["Periode Sewa", "Bulan", "3 Bulan", "6 Bulan", "Tahun"]}
+                    options={["Periode Sewa", "Hari", "Minggu", "Bulan", "3 Bulan", "6 Bulan", "Tahun"]}
                     selectedValue={
-                      filters.rent_period === "3bulan"
+                      filters.rent_period === "hari"
+                        ? "Hari"
+                        : filters.rent_period === "minggu"
+                        ? "Minggu"
+                        : filters.rent_period === "3bulan"
                         ? "3 Bulan"
                         : filters.rent_period === "6bulan"
                         ? "6 Bulan"
@@ -364,6 +370,10 @@ export default function ListingSidebar({
                     onChange={(value) => {
                       const periodValue = value === "Periode Sewa"
                         ? ""
+                        : value === "Hari"
+                        ? "hari"
+                        : value === "Minggu"
+                        ? "minggu"
                         : value === "3 Bulan"
                         ? "3bulan"
                         : value === "6 Bulan"
