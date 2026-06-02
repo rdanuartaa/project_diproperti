@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/admin/property-submissions/{property}/documents/{document}/download', [PropertyController::class, 'downloadSubmissionDocument']);
         Route::get('/admin/property-submissions/{property}/seller-id-card/download', [PropertyController::class, 'downloadSellerIdCard']);
         Route::put('/admin/property-submissions/{property}/approve', [PropertyController::class, 'approveSubmission']);
+        Route::delete('/admin/property-submissions/{property}/reject', [PropertyController::class, 'rejectSubmission']);
 
         Route::get('/admin/articles', [ArticleController::class, 'adminIndex']);
         Route::post('/admin/articles', [ArticleController::class, 'store']);

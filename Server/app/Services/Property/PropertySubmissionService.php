@@ -5,6 +5,7 @@ namespace App\Services\Property;
 use App\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class PropertySubmissionService
 {
@@ -100,6 +101,19 @@ class PropertySubmissionService
         $property->save();
 
         return $this->hydrateForResponse($property, $request);
+    }
+
+    public function reject(Property $property): void
+    {
+        if ($property->is_verified || $property->status !== 'draft') {
+            throw ValidationException::withMessages([
+                'property' => ['Hanya pengajuan draft yang belum disetujui yang dapat ditolak.'],
+            ]);
+        }
+
+        $storedPaths = $this->mediaService->collectStoredPaths($property);
+        $property->delete();
+        $this->mediaService->deleteStoredFilesBestEffort($storedPaths);
     }
 
     public function updateDraft(Request $request, int $id): Property

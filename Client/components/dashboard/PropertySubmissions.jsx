@@ -202,7 +202,7 @@ export default function PropertySubmissions() {
     if (!submission || !canActOnSubmission(submission)) return;
     setIsActionLoading(true);
     try {
-      await api.delete(`/admin/properties/${submission.id}`);
+      await api.delete(`/admin/property-submissions/${submission.id}/reject`);
       setSuccessMessage("Pengajuan berhasil ditolak/dihapus.");
       setShowSuccess(true);
       setShowConfirm(false);
@@ -210,7 +210,13 @@ export default function PropertySubmissions() {
       closeDetail();
       fetchSubmissions();
     } catch (error) {
-      setAttention({ open: true, message: "Gagal menghapus pengajuan." });
+      setAttention({
+        open: true,
+        message:
+          error.response?.data?.errors?.property?.[0] ||
+          error.response?.data?.message ||
+          "Gagal menghapus pengajuan.",
+      });
     } finally {
       setIsActionLoading(false);
     }

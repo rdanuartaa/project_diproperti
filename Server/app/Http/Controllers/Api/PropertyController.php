@@ -464,6 +464,15 @@ class PropertyController extends Controller
         return response()->json(['message' => 'Pengajuan properti disetujui', 'property' => $property]);
     }
 
+    public function rejectSubmission(Request $request, Property $property): \Illuminate\Http\JsonResponse
+    {
+        if (!$request->user()?->isAdmin()) return response()->json(['message' => 'Unauthorized'], 403);
+
+        $this->submissionService->reject($property);
+
+        return response()->json(['message' => 'Pengajuan properti berhasil ditolak dan dihapus']);
+    }
+
     public function downloadPropertyImage(Request $request, PropertyImage $image): \Symfony\Component\HttpFoundation\Response
     {
         if (!$request->user()?->isAdmin()) abort(403, 'Unauthorized');
@@ -519,14 +528,10 @@ class PropertyController extends Controller
 
             Log::info('=== DELETE PROPERTY START === ID: ' . $property->id);
 
-            foreach ($property->images as $image) {
-                if (Storage::disk('s3')->exists($image->image_url)) {
-                    Storage::disk('s3')->delete($image->image_url);
-                }
-            }
-
+            $storedPaths = $this->mediaService->collectStoredPaths($property);
             $propertyId = $property->id;
             $property->delete();
+            $this->mediaService->deleteStoredFilesBestEffort($storedPaths);
 
             Log::info('=== DELETE PROPERTY SUCCESS === ID: ' . $propertyId);
             return response()->json(['message' => 'Property deleted successfully']);

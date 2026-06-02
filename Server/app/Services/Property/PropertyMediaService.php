@@ -14,6 +14,12 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PropertyMediaService
 {
+    private const DOCUMENT_FIELDS = [
+        'certificate_file',
+        'electric_bill_file',
+        'water_bill_file',
+    ];
+
     public function appendImageUrls(Property|Collection|LengthAwarePaginator $data): Property|Collection|LengthAwarePaginator
     {
         $callback = function ($property) {
@@ -197,6 +203,33 @@ class PropertyMediaService
 
         $property->{$field} = $r2Path;
         $property->save();
+    }
+
+    public function collectStoredPaths(Property $property): array
+    {
+        return $property->images()
+            ->get()
+            ->map(fn ($image) => $image->getRawOriginal('image_url') ?: $image->image_url)
+            ->merge(collect(self::DOCUMENT_FIELDS)->map(fn (string $field) => $property->{$field}))
+            ->filter(fn ($path) => is_string($path) && $path !== '')
+            ->reject(fn (string $path) => str_starts_with($path, 'http://') || str_starts_with($path, 'https://'))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public function deleteStoredFilesBestEffort(array $paths): void
+    {
+        foreach ($paths as $path) {
+            try {
+                Storage::disk('s3')->delete($path);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to delete property file from storage.', [
+                    'path' => $path,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     public function makeDownloadFilename(string $label, ?string $path): string
