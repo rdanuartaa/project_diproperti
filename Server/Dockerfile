@@ -12,11 +12,8 @@ WORKDIR /var/www/html
 
 COPY . .
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader \
-    && php artisan optimize:clear
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Fix permission
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 775 /var/www/html/storage \
     && chmod -R 775 /var/www/html/bootstrap/cache
@@ -25,7 +22,6 @@ RUN echo "max_execution_time = 300" >> /usr/local/etc/php/conf.d/docker-php-conf
     && echo "max_input_time = 300" >> /usr/local/etc/php/conf.d/docker-php-config.ini \
     && echo "memory_limit = 512M" >> /usr/local/etc/php/conf.d/docker-php-config.ini
 
-# Entrypoint script
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

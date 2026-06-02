@@ -1,0 +1,31 @@
+groups:
+  - name: server-alerts
+    rules:
+
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[1m])) * 100) > 80
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU Usage Tinggi"
+          description: "CPU server di atas 80%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memory Usage Tinggi"
+          description: "RAM server di atas 85%"
+
+      - alert: ContainerDown
+        expr: up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container Down"
+          description: "Ada service/container yang mati"
+  

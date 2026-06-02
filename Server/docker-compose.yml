@@ -14,8 +14,7 @@ services:
       - DB_USERNAME=properti_user
       - DB_PASSWORD=properti_pass
     volumes:
-      # Jangan mount seluruh folder — hanya yang perlu hot-reload
-      - .:/var/www/html                    # ← mount semua kode
+      - .:/var/www/html                   
       - /var/www/html/vendor               
       - ./storage:/var/www/html/storage
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
@@ -69,9 +68,59 @@ services:
     depends_on:
       - db
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: properti-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./docker/prometheus/alert.rules.yml:/etc/prometheus/alert.rules.yml
+
+    networks:
+      - properti-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: properti-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - properti-net
+    depends_on:
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: properti-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    networks:
+      - properti-net
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: properti-cadvisor
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - properti-net
+
 networks:
   properti-net:
     driver: bridge
 
 volumes:
   dbdata:
+  grafana-data:

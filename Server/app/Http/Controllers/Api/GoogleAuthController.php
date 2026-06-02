@@ -10,41 +10,39 @@ use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
 
-
 class GoogleAuthController extends Controller
 {
     public function redirect()
     {
         /** @var GoogleProvider $provider */
         $provider = Socialite::driver('google');
+
         return $provider->stateless()->redirect();
     }
 
     public function callback()
     {
+        $frontendUrl = env('FRONTEND_URL', 'https://dipropertijember.my.id');
+
         try {
-            // 1. Ambil data user dari Google
             /** @var GoogleProvider $provider */
             $provider = Socialite::driver('google');
             $googleUser = $provider->stateless()->user();
 
-            // 2. Cek apakah user sudah ada berdasarkan google_id
             $user = User::where('google_id', $googleUser->getId())->first();
 
-            // 3. Jika belum ada, cek email atau buat baru
             if (!$user) {
                 $existingUser = User::where('email', $googleUser->getEmail())->first();
 
                 if ($existingUser) {
-                    // Link akun Google ke user yang sudah ada
                     $existingUser->update([
                         'google_id' => $googleUser->getId(),
                         'avatar' => $googleUser->getAvatar(),
                         'email_verified_at' => now(),
                     ]);
+
                     $user = $existingUser;
                 } else {
-                    // Buat user baru
                     $user = User::create([
                         'name' => $googleUser->getName(),
                         'email' => $googleUser->getEmail(),
@@ -57,36 +55,25 @@ class GoogleAuthController extends Controller
                 }
             }
 
-            // 4. Generate Sanctum Token
             $token = $user->createToken('auth_token')->plainTextToken;
 
-            // 5. Redirect ke Frontend (Next.js) bawa token
+            return redirect($frontendUrl . '/?token=' . $token . '&status=success');
+        } catch (\Exception $e) {
             return redirect(
-                env('FRONTEND_URL', 'http://localhost:3000') .
-                    '/?token=' . $token . '&status=success'
-            );
-
-        }
-
-        catch (\Exception $e) {
-            // Jika error, redirect dengan pesan gagal
-            return redirect(
-                env('FRONTEND_URL', 'http://localhost:3000') .
-                    '/auth/google/callback?status=failed&error=' . urlencode($e->getMessage())
+                $frontendUrl . '/auth/google/callback?status=failed&error=' . urlencode($e->getMessage())
             );
         }
     }
 
-    // Endpoint untuk ambil data user yang login (butuh token)
     public function me(Request $request)
     {
         return response()->json(['user' => $request->user()]);
     }
 
-    // Endpoint logout
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        $request->user()->currentAccessToken()?->delete();
+
         return response()->json(['message' => 'Logged out']);
     }
 }

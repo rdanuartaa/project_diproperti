@@ -176,7 +176,7 @@
             <span class="highlight">Aplikasi utamanya (Frontend) berjalan di:</span>
         </p>
 
-        <a href="http://localhost:3000" class="btn">Buka Localhost:3000</a>
+        <a href="https://dipropertijember.my.id" class="btn">Yuk Mampir</a>
 
         <div class="footer">
             Laravel v{{ Illuminate\Foundation\Application::VERSION }} (PHP v{{ PHP_VERSION }})
