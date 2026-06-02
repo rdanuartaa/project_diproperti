@@ -38,6 +38,10 @@ class PropertyScoringService
         ],
     ];
 
+    public function __construct(
+        private ?PropertyScoringProfileService $profileService,
+    ) {}
+
     public function normalizeWeights(array $weights): array
     {
         $totalWeight = array_sum($weights);
@@ -54,6 +58,12 @@ class PropertyScoringService
 
     public function buildStats(string $type, string $listingType): array
     {
+        return $this->profileService?->getActiveStats($type, $listingType)
+            ?? $this->getFallbackStats($type, $listingType);
+    }
+
+    public function getFallbackStats(string $type, string $listingType): array
+    {
         $profile = self::REFERENCE_PROFILES[$type][$listingType];
 
         return [
@@ -61,7 +71,23 @@ class PropertyScoringService
             'max_price' => $profile['price'][1],
             'min_area' => $profile['area'][0],
             'max_area' => $profile['area'][1],
+            'profile_source' => 'fallback',
+            'profile_version' => null,
+            'profile_sample_count' => 0,
         ];
+    }
+
+    public function getSupportedCategories(): array
+    {
+        $categories = [];
+
+        foreach (self::REFERENCE_PROFILES as $type => $listingProfiles) {
+            foreach (array_keys($listingProfiles) as $listingType) {
+                $categories[] = ['type' => $type, 'listing_type' => $listingType];
+            }
+        }
+
+        return $categories;
     }
 
     public function calculateScore(Property $property, array $stats, array $weights): array
@@ -101,6 +127,15 @@ class PropertyScoringService
                 'distance_from_jember_center_km' => $distanceFromCenter !== null ? round($distanceFromCenter, 3) : null,
                 'area_score' => $areaScore,
                 'facility_score' => $facilityScore,
+                'reference_profile' => [
+                    'source' => $stats['profile_source'] ?? 'fallback',
+                    'version' => $stats['profile_version'] ?? null,
+                    'sample_count' => $stats['profile_sample_count'] ?? 0,
+                    'min_price' => $stats['min_price'],
+                    'max_price' => $stats['max_price'],
+                    'min_area' => $stats['min_area'],
+                    'max_area' => $stats['max_area'],
+                ],
             ],
         ];
     }
@@ -166,7 +201,7 @@ class PropertyScoringService
         return max(0, min(1, ($value - $min) / ($max - $min)));
     }
 
-    private function getAreaValue(Property $property): float
+    public function getAreaValue(Property $property): float
     {
         $detail = $property->detail;
         if (!$detail) {

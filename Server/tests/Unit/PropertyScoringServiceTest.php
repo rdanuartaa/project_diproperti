@@ -15,7 +15,7 @@ class PropertyScoringServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new PropertyScoringService();
+        $this->service = new PropertyScoringService(null);
     }
 
     #[Test]
