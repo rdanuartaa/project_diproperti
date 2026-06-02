@@ -46,7 +46,7 @@ class PropertyScoringProfileServiceTest extends TestCase
         $this->assertSame(100000000.0, $stats['min_price']);
         $this->assertSame(5000000000.0, $stats['max_price']);
         $this->assertSame(20.0, $stats['min_area']);
-        $this->assertSame(1000.0, $stats['max_area']);
+        $this->assertSame(500.0, $stats['max_area']);
     }
 
     #[Test]

@@ -71,6 +71,7 @@ export default function PropertySubmissions() {
   const [successMessage, setSuccessMessage] = useState("");
   const [attention, setAttention] = useState({ open: false, message: "" });
   const [showConfirm, setShowConfirm] = useState(false);
+  const [submissionToReject, setSubmissionToReject] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
@@ -164,6 +165,18 @@ export default function PropertySubmissions() {
     setShowDetailModal(false);
   };
 
+  const openRejectConfirmation = () => {
+    if (!activeSubmission || !canActOnSubmission(activeSubmission)) return;
+    setSubmissionToReject(activeSubmission);
+    setShowConfirm(true);
+  };
+
+  const closeRejectConfirmation = () => {
+    if (isActionLoading) return;
+    setShowConfirm(false);
+    setSubmissionToReject(null);
+  };
+
   const handleApprove = async () => {
     if (!activeSubmission || !canActOnSubmission(activeSubmission)) return;
     setIsActionLoading(true);
@@ -185,13 +198,15 @@ export default function PropertySubmissions() {
   };
 
   const handleDelete = async () => {
-    if (!activeSubmission || !canActOnSubmission(activeSubmission)) return;
+    const submission = submissionToReject || activeSubmission;
+    if (!submission || !canActOnSubmission(submission)) return;
     setIsActionLoading(true);
     try {
-      await api.delete(`/admin/properties/${activeSubmission.id}`);
+      await api.delete(`/admin/properties/${submission.id}`);
       setSuccessMessage("Pengajuan berhasil ditolak/dihapus.");
       setShowSuccess(true);
       setShowConfirm(false);
+      setSubmissionToReject(null);
       closeDetail();
       fetchSubmissions();
     } catch (error) {
@@ -498,10 +513,10 @@ export default function PropertySubmissions() {
         />
         <ConfirmModal
           isOpen={showConfirm}
-          onClose={() => setShowConfirm(false)}
+          onClose={closeRejectConfirmation}
           onConfirm={handleDelete}
           title="Konfirmasi Penolakan"
-          message={`Tolak & hapus pengajuan "${activeSubmission?.title}"?`}
+          message={`Tolak & hapus pengajuan "${submissionToReject?.title || activeSubmission?.title || "tanpa judul"}"?`}
           confirmText="Tolak / Hapus"
           cancelText="Batal"
           isLoading={isActionLoading}
@@ -1621,7 +1636,7 @@ export default function PropertySubmissions() {
                     <button
                       type="button"
                       className="tf-btn style-border pd-23 btn-cancel-danger"
-                      onClick={() => setShowConfirm(true)}
+                      onClick={openRejectConfirmation}
                       disabled={isActionLoading}
                     >
                       Tolak / Hapus

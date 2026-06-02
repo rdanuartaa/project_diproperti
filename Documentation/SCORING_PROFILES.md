@@ -16,6 +16,26 @@ Properti berstatus `sold` tetap digunakan karena relevan sebagai data historis.
 - Sampel minimum default adalah `30` properti per kategori.
 - Jika sampel belum cukup, sistem memakai fallback terdokumentasi.
 
+## Baseline Fallback Luas
+
+Fallback luas dipakai selama data historis kategori belum mencapai 30 sampel.
+Nilainya dibuat lebih representatif untuk fase awal aplikasi:
+
+| Tipe | Penawaran | Min luas | Max luas |
+| --- | --- | ---: | ---: |
+| Rumah | Jual | 20 | 500 |
+| Rumah | Sewa | 20 | 500 |
+| Villa | Jual | 30 | 1.000 |
+| Villa | Sewa | 30 | 1.000 |
+| Ruko | Jual | 10 | 750 |
+| Ruko | Sewa | 10 | 750 |
+| Kos | Sewa | 1 | 30 |
+| Tanah | Jual | 20 | 10.000 |
+| Tanah | Sewa | 20 | 10.000 |
+
+Nilai tersebut adalah baseline fallback terkurasi, bukan hasil P5-P95. Setelah
+jumlah sampel mencukupi, sistem dapat beralih ke profil historis P5-P95.
+
 Profil disimpan dan diberi versi. Skor tidak dihitung ulang berdasarkan kandidat
 pada halaman saat itu, sehingga penambahan satu properti ekstrem tidak langsung
 mengubah skor properti lama.

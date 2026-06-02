@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { createPortal } from "react-dom";
 
 export default function ConfirmModal({ 
   isOpen, 
@@ -13,7 +14,7 @@ export default function ConfirmModal({
 }) {
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div 
       className="modal show d-block" 
       style={{ 
@@ -23,7 +24,7 @@ export default function ConfirmModal({
         width: "100%", 
         height: "100%", 
         backgroundColor: "rgba(0,0,0,0.65)", 
-        zIndex: 9999, 
+        zIndex: 11000,
         display: "flex", 
         alignItems: "center", 
         justifyContent: "center",
@@ -171,6 +172,7 @@ export default function ConfirmModal({
           }
         }
       `}</style>
-    </div>
+    </div>,
+    document.body,
   );
 }
