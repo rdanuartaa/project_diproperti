@@ -214,6 +214,7 @@ export default function Properties() {
           params: {
             type: activeType,
             status: "published",
+            sort_order: "popular",
             per_page: 10,
           },
         });

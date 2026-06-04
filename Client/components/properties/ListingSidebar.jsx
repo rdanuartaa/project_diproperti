@@ -150,7 +150,7 @@ export default function ListingSidebar({
   filters,
   onChange,
   onReset,
-  sortOrder = "desc",
+  sortOrder = "popular",
   onSortChange,
   propertyTypeOptions = ["Semua Tipe", "rumah", "villa", "ruko", "kos", "tanah"],
   listingTypeOptions = ["Jual/Sewa", "Dijual", "Disewa"],

@@ -10,6 +10,7 @@ import { useCompare } from "@/components/compare/CompareContext";
 import { getPropertyConfig } from "@/lib/property";
 
 const PAGE_SIZE = 10;
+const DEFAULT_SORT_ORDER = "popular";
 
 const EMPTY_FILTERS = {
   search: "", city: "", location: "", type: "", listing_type: "",
@@ -48,14 +49,14 @@ const SHARED_FILTER_KEYS = ["search", "city", "location", "type", "listing_type"
 const VALID_SORT_ORDERS = ["desc", "asc", "popular", "price_asc", "price_desc"];
 
 function normalizeSortOrder(value) {
-  if (!value) return "desc";
+  if (!value) return DEFAULT_SORT_ORDER;
   const normalized = String(value).toLowerCase();
   if (normalized === "populer" || normalized === "terpopuler") return "popular";
   if (normalized === "terbaru") return "desc";
   if (normalized === "terlama" || normalized === "oldest") return "asc";
   if (normalized === "termurah" || normalized === "price-low" || normalized === "price_low") return "price_asc";
   if (normalized === "termahal" || normalized === "price-high" || normalized === "price_high") return "price_desc";
-  return VALID_SORT_ORDERS.includes(normalized) ? normalized : "desc";
+  return VALID_SORT_ORDERS.includes(normalized) ? normalized : DEFAULT_SORT_ORDER;
 }
 
 function normalizeFiltersForType(filters, type) {
@@ -363,17 +364,21 @@ export default function Properties3({ defaultGrid = false }) {
     const resetFilters = applyCompareLock(EMPTY_FILTERS);
     setFilters(resetFilters);
     setAppliedFilters(resetFilters);
-    setSortOrder("desc");
+    setSortOrder(DEFAULT_SORT_ORDER);
     setPage(1);
     if (compareLock) {
       const params = new URLSearchParams();
       params.set("type", compareLock.type);
       params.set("listing_type", compareLock.listing_type);
+      params.set("sort_order", DEFAULT_SORT_ORDER);
       params.set("page", "1");
       router.replace(`?${params.toString()}`, { scroll: false });
       return;
     }
-    router.replace(window.location.pathname, { scroll: false });
+    router.replace(
+      `${window.location.pathname}?sort_order=${DEFAULT_SORT_ORDER}`,
+      { scroll: false },
+    );
   };
 
   const startItem = pagination.total === 0 ? 0 : pagination.from || (currentPage - 1) * pagination.per_page + 1;
