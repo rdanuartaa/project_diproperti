@@ -21,6 +21,8 @@ const formatRupiah = (value) => {
   }).format(value);
 };
 
+const MINIMUM_WINNING_MARGIN = 2;
+
 const getRentPeriodLabel = (property) => {
   const period = String(property?.price_period || "bulan");
   if (period === "hari") return "hari";
@@ -393,9 +395,13 @@ export default function Compare() {
   const [attention, setAttention] = useState({ open: false, message: "" });
   const compareRows = useMemo(() => buildCompareRows(properties), [properties]);
   const comparisonWeights = properties[0]?.comparison_weights;
-  const scores = useMemo(
-    () => properties.map((property) => Math.round(Number(property.comparison_score || 0) * 100)),
+  const rawScores = useMemo(
+    () => properties.map((property) => Number(property.comparison_score || 0) * 100),
     [properties],
+  );
+  const scores = useMemo(
+    () => rawScores.map((score) => Math.round(score)),
+    [rawScores],
   );
   const prosCons = useMemo(
     () => buildProsCons(properties, compareRows),
@@ -403,9 +409,33 @@ export default function Compare() {
   );
 
   const bestScoreIndex = useMemo(() => {
-    if (!scores.length) return -1;
-    return scores.indexOf(Math.max(...scores));
-  }, [scores]);
+    if (properties.length < 2) return -1;
+
+    const rankedScores = rawScores
+      .map((score, index) => ({ index, score }))
+      .sort((a, b) => b.score - a.score);
+
+    return rankedScores[0].score - rankedScores[1].score >= MINIMUM_WINNING_MARGIN
+      ? rankedScores[0].index
+      : -1;
+  }, [properties.length, rawScores]);
+
+  const recommendationText = useMemo(() => {
+    if (bestScoreIndex >= 0) {
+      return `Berdasarkan perbandingan, properti "${properties[bestScoreIndex].title}" memiliki nilai terbaik dengan skor ${scores[bestScoreIndex]}/100 dan lebih layak untuk dipertimbangkan.`;
+    }
+
+    if (properties.length > 1) {
+      const topScore = Math.max(...rawScores);
+      const comparableTitles = properties
+        .filter((_, index) => topScore - rawScores[index] < MINIMUM_WINNING_MARGIN)
+        .map((property) => `"${property.title}"`);
+
+      return `Belum ada pemenang yang meyakinkan. ${comparableTitles.join(" dan ")} memiliki skor yang relatif setara; pertimbangkan prioritas harga, luas, lokasi, dan fasilitas Anda.`;
+    }
+
+    return "Belum cukup data untuk menentukan rekomendasi.";
+  }, [bestScoreIndex, properties, rawScores, scores]);
 
   const validateProperties = (props) => {
     if (props.length < 2) return true;
@@ -981,9 +1011,7 @@ export default function Compare() {
                 </div>
                 <h6 style={{ margin: "18px 0 8px" }}>Rekomendasi</h6>
                 <p style={{ margin: 0, color: "#555" }}>
-                  {properties[bestScoreIndex]?.title
-                    ? `Berdasarkan perbandingan, properti "${properties[bestScoreIndex].title}" memiliki nilai terbaik dengan skor ${scores[bestScoreIndex]}/100 dan lebih layak untuk dipertimbangkan.`
-                    : "Belum cukup data untuk menentukan rekomendasi."}
+                  {recommendationText}
                 </p>
               </div>
             )}

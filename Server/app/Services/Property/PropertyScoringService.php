@@ -7,9 +7,13 @@ use App\Models\Property;
 class PropertyScoringService
 {
     private const JEMBER_CENTER_LATITUDE = -8.17211;
+
     private const JEMBER_CENTER_LONGITUDE = 113.69953;
+
     private const MAX_RECOMMENDED_DISTANCE_KM = 30;
+
     private const MISSING_FIELD_PENALTY = 0.05;
+
     private const MAX_COMPLETENESS_PENALTY = 0.3;
 
     /**
@@ -97,8 +101,8 @@ class PropertyScoringService
         $facilityValue = $this->getFacilityValue($property);
         $distanceFromCenter = $this->getDistanceFromJemberCenter($property);
 
-        $priceScore = 1 - $this->normalizeValue($priceValue, $stats['min_price'], $stats['max_price']);
-        $areaScore = $this->normalizeValue($areaValue, $stats['min_area'], $stats['max_area']);
+        $priceScore = 1 - $this->normalizeLogValue($priceValue, $stats['min_price'], $stats['max_price']);
+        $areaScore = $this->normalizeLogValue($areaValue, $stats['min_area'], $stats['max_area']);
         $facilityScore = $this->normalizeValue($facilityValue, 0, 1);
         $locationScore = $distanceFromCenter !== null
             ? 1 - $this->normalizeValue($distanceFromCenter, 0, self::MAX_RECOMMENDED_DISTANCE_KM)
@@ -128,6 +132,7 @@ class PropertyScoringService
                 'area_score' => $areaScore,
                 'facility_score' => $facilityScore,
                 'reference_profile' => [
+                    'normalization' => 'logarithmic_clamped',
                     'source' => $stats['profile_source'] ?? 'fallback',
                     'version' => $stats['profile_version'] ?? null,
                     'sample_count' => $stats['profile_sample_count'] ?? 0,
@@ -171,7 +176,7 @@ class PropertyScoringService
         if ($property->latitude === null || $property->longitude === null) {
             $missing[] = 'coordinates';
         }
-        if (!$detail) {
+        if (! $detail) {
             return [...$missing, 'detail'];
         }
 
@@ -201,10 +206,21 @@ class PropertyScoringService
         return max(0, min(1, ($value - $min) / ($max - $min)));
     }
 
+    private function normalizeLogValue(float $value, float $min, float $max): float
+    {
+        if ($value <= 0 || $min <= 0 || $max <= $min) {
+            return $this->normalizeValue($value, $min, $max);
+        }
+
+        $clampedValue = max($min, min($value, $max));
+
+        return (log($clampedValue) - log($min)) / (log($max) - log($min));
+    }
+
     public function getAreaValue(Property $property): float
     {
         $detail = $property->detail;
-        if (!$detail) {
+        if (! $detail) {
             return 0;
         }
 
@@ -229,11 +245,11 @@ class PropertyScoringService
     private function getFacilityValue(Property $property): float
     {
         $detail = $property->detail;
-        if (!$detail) {
+        if (! $detail) {
             return 0;
         }
 
-        $normalized = fn(float $value, float $target) => max(0, min($value / $target, 1));
+        $normalized = fn (float $value, float $target) => max(0, min($value / $target, 1));
 
         $waterScore = match ($detail->water ?? null) {
             'pdam', 'PDAM' => 1,
@@ -276,7 +292,7 @@ class PropertyScoringService
             + ((bool) $detail->private_pool ? 1 : 0) * 0.16
             + ((bool) $detail->furnished ? 1 : 0) * 0.16
             + ((bool) $detail->near_tourism ? 1 : 0) * 0.16
-            + (!empty($detail->view_type) ? 1 : 0) * 0.12
+            + (! empty($detail->view_type) ? 1 : 0) * 0.12
             + ((bool) $detail->garden ? 1 : 0) * 0.1
             + $electricityScore * 0.05
             + $waterScore * 0.05;
@@ -284,7 +300,7 @@ class PropertyScoringService
         $kosRoomScore = $normalized((float) ($detail->total_rooms ?? 0), 20) * 0.36
             + $normalized((float) ($detail->bathrooms ?? 0), 10) * 0.28
             + (($detail->bathroom_position ?? null) === 'dalam' ? 1 : 0.65) * 0.2
-            + (!empty($detail->gender_type) ? 1 : 0) * 0.16;
+            + (! empty($detail->gender_type) ? 1 : 0) * 0.16;
 
         $kosExtraScore = ((bool) $detail->wifi_included ? 1 : 0) * 0.18
             + ((bool) $detail->electricity_included ? 1 : 0) * 0.18
@@ -305,9 +321,9 @@ class PropertyScoringService
             'kos' => ($kosRoomScore * 0.4) + ($kosExtraScore * 0.6),
             'ruko' => ($rukoBusinessScore * 0.4) + ($rukoUtilityScore * 0.6),
             'tanah' => $roadScore * 0.35
-                + (!empty($detail->zoning) ? 1 : 0) * 0.25
+                + (! empty($detail->zoning) ? 1 : 0) * 0.25
                 + $landTypeScore * 0.25
-                + (!empty($detail->land_contour) ? 1 : 0) * 0.15,
+                + (! empty($detail->land_contour) ? 1 : 0) * 0.15,
             default => 0,
         };
     }

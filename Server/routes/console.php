@@ -1,10 +1,10 @@
 <?php
 
+use App\Services\Property\PropertyScoringProfileService;
+use App\Services\Property\PropertyScoringService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
-use App\Services\Property\PropertyScoringProfileService;
-use App\Services\Property\PropertyScoringService;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -22,7 +22,7 @@ Artisan::command(
 
         $this->table(
             ['Type', 'Listing', 'Version', 'Source', 'Samples', 'Min Price', 'Max Price', 'Min Area', 'Max Area'],
-            collect($profiles)->map(fn(array $profile) => [
+            collect($profiles)->map(fn (array $profile) => [
                 $profile['type'],
                 $profile['listing_type'],
                 $profile['version'],
@@ -42,5 +42,5 @@ Artisan::command(
 )->purpose('Build stable P5-P95 scoring profiles from verified historical properties');
 
 Schedule::command('properties:refresh-scoring-profiles --min-samples=30')
-    ->cron('0 2 1 1,7 *')
+    ->cron('0 2 1 * *')
     ->withoutOverlapping();
