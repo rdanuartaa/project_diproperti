@@ -2,6 +2,9 @@
 
 Rekomendasi dan komparasi menggunakan mesin SAW yang sama. Normalisasi harga dan
 luas membaca profil referensi aktif dari tabel `property_scoring_profiles`.
+Harga memakai normalisasi linear ter-clamp agar posisi harga dalam pasar mudah
+dipahami. Luas memakai normalisasi logaritmik ter-clamp agar perbedaan luas pada
+kelas kecil dan menengah tetap terbaca tanpa didominasi properti ekstrem.
 
 ## Dasar Perhitungan
 
@@ -54,8 +57,8 @@ Untuk melihat hasil tanpa menyimpannya:
 php artisan properties:refresh-scoring-profiles --min-samples=30 --dry-run
 ```
 
-Scheduler Laravel menjalankan refresh otomatis setiap 1 Januari dan 1 Juli pukul
-02.00. Pastikan cron scheduler Laravel aktif pada server produksi:
+Scheduler Laravel menjalankan refresh otomatis setiap tanggal 1 pukul 02.00.
+Pastikan cron scheduler Laravel aktif pada server produksi:
 
 ```cron
 * * * * * cd /path/to/Server && php artisan schedule:run >> /dev/null 2>&1

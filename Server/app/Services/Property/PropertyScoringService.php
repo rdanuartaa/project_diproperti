@@ -101,7 +101,7 @@ class PropertyScoringService
         $facilityValue = $this->getFacilityValue($property);
         $distanceFromCenter = $this->getDistanceFromJemberCenter($property);
 
-        $priceScore = 1 - $this->normalizeLogValue($priceValue, $stats['min_price'], $stats['max_price']);
+        $priceScore = 1 - $this->normalizeValue($priceValue, $stats['min_price'], $stats['max_price']);
         $areaScore = $this->normalizeLogValue($areaValue, $stats['min_area'], $stats['max_area']);
         $facilityScore = $this->normalizeValue($facilityValue, 0, 1);
         $locationScore = $distanceFromCenter !== null
@@ -132,7 +132,8 @@ class PropertyScoringService
                 'area_score' => $areaScore,
                 'facility_score' => $facilityScore,
                 'reference_profile' => [
-                    'normalization' => 'logarithmic_clamped',
+                    'price_normalization' => 'linear_clamped',
+                    'area_normalization' => 'logarithmic_clamped',
                     'source' => $stats['profile_source'] ?? 'fallback',
                     'version' => $stats['profile_version'] ?? null,
                     'sample_count' => $stats['profile_sample_count'] ?? 0,
@@ -275,7 +276,13 @@ class PropertyScoringService
             default => 0,
         };
 
-        $houseRoomScore = $normalized((float) ($detail->bedrooms ?? 0), 5) * 0.28
+        $houseRoomScore = $normalized((float) ($detail->bedrooms ?? 0), 3) * 0.3
+            + $normalized((float) ($detail->bathrooms ?? 0), 2) * 0.25
+            + $normalized((float) ($detail->kitchens ?? 0), 1) * 0.18
+            + $normalized((float) ($detail->living_rooms ?? 0), 1) * 0.17
+            + $normalized((float) ($detail->floors ?? 0), 2) * 0.1;
+
+        $villaRoomScore = $normalized((float) ($detail->bedrooms ?? 0), 5) * 0.28
             + $normalized((float) ($detail->bathrooms ?? 0), 4) * 0.24
             + $normalized((float) ($detail->kitchens ?? 0), 2) * 0.18
             + $normalized((float) ($detail->living_rooms ?? 0), 3) * 0.18
@@ -316,8 +323,8 @@ class PropertyScoringService
         $rukoUtilityScore = $electricityScore * 0.5 + $waterScore * 0.5;
 
         return match ($property->type) {
-            'rumah' => ($houseRoomScore * 0.45) + ($houseExtraScore * 0.55),
-            'villa' => ($houseRoomScore * 0.4) + ($villaExtraScore * 0.6),
+            'rumah' => ($houseRoomScore * 0.65) + ($houseExtraScore * 0.35),
+            'villa' => ($villaRoomScore * 0.4) + ($villaExtraScore * 0.6),
             'kos' => ($kosRoomScore * 0.4) + ($kosExtraScore * 0.6),
             'ruko' => ($rukoBusinessScore * 0.4) + ($rukoUtilityScore * 0.6),
             'tanah' => $roadScore * 0.35

@@ -88,7 +88,7 @@ class PropertyScoringServiceTest extends TestCase
     }
 
     #[Test]
-    public function it_uses_logarithmic_normalization_for_skewed_property_values(): void
+    public function it_uses_linear_price_and_logarithmic_area_normalization(): void
     {
         $stats = $this->service->buildStats('rumah', 'jual');
         $weights = ['price' => 50, 'location' => 0, 'area' => 50, 'facilities' => 0];
@@ -99,13 +99,14 @@ class PropertyScoringServiceTest extends TestCase
         $extremeResult = $this->service->calculateScore($extreme, $stats, $weights);
 
         $this->assertSame(
+            'linear_clamped',
+            $affordableResult['detail']['reference_profile']['price_normalization'],
+        );
+        $this->assertSame(
             'logarithmic_clamped',
-            $affordableResult['detail']['reference_profile']['normalization'],
+            $affordableResult['detail']['reference_profile']['area_normalization'],
         );
-        $this->assertGreaterThan(
-            0.2,
-            $affordableResult['detail']['price_score'] - $extremeResult['detail']['price_score'],
-        );
+        $this->assertEqualsWithDelta(0.918367, $affordableResult['detail']['price_score'], 0.000001);
         $this->assertGreaterThan(
             0.2,
             $extremeResult['detail']['area_score'] - $affordableResult['detail']['area_score'],
@@ -125,6 +126,74 @@ class PropertyScoringServiceTest extends TestCase
 
         $this->assertSame($maximumResult['detail']['price_score'], $extremeResult['detail']['price_score']);
         $this->assertSame($maximumResult['detail']['area_score'], $extremeResult['detail']['area_score']);
+    }
+
+    #[Test]
+    public function it_scores_practical_core_house_facilities_as_adequate(): void
+    {
+        $property = $this->makeCompleteHouse(500000000, 60, 60, [
+            'bedrooms' => 3,
+            'bathrooms' => 2,
+            'kitchens' => 1,
+            'living_rooms' => 1,
+            'floors' => 1,
+            'carport' => true,
+            'water' => 'pdam',
+            'listrik_type' => 'overground',
+        ]);
+
+        $result = $this->service->calculateScore(
+            $property,
+            $this->service->buildStats('rumah', 'jual'),
+            ['price' => 0, 'location' => 0, 'area' => 0, 'facilities' => 100],
+        );
+
+        $this->assertGreaterThanOrEqual(0.75, $result['detail']['facility_score']);
+    }
+
+    #[Test]
+    public function it_rewards_additional_house_facilities_without_requiring_them_for_an_adequate_score(): void
+    {
+        $standard = $this->makeCompleteHouse(500000000, 60, 60, [
+            'bedrooms' => 3,
+            'bathrooms' => 2,
+            'kitchens' => 1,
+            'living_rooms' => 1,
+            'floors' => 1,
+            'water' => 'pdam',
+            'listrik_type' => 'overground',
+        ]);
+        $complete = $this->makeCompleteHouse(500000000, 60, 60, [
+            'bedrooms' => 3,
+            'bathrooms' => 2,
+            'kitchens' => 1,
+            'living_rooms' => 1,
+            'floors' => 2,
+            'carport' => true,
+            'garden' => true,
+            'one_gate_system' => true,
+            'security_24jam' => true,
+            'water' => 'pdam',
+            'listrik_type' => 'underground',
+        ]);
+        $weights = ['price' => 0, 'location' => 0, 'area' => 0, 'facilities' => 100];
+
+        $standardResult = $this->service->calculateScore(
+            $standard,
+            $this->service->buildStats('rumah', 'jual'),
+            $weights,
+        );
+        $completeResult = $this->service->calculateScore(
+            $complete,
+            $this->service->buildStats('rumah', 'jual'),
+            $weights,
+        );
+
+        $this->assertGreaterThan(
+            $standardResult['detail']['facility_score'],
+            $completeResult['detail']['facility_score'],
+        );
+        $this->assertSame(1.0, $completeResult['detail']['facility_score']);
     }
 
     private function makeCompleteRentalKos(string $rentPeriod, int $price): Property
@@ -147,8 +216,12 @@ class PropertyScoringServiceTest extends TestCase
         return $property;
     }
 
-    private function makeCompleteHouse(int $price, float $buildingArea, float $landArea): Property
-    {
+    private function makeCompleteHouse(
+        int $price,
+        float $buildingArea,
+        float $landArea,
+        array $detailOverrides = [],
+    ): Property {
         $property = new Property([
             'type' => 'rumah',
             'listing_type' => 'jual',
@@ -156,10 +229,10 @@ class PropertyScoringServiceTest extends TestCase
             'latitude' => -8.17211,
             'longitude' => 113.69953,
         ]);
-        $property->setRelation('detail', new PropertyDetail([
+        $property->setRelation('detail', new PropertyDetail(array_merge([
             'luas_bangunan' => $buildingArea,
             'luas_tanah' => $landArea,
-        ]));
+        ], $detailOverrides)));
 
         return $property;
     }
