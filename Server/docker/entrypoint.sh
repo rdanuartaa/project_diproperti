@@ -23,7 +23,11 @@ rm -f /var/www/html/bootstrap/cache/config.php
 
 echo ">>> Running artisan commands..."
 php artisan package:discover --ansi || true
-php artisan key:generate --force || true
+if [ -n "${APP_KEY:-}" ] || grep -Eq '^APP_KEY=.+$' .env 2>/dev/null; then
+    echo ">>> Preserving existing application key..."
+else
+    php artisan key:generate --force || true
+fi
 php artisan config:clear || true
 php artisan config:cache || true
 php artisan migrate --force || true
