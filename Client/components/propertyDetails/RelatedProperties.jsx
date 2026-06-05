@@ -278,9 +278,10 @@ export default function RelatedProperties({ slug }) {
               </p>
             </div>
 
-            {/* Desktop: Swiper dengan styling sama seperti grid */}
+            {/* Desktop: Swiper dengan styling sama seperti home popular properties */}
             <div className="d-none d-lg-block">
               <Swiper
+                dir="ltr"
                 modules={[Pagination, Navigation]}
                 spaceBetween={15}
                 slidesPerView={3}
@@ -291,21 +292,24 @@ export default function RelatedProperties({ slug }) {
                   768: { slidesPerView: 2 },
                   576: { slidesPerView: 1 },
                 }}
-                className="tf-swiper-related"
+                className="swiper sw-layout style-pagination tf-swiper-related"
               >
                 {relatedProperties.map((property) => (
-                  <SwiperSlide key={property.id}>
+                  <SwiperSlide className="swiper-slide" key={property.id}>
                     {renderPropertyCard(property)}
                   </SwiperSlide>
                 ))}
+
+                <div className="sw-wrap-btn home-carousel-nav mt-48">
+                  <div className="swiper-button-prev sw-button nav-prev-layout related-prev">
+                    <i className="icon-arrow-left-3" />
+                  </div>
+                  <div className="sw-pagination sw-pagination-layout text-center related-pagination" />
+                  <div className="swiper-button-next sw-button nav-next-layout related-next">
+                    <i className="icon-arrow-right-3" />
+                  </div>
+                </div>
               </Swiper>
-              
-              {/* Navigation & Pagination */}
-              <div className="swiper-controls flex justify-end gap-2 mt-4">
-                <button className="btn-icon related-prev"><i className="icon-arrow-left" /></button>
-                <button className="btn-icon related-next"><i className="icon-arrow-right" /></button>
-              </div>
-              <div className="related-pagination text-center mt-3" />
             </div>
 
             {/* Mobile: Swiper seperti artikel home */}
